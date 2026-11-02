@@ -1,9 +1,13 @@
+// Written by Mudlej. License is GPLv3.
+
 package com.gitlab.mudlej.MjPdfReader.suite.scan
 
 import com.gitlab.mudlej.MjPdfReader.suite.core.DurationCategory
 import com.gitlab.mudlej.MjPdfReader.suite.core.TestDuration
 import androidx.room.Room
 import androidx.room.testing.MigrationTestHelper
+import androidx.test.ext.junit.runners.AndroidJUnit4
+import androidx.test.filters.LargeTest
 import androidx.test.platform.app.InstrumentationRegistry
 import com.gitlab.mudlej.MjPdfReader.data.AppDatabase
 import com.gitlab.mudlej.MjPdfReader.data.AppDatabaseMigrations
@@ -13,7 +17,10 @@ import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
 import org.junit.Rule
 import org.junit.Test
+import org.junit.runner.RunWith
 
+@LargeTest
+@RunWith(AndroidJUnit4::class)
 @TestDuration(DurationCategory.SHORT)
 class ScanDatabaseMigrationTest {
     @get:Rule

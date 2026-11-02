@@ -147,6 +147,7 @@ The repository is three modules:
 - Credits to [@Derekelkins](https://github.com/Derekelkins) for adding the ability to remember the last opened page to the original app.
 - Big thanks to [Bnyro](https://gitlab.com/Bnyro) (LibreTube's dev) for helping me with the colors and the migration to M3. (MJ PDF v2.1)
 - Community translators brought the app to 15 languages.
+- The test suite renders [The Linux Command Line](https://linuxcommand.org/tlcl.php) by William Shotts as a real world PDF fixture.
 
 ## License
 MJ PDF uses the GPLv3 license. The original app (PDF Viewer Plus) was under the MIT license.

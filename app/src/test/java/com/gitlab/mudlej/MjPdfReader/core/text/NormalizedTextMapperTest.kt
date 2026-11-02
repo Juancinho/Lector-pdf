@@ -18,9 +18,9 @@ class NormalizedTextMapperTest {
         "ratio ½ of it",
         "chapter Ⅸ begins",
         "ends here… and on",
-        "abc￾\r\ndef",
-        "abc￾\ndef",
-        "abc￾def",
+        "abc\uFFFE\r\ndef",
+        "abc\uFFFE\ndef",
+        "abc\uFFFEdef",
         "line one\r\nline two",
         "ﬁrst word",
         "trailing ﬁ",
@@ -83,11 +83,11 @@ class NormalizedTextMapperTest {
 
     private fun normalize(raw: String): String {
         return Normalizer.normalize(PdfiumCore.mapPresentationFormMarks(raw), Normalizer.Form.NFKC)
-            .replace("￾\r\n", "")
-            .replace("￾\n", "")
-            .replace("￾\r", "")
-            .replace("￾", "")
-            .replace("​", "")
+            .replace("\uFFFE\r\n", "")
+            .replace("\uFFFE\n", "")
+            .replace("\uFFFE\r", "")
+            .replace("\uFFFE", "")
+            .replace("\u200B", "")
             .replace("\r\n", "\n")
             .replace('\r', '\n')
     }

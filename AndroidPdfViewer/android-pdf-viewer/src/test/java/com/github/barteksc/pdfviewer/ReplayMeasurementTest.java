@@ -15,19 +15,6 @@ import java.util.concurrent.atomic.AtomicReference;
 
 public class ReplayMeasurementTest {
 
-    public static void main(String[] args) throws Exception {
-        ReplayMeasurementTest test = new ReplayMeasurementTest();
-        test.lines_haveStableMachineReadableFormatAndReplayCorrelation();
-        test.lastReportLines_exposesTheFinishedReportWithoutLogging();
-        test.activeSession_isConfinedToTheThreadRunningTheReplay();
-        test.oneEdit_canRetainMoreThanOneNativeOpen();
-        test.report_isAnIndependentSnapshotWithImmutableLines();
-        test.zeroEdits_reportsOnlyTheTotal();
-        test.partialReplay_omitsUnfinishedEditsButRetainsTheirNativeOpens();
-        test.invalidIndexes_preserveTrackingOnBeginAndClearItOnEnd();
-        test.finishOlderSession_keepsTheNewerSessionActive();
-    }
-
     @Test
     public void lines_haveStableMachineReadableFormatAndReplayCorrelation() {
         ReplayMeasurement.Session session = ReplayMeasurement.start(123456L, 2);
