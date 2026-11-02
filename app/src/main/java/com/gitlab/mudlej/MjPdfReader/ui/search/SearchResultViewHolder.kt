@@ -34,7 +34,7 @@ class SearchResultViewHolder(
         val text = stylizeText(searchResult, row.nestedQuery, ignoreAccents)
         binding.apply {
             resultText.setText(text, TextView.BufferType.SPANNABLE)
-            resultPageNumber.text = "PAGE\n${searchResult.pageNumber}"
+            resultPageNumber.text = context.getString(R.string.search_result_page_label, searchResult.pageNumber)
 
             // show more text
             if (!searchResult.expanded) {

@@ -88,6 +88,12 @@ class HomeActivity : AppCompatActivity(), HomeItemFunctions {
 
     private val homeViewModel: HomeViewModel by viewModels()
 
+    internal val renderingForTest: HomeRendering
+        get() = rendering
+
+    internal val recentTabForTest: RecentTabController
+        get() = recentTab
+
     private val homeBackCallback = object : OnBackPressedCallback(false) {
         override fun handleOnBackPressed() {
             when {

@@ -474,6 +474,7 @@
     <string name="highlights_saved">變更已儲存</string>
     <string name="highlight_failed">無法新增醒目標示</string>
     <string name="search_results">搜尋結果</string>
+    <string name="search_result_page_label">頁\n%1$d</string>
     <string name="copy">複製</string>
     <string name="copy_all">全部複製</string>
     <string name="highlight_update_failed">無法更新醒目標示</string>
@@ -547,6 +548,7 @@
     <string name="text_size">文字大小</string>
     <string name="go_to_page">前往頁面</string>
     <string name="go_to">前往</string>
+    <string name="go_to_page_current_hint">目前頁面 %1$d/%2$d</string>
     <string name="all_pages">所有頁面</string>
     <string name="grid_columns">欄數</string>
     <string name="page_thumbnail_description">頁面縮圖</string>
@@ -933,4 +935,8 @@
     <string name="shared_copy_mode_always_summary">副本會自動儲存，不會詢問。非常大的檔案和儲存空間不足時仍會先詢問。</string>
     <string name="shared_copy_mode_ask">每次都詢問</string>
     <string name="shared_copy_mode_ask_summary">儲存副本前，每個分享的檔案都會先詢問。</string>
+
+    <plurals name="hide_delay_seconds">
+        <item quantity="other">%d 秒</item>
+    </plurals>
 </resources>

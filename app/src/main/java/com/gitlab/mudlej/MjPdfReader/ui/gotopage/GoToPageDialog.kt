@@ -30,7 +30,7 @@ fun showGoToPageDialog(
     showAllPages: (() -> Unit)? = null,
 ) {
     val binding = DialogGoToPageBinding.inflate(LayoutInflater.from(activity))
-    binding.inputLayout.hint = "Current page ${pageIndex + 1}/$pdfLength"
+    binding.inputLayout.hint = activity.getString(R.string.go_to_page_current_hint, pageIndex + 1, pdfLength)
 
     val cache = if (documentUri != null && pdfLength > 0) {
         PageThumbnailCache(activity, documentUri, password)

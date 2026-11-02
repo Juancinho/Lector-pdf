@@ -474,6 +474,7 @@
     <string name="highlights_saved">Modifications enregistrées</string>
     <string name="highlight_failed">Impossible d\'ajouter le surlignage</string>
     <string name="search_results">Résultats de la recherche</string>
+    <string name="search_result_page_label">PAGE\n%1$d</string>
     <string name="copy">Copier</string>
     <string name="copy_all">Tout copier</string>
     <string name="highlight_update_failed">Impossible de mettre à jour le surlignage</string>
@@ -547,6 +548,7 @@
     <string name="text_size">Taille du texte</string>
     <string name="go_to_page">Aller à la page</string>
     <string name="go_to">Aller à</string>
+    <string name="go_to_page_current_hint">Page actuelle %1$d/%2$d</string>
     <string name="all_pages">Toutes les pages</string>
     <string name="grid_columns">Colonnes</string>
     <string name="page_thumbnail_description">Miniature de la page</string>
@@ -946,4 +948,10 @@
     <string name="shared_copy_mode_always_summary">Les copies sont enregistrées sans demander. Les fichiers très volumineux et le stockage faible demandent quand même d\'abord.</string>
     <string name="shared_copy_mode_ask">Demander à chaque fois</string>
     <string name="shared_copy_mode_ask_summary">Chaque fichier partagé demande avant qu\'une copie soit enregistrée.</string>
+
+    <plurals name="hide_delay_seconds">
+        <item quantity="one">%d seconde</item>
+        <item quantity="many">%d secondes</item>
+        <item quantity="other">%d secondes</item>
+    </plurals>
 </resources>

@@ -474,6 +474,7 @@
     <string name="highlights_saved">Değişiklikler kaydedildi</string>
     <string name="highlight_failed">Vurgu eklenemedi</string>
     <string name="search_results">Arama Sonuçları</string>
+    <string name="search_result_page_label">SAYFA\n%1$d</string>
     <string name="copy">Kopyala</string>
     <string name="copy_all">Hepsini Kopyala</string>
     <string name="highlight_update_failed">Vurgu güncellenemedi</string>
@@ -547,6 +548,7 @@
     <string name="text_size">Metin boyutu</string>
     <string name="go_to_page">Sayfaya Git</string>
     <string name="go_to">Git</string>
+    <string name="go_to_page_current_hint">Geçerli sayfa %1$d/%2$d</string>
     <string name="all_pages">Tüm Sayfalar</string>
     <string name="grid_columns">Sütunlar</string>
     <string name="page_thumbnail_description">Sayfa küçük resmi</string>
@@ -940,4 +942,9 @@
     <string name="shared_copy_mode_always_summary">Kopyalar sorulmadan kaydedilir. Çok büyük dosyalar ve düşük depolama alanı yine de önce sorar.</string>
     <string name="shared_copy_mode_ask">Her seferinde sor</string>
     <string name="shared_copy_mode_ask_summary">Her paylaşılan dosya, bir kopya kaydedilmeden önce sorar.</string>
+
+    <plurals name="hide_delay_seconds">
+        <item quantity="one">%d saniye</item>
+        <item quantity="other">%d saniye</item>
+    </plurals>
 </resources>

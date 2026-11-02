@@ -6,17 +6,15 @@ import android.os.Handler
 import android.os.Looper
 import android.os.SystemClock
 import android.util.Log
-import com.gitlab.mudlej.MjPdfReader.BuildConfig
 import java.util.concurrent.CountDownLatch
 import java.util.concurrent.TimeUnit
-import java.util.concurrent.atomic.AtomicInteger
 
 private const val TAG = "MjPdfPerf"
 private const val HEARTBEAT_INTERVAL_MS = 50L
 private const val STALL_THRESHOLD_MS = 64L
 private const val STACK_DUMP_INTERVAL_MS = 500L
 
-class MainThreadStallWatchdog(private val activityOwned: Boolean = false) {
+class MainThreadStallWatchdog {
 
     private val mainHandler = Handler(Looper.getMainLooper())
 
@@ -29,9 +27,6 @@ class MainThreadStallWatchdog(private val activityOwned: Boolean = false) {
             return
         }
         running = true
-        if (BuildConfig.DEBUG && activityOwned) {
-            activityOwnedRunning.incrementAndGet()
-        }
         thread = Thread(::loop, "MjPdfStallWatchdog").apply {
             isDaemon = true
             start()
@@ -39,11 +34,7 @@ class MainThreadStallWatchdog(private val activityOwned: Boolean = false) {
     }
 
     fun stop() {
-        val wasRunning = running
         running = false
-        if (BuildConfig.DEBUG && activityOwned && wasRunning) {
-            activityOwnedRunning.decrementAndGet()
-        }
         thread?.interrupt()
         thread = null
     }
@@ -70,40 +61,6 @@ class MainThreadStallWatchdog(private val activityOwned: Boolean = false) {
             } catch (e: InterruptedException) {
                 return
             }
-        }
-    }
-
-    companion object {
-
-        private val shared by lazy { MainThreadStallWatchdog() }
-        private val activityOwnedRunning = AtomicInteger()
-
-        fun debugStart() {
-            if (!BuildConfig.DEBUG) {
-                return
-            }
-            shared.start()
-        }
-
-        fun debugStop() {
-            if (!BuildConfig.DEBUG) {
-                return
-            }
-            shared.stop()
-        }
-
-        fun debugRunning(): Boolean {
-            if (!BuildConfig.DEBUG) {
-                return false
-            }
-            return shared.running
-        }
-
-        fun debugActivityOwnedRunningCount(): Int {
-            if (!BuildConfig.DEBUG) {
-                return 0
-            }
-            return activityOwnedRunning.get()
         }
     }
 }

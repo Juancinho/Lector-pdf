@@ -474,6 +474,7 @@
     <string name="highlights_saved">Wijzigingen opgeslagen</string>
     <string name="highlight_failed">Kon markering niet toevoegen</string>
     <string name="search_results">Zoekresultaten</string>
+    <string name="search_result_page_label">PAGINA\n%1$d</string>
     <string name="copy">Kopiëren</string>
     <string name="copy_all">Alles kopiëren</string>
     <string name="highlight_update_failed">Kon markering niet bijwerken</string>
@@ -547,6 +548,7 @@
     <string name="text_size">Tekstgrootte</string>
     <string name="go_to_page">Ga naar pagina</string>
     <string name="go_to">Ga naar</string>
+    <string name="go_to_page_current_hint">Huidige pagina %1$d/%2$d</string>
     <string name="all_pages">Alle pagina\'s</string>
     <string name="grid_columns">Kolommen</string>
     <string name="page_thumbnail_description">Miniatuur van pagina</string>
@@ -940,4 +942,9 @@
     <string name="shared_copy_mode_always_summary">Kopieën worden opgeslagen zonder te vragen. Zeer grote bestanden en weinig opslagruimte vragen nog steeds eerst.</string>
     <string name="shared_copy_mode_ask">Elke keer vragen</string>
     <string name="shared_copy_mode_ask_summary">Elk gedeeld bestand vraagt voordat een kopie wordt opgeslagen.</string>
+
+    <plurals name="hide_delay_seconds">
+        <item quantity="one">%d seconde</item>
+        <item quantity="other">%d seconden</item>
+    </plurals>
 </resources>

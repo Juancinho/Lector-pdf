@@ -107,6 +107,11 @@ class RecentTabController(
 
     fun invalidateAccessRender() = layout.invalidateAccess()
 
+    internal val isRenderingForTest: Boolean
+        get() = layout.isRendering
+
+    internal suspend fun holdRenderUntilAccessInvalidatedForTest() = layout.holdUntilAccessInvalidatedForTest()
+
     private suspend fun awaitSubmissions(rows: List<HomeItem>, sections: List<HomeSection>) {
         suspendCancellableCoroutine { continuation ->
             val remaining = AtomicInteger(2)

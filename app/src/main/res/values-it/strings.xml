@@ -474,6 +474,7 @@
     <string name="highlights_saved">Modifiche salvate</string>
     <string name="highlight_failed">Impossibile aggiungere l\'evidenziazione</string>
     <string name="search_results">Risultati di ricerca</string>
+    <string name="search_result_page_label">PAGINA\n%1$d</string>
     <string name="copy">Copia</string>
     <string name="copy_all">Copia tutto</string>
     <string name="highlight_update_failed">Impossibile aggiornare l\'evidenziazione</string>
@@ -547,6 +548,7 @@
     <string name="text_size">Dimensione testo</string>
     <string name="go_to_page">Vai alla pagina</string>
     <string name="go_to">Vai a</string>
+    <string name="go_to_page_current_hint">Pagina corrente %1$d/%2$d</string>
     <string name="all_pages">Tutte le pagine</string>
     <string name="grid_columns">Colonne</string>
     <string name="page_thumbnail_description">Miniatura della pagina</string>
@@ -940,4 +942,9 @@
     <string name="shared_copy_mode_always_summary">Le copie vengono salvate senza chiedere conferma. I file molto grandi e la memoria insufficiente chiedono comunque prima.</string>
     <string name="shared_copy_mode_ask">Chiedi ogni volta</string>
     <string name="shared_copy_mode_ask_summary">Ogni file condiviso chiede conferma prima che una copia venga salvata.</string>
+
+    <plurals name="hide_delay_seconds">
+        <item quantity="one">%d secondo</item>
+        <item quantity="other">%d secondi</item>
+    </plurals>
 </resources>

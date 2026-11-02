@@ -474,6 +474,7 @@
     <string name="highlights_saved">更改已保存</string>
     <string name="highlight_failed">无法添加高亮</string>
     <string name="search_results">搜索结果</string>
+    <string name="search_result_page_label">页\n%1$d</string>
     <string name="copy">复制</string>
     <string name="copy_all">全部复制</string>
     <string name="highlight_update_failed">无法更新高亮</string>
@@ -547,6 +548,7 @@
     <string name="text_size">文字大小</string>
     <string name="go_to_page">前往页面</string>
     <string name="go_to">前往</string>
+    <string name="go_to_page_current_hint">当前页面 %1$d/%2$d</string>
     <string name="all_pages">所有页面</string>
     <string name="grid_columns">列数</string>
     <string name="page_thumbnail_description">页面缩略图</string>
@@ -933,4 +935,8 @@
     <string name="shared_copy_mode_always_summary">副本会自动保存，无需询问。超大文件和存储空间不足时仍会先询问。</string>
     <string name="shared_copy_mode_ask">每次都询问</string>
     <string name="shared_copy_mode_ask_summary">保存副本前，每个共享文件都会先询问。</string>
+
+    <plurals name="hide_delay_seconds">
+        <item quantity="other">%d 秒</item>
+    </plurals>
 </resources>

@@ -474,6 +474,7 @@
     <string name="highlights_saved">Cambios guardados</string>
     <string name="highlight_failed">No se pudo agregar el resaltado</string>
     <string name="search_results">Resultados de Búsqueda</string>
+    <string name="search_result_page_label">PÁGINA\n%1$d</string>
     <string name="copy">Copiar</string>
     <string name="copy_all">Copiar Todo</string>
     <string name="highlight_update_failed">No se pudo actualizar el resaltado</string>
@@ -547,6 +548,7 @@
     <string name="text_size">Tamaño de texto</string>
     <string name="go_to_page">Ir a la Página</string>
     <string name="go_to">Ir a</string>
+    <string name="go_to_page_current_hint">Página actual %1$d/%2$d</string>
     <string name="all_pages">Todas las Páginas</string>
     <string name="grid_columns">Columnas</string>
     <string name="page_thumbnail_description">Miniatura de página</string>
@@ -940,4 +942,9 @@
     <string name="shared_copy_mode_always_summary">Las copias se guardan sin preguntar. Los archivos muy grandes y el almacenamiento bajo aún preguntan primero.</string>
     <string name="shared_copy_mode_ask">Preguntar cada vez</string>
     <string name="shared_copy_mode_ask_summary">Cada archivo compartido pregunta antes de guardar una copia.</string>
+
+    <plurals name="hide_delay_seconds">
+        <item quantity="one">%d segundo</item>
+        <item quantity="other">%d segundos</item>
+    </plurals>
 </resources>

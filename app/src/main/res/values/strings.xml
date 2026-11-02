@@ -598,6 +598,7 @@
     <string name="annotation_save_different_file_message">%1$s is not the file you are reading. Its contents will be replaced with this document and cannot be recovered.</string>
     <string name="annotation_save_overwrite_action">Overwrite</string>
     <string name="search_results">Search Results</string>
+    <string name="search_result_page_label">PAGE\n%1$d</string>
     <string name="copy">Copy</string>
     <string name="copy_all">Copy All</string>
     <string name="highlight_update_failed">Couldn\'t update highlight</string>
@@ -671,6 +672,7 @@
     <string name="text_size">Text Size</string>
     <string name="go_to_page">Go To Page</string>
     <string name="go_to">Go To</string>
+    <string name="go_to_page_current_hint">Current page %1$d/%2$d</string>
     <string name="all_pages">All Pages</string>
     <string name="grid_columns">Columns</string>
     <string name="page_thumbnail_description">Page thumbnail</string>

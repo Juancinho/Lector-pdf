@@ -474,6 +474,7 @@
     <string name="highlights_saved">تم حفظ التغييرات</string>
     <string name="highlight_failed">تعذر إضافة التظليل</string>
     <string name="search_results">نتائج البحث</string>
+    <string name="search_result_page_label">الصفحة\n%1$d</string>
     <string name="copy">نسخ</string>
     <string name="copy_all">نسخ الكل</string>
     <string name="highlight_update_failed">تعذر تحديث التظليل</string>
@@ -547,6 +548,7 @@
     <string name="text_size">حجم النص</string>
     <string name="go_to_page">الذهاب إلى الصفحة</string>
     <string name="go_to">اذهب إلى</string>
+    <string name="go_to_page_current_hint">الصفحة الحالية %1$d/%2$d</string>
     <string name="all_pages">كل الصفحات</string>
     <string name="grid_columns">الأعمدة</string>
     <string name="page_thumbnail_description">صورة مصغرة للصفحة</string>
@@ -968,4 +970,13 @@
     <string name="shared_copy_mode_always_summary">تُحفظ النسخ دون سؤال. الملفات الكبيرة جدًا ومساحة التخزين المنخفضة لا تزال تطلب الإذن أولًا.</string>
     <string name="shared_copy_mode_ask">السؤال في كل مرة</string>
     <string name="shared_copy_mode_ask_summary">يُطلب الإذن قبل حفظ نسخة من كل ملف مشترك.</string>
+
+    <plurals name="hide_delay_seconds">
+        <item quantity="zero">%d ثانية</item>
+        <item quantity="one">ثانية واحدة</item>
+        <item quantity="two">ثانيتان</item>
+        <item quantity="few">%d ثوانٍ</item>
+        <item quantity="many">%d ثانية</item>
+        <item quantity="other">%d ثانية</item>
+    </plurals>
 </resources>

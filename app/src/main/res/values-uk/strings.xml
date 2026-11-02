@@ -474,6 +474,7 @@
     <string name="highlights_saved">Зміни збережено</string>
     <string name="highlight_failed">Не вдалося додати виділення</string>
     <string name="search_results">Результати пошуків</string>
+    <string name="search_result_page_label">СТОРІНКА\n%1$d</string>
     <string name="copy">Скопіювати</string>
     <string name="copy_all">Скопіювати все</string>
     <string name="highlight_update_failed">Не вдалося оновити виділення</string>
@@ -547,6 +548,7 @@
     <string name="text_size">Розмір тексту</string>
     <string name="go_to_page">Перейти до сторінки</string>
     <string name="go_to">Перейти</string>
+    <string name="go_to_page_current_hint">Поточна сторінка %1$d/%2$d</string>
     <string name="all_pages">Усі сторінки</string>
     <string name="grid_columns">Стовпці</string>
     <string name="page_thumbnail_description">Мініатюра сторінки</string>
@@ -954,4 +956,11 @@
     <string name="shared_copy_mode_always_summary">Копії зберігаються без запитання. Дуже великі файли та мало місця для зберігання все одно спершу запитують.</string>
     <string name="shared_copy_mode_ask">Запитувати щоразу</string>
     <string name="shared_copy_mode_ask_summary">Перед збереженням копії кожен надісланий файл запитує підтвердження.</string>
+
+    <plurals name="hide_delay_seconds">
+        <item quantity="one">%d секунда</item>
+        <item quantity="few">%d секунди</item>
+        <item quantity="many">%d секунд</item>
+        <item quantity="other">%d секунди</item>
+    </plurals>
 </resources>

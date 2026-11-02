@@ -8,6 +8,7 @@ import androidx.lifecycle.LifecycleEventObserver
 import androidx.lifecycle.LifecycleOwner
 import androidx.lifecycle.findViewTreeLifecycleOwner
 import androidx.recyclerview.widget.RecyclerView
+import com.gitlab.mudlej.MjPdfReader.BuildConfig
 import kotlin.coroutines.resume
 import kotlinx.coroutines.CancellableContinuation
 import kotlinx.coroutines.suspendCancellableCoroutine
@@ -44,6 +45,24 @@ internal class RecentLayout {
             active = false
             pendingLayout = null
             attempt.finish()
+        }
+    }
+
+    val isRendering: Boolean
+        get() = active
+
+    suspend fun holdUntilAccessInvalidatedForTest() {
+        if (!BuildConfig.DEBUG) return
+        val view = recyclerView ?: return
+        active = true
+        accessInvalidated = false
+        try {
+            suspendCancellableCoroutine<Unit> { continuation ->
+                pendingLayout = LayoutWait(view, null, continuation)
+            }
+        } finally {
+            active = false
+            pendingLayout = null
         }
     }
 

@@ -89,7 +89,7 @@ class MainActivity : AppCompatActivity(), ReaderUi {
     private var doubleBackToExitPressedOnce = false
     private var savingProgressVisible = false
     private var taskDescriptionName: String? = null
-    private val stallWatchdog by lazy { MainThreadStallWatchdog(activityOwned = true) }
+    private val stallWatchdog by lazy { MainThreadStallWatchdog() }
 
     private val annotationController get() = reader.annotationController
     private val annotationSaveController get() = reader.annotationSaveController

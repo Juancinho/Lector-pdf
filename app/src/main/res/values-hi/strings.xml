@@ -474,6 +474,7 @@
     <string name="highlights_saved">बदलाव सहेजे गए</string>
     <string name="highlight_failed">हाइलाइट जोड़ नहीं सका</string>
     <string name="search_results">खोज परिणाम</string>
+    <string name="search_result_page_label">पेज\n%1$d</string>
     <string name="copy">कॉपी करें</string>
     <string name="copy_all">सभी कॉपी करें</string>
     <string name="highlight_update_failed">हाइलाइट अपडेट नहीं कर सका</string>
@@ -547,6 +548,7 @@
     <string name="text_size">टेक्स्ट आकार</string>
     <string name="go_to_page">पृष्ठ पर जाएं</string>
     <string name="go_to">जाएं</string>
+    <string name="go_to_page_current_hint">वर्तमान पेज %1$d/%2$d</string>
     <string name="all_pages">सभी पेज</string>
     <string name="grid_columns">कॉलम</string>
     <string name="page_thumbnail_description">पेज थंबनेल</string>
@@ -940,4 +942,9 @@
     <string name="shared_copy_mode_always_summary">प्रतियां बिना पूछे सहेजी जाती हैं। बहुत बड़ी फ़ाइलें और कम स्टोरेज होने पर अब भी पहले पूछा जाता है।</string>
     <string name="shared_copy_mode_ask">हर बार पूछें</string>
     <string name="shared_copy_mode_ask_summary">प्रति सहेजने से पहले हर साझा की गई फ़ाइल के लिए पूछा जाता है।</string>
+
+    <plurals name="hide_delay_seconds">
+        <item quantity="one">%d सेकंड</item>
+        <item quantity="other">%d सेकंड</item>
+    </plurals>
 </resources>

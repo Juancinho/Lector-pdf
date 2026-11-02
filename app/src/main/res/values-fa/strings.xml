@@ -474,6 +474,7 @@
     <string name="highlights_saved">تغییرات ذخیره شدند</string>
     <string name="highlight_failed">افزودن هایلایت ناموفق بود</string>
     <string name="search_results">نتایج جستجو</string>
+    <string name="search_result_page_label">صفحه\n%1$d</string>
     <string name="copy">رونویسی</string>
     <string name="copy_all">رونویسی همه</string>
     <string name="highlight_update_failed">به‌روزرسانی هایلایت ناموفق بود</string>
@@ -547,6 +548,7 @@
     <string name="text_size">اندازه متن</string>
     <string name="go_to_page">برو به صفحه</string>
     <string name="go_to">برو به</string>
+    <string name="go_to_page_current_hint">صفحه فعلی %1$d/%2$d</string>
     <string name="all_pages">همه صفحات</string>
     <string name="grid_columns">ستون‌ها</string>
     <string name="page_thumbnail_description">بندانگشتی صفحه</string>
@@ -940,4 +942,9 @@
     <string name="shared_copy_mode_always_summary">نسخه‌ها بدون پرسش ذخیره می‌شوند. پرونده‌های بسیار بزرگ و فضای ذخیره‌سازی کم همچنان ابتدا می‌پرسند.</string>
     <string name="shared_copy_mode_ask">هر بار پرسیده شود</string>
     <string name="shared_copy_mode_ask_summary">پیش از ذخیره نسخه هر پرونده اشتراکی، پرسیده می‌شود.</string>
+
+    <plurals name="hide_delay_seconds">
+        <item quantity="one">%d ثانیه</item>
+        <item quantity="other">%d ثانیه</item>
+    </plurals>
 </resources>

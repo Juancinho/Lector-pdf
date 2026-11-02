@@ -4010,32 +4010,6 @@ public class PDFView extends RelativeLayout {
         }
     }
 
-    /**
-     * Peak recorded immediately after a page-part insertion while scaling. CacheManager removes an equal part
-     * from both queues before insertion, so non-zero active and passive tile counts describe disjoint current
-     * and previous tile sets rather than duplicate accounting.
-     */
-    public static final class DebugPartCachePeak {
-
-        public final long observationId;
-        public final int activePartCount;
-        public final int passivePartCount;
-        public final int activeTileCount;
-        public final int passiveTileCount;
-        public final int totalPartCount;
-        public final int scalingInsertions;
-
-        DebugPartCachePeak(long[] stats) {
-            this.observationId = stats[0];
-            this.activePartCount = (int) stats[1];
-            this.passivePartCount = (int) stats[2];
-            this.activeTileCount = (int) stats[3];
-            this.passiveTileCount = (int) stats[4];
-            this.totalPartCount = (int) stats[5];
-            this.scalingInsertions = (int) stats[6];
-        }
-    }
-
     private static final long[] NO_PART_STATS = new long[]{0, 0, 0, 0, 0};
 
     private static final long[] NO_PREVIEW_STATS = new long[]{0, 0, 0, 0};
@@ -4097,20 +4071,6 @@ public class PDFView extends RelativeLayout {
                 store == null ? 0 : store.debugPoolCap(),
                 file == null ? NO_PAGE_STATS : file.debugPageStats()
         );
-    }
-
-    public long debugResetPartCachePeak() {
-        if (!debugStateEnabled || cacheManager == null) {
-            return -1L;
-        }
-        return cacheManager.debugResetPartPeak();
-    }
-
-    public DebugPartCachePeak debugPartCachePeak() {
-        if (!debugStateEnabled || cacheManager == null) {
-            return null;
-        }
-        return new DebugPartCachePeak(cacheManager.debugPartPeakStats());
     }
 
     static String debugText(String value) {

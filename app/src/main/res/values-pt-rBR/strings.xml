@@ -474,6 +474,7 @@
     <string name="highlights_saved">Alterações salvas</string>
     <string name="highlight_failed">Não foi possível adicionar o destaque</string>
     <string name="search_results">Resultados da Busca</string>
+    <string name="search_result_page_label">PÁGINA\n%1$d</string>
     <string name="copy">Copiar</string>
     <string name="copy_all">Copiar Tudo</string>
     <string name="highlight_update_failed">Não foi possível atualizar o destaque</string>
@@ -547,6 +548,7 @@
     <string name="text_size">Tamanho do texto</string>
     <string name="go_to_page">Ir para a Página</string>
     <string name="go_to">Ir Para</string>
+    <string name="go_to_page_current_hint">Página atual %1$d/%2$d</string>
     <string name="all_pages">Todas as Páginas</string>
     <string name="grid_columns">Colunas</string>
     <string name="page_thumbnail_description">Miniatura da página</string>
@@ -946,4 +948,10 @@
     <string name="shared_copy_mode_always_summary">As cópias são salvas sem perguntar. Arquivos muito grandes e pouco armazenamento ainda perguntam antes.</string>
     <string name="shared_copy_mode_ask">Perguntar toda vez</string>
     <string name="shared_copy_mode_ask_summary">Cada arquivo compartilhado pergunta antes de uma cópia ser salva.</string>
+
+    <plurals name="hide_delay_seconds">
+        <item quantity="one">%d segundo</item>
+        <item quantity="many">%d segundos</item>
+        <item quantity="other">%d segundos</item>
+    </plurals>
 </resources>

@@ -474,6 +474,7 @@
     <string name="highlights_saved">Изменения сохранены</string>
     <string name="highlight_failed">Не удалось добавить подсветку</string>
     <string name="search_results">Результаты поиска</string>
+    <string name="search_result_page_label">СТРАНИЦА\n%1$d</string>
     <string name="copy">Копировать</string>
     <string name="copy_all">Копировать все</string>
     <string name="highlight_update_failed">Не удалось обновить подсветку</string>
@@ -547,6 +548,7 @@
     <string name="text_size">Размер текста</string>
     <string name="go_to_page">Перейти на страницу</string>
     <string name="go_to">Перейти</string>
+    <string name="go_to_page_current_hint">Текущая страница %1$d/%2$d</string>
     <string name="all_pages">Все страницы</string>
     <string name="grid_columns">Столбцы</string>
     <string name="page_thumbnail_description">Миниатюра страницы</string>
@@ -954,4 +956,11 @@
     <string name="shared_copy_mode_always_summary">Копии сохраняются без вопроса. Очень большие файлы и нехватка места по-прежнему сначала спрашивают.</string>
     <string name="shared_copy_mode_ask">Спрашивать каждый раз</string>
     <string name="shared_copy_mode_ask_summary">Перед сохранением копии для каждого присланного файла запрашивается подтверждение.</string>
+
+    <plurals name="hide_delay_seconds">
+        <item quantity="one">%d секунда</item>
+        <item quantity="few">%d секунды</item>
+        <item quantity="many">%d секунд</item>
+        <item quantity="other">%d секунды</item>
+    </plurals>
 </resources>
