@@ -474,6 +474,7 @@
     <string name="highlights_saved">變更已儲存</string>
     <string name="highlight_failed">無法新增醒目標示</string>
     <string name="search_results">搜尋結果</string>
+    <string name="search_result_page_label">頁\n%1$d</string>
     <string name="copy">複製</string>
     <string name="copy_all">全部複製</string>
     <string name="highlight_update_failed">無法更新醒目標示</string>
@@ -546,8 +547,8 @@
     <string name="dracula">Dracula</string>
     <string name="text_size">文字大小</string>
     <string name="go_to_page">前往頁面</string>
-    <string name="no_input">無輸入！</string>
     <string name="go_to">前往</string>
+    <string name="go_to_page_current_hint">目前頁面 %1$d/%2$d</string>
     <string name="all_pages">所有頁面</string>
     <string name="grid_columns">欄數</string>
     <string name="page_thumbnail_description">頁面縮圖</string>
@@ -662,6 +663,7 @@
     <string name="home_scan_locations_save">儲存</string>
     <string name="home_scan_locations_up">上一層</string>
     <string name="home_menu_scan_locations">掃描位置</string>
+    <string name="home_menu_full_rescan">完整重新掃描</string>
     <string name="home_search_hint">搜尋您的書庫</string>
     <string name="home_tab_recent">最近</string>
     <string name="home_tab_library">書庫</string>
@@ -683,7 +685,9 @@
     <string name="home_chip_abandoned">已放棄</string>
     <string name="home_chip_all_files">所有檔案</string>
     <string name="home_hero_progress_template">%1$d%% · %2$d/%3$d</string>
-    <string name="home_scanning_progress">掃描中…已找到 %1$d 個 PDF</string>
+    <string name="home_scan_finding">正在尋找 PDF… 已找到 %1$d 個</string>
+    <string name="home_scan_reading_details">正在讀取 PDF 詳細資料… %1$d/%2$d</string>
+    <string name="home_scan_incomplete">掃描未完成… 已找到 %1$d 個 PDF</string>
     <string name="home_menu_title">書庫選單</string>
     <string name="home_menu_view">檢視</string>
     <string name="home_menu_stats">書庫統計</string>
@@ -881,7 +885,7 @@
     <string name="auto_backup_failure_notice">上次自動備份失敗。</string>
     <string name="auto_backup_stale_notice">自動備份已超過一天未執行。</string>
     <string name="auto_backup_notice_action">備份設定</string>
-    <string name="home_recent_permission_message">您的書籍需要檔案存取權才能再次開啟。請允許存取以解鎖它們。</string>
+    <string name="home_recent_permission_message">沒有檔案存取權，無法檢查某些最近使用的文件。請允許存取，以便 MJ PDF 在這些文件仍然可用時檢查並開啟它們。</string>
     <string name="home_list_badges_title">清單卡片標記</string>
     <string name="home_list_badges_summary">選擇在清單檢視中檔案名稱下方顯示哪些詳細資訊。</string>
     <string name="home_badge_pages">頁數</string>
@@ -931,4 +935,8 @@
     <string name="shared_copy_mode_always_summary">副本會自動儲存，不會詢問。非常大的檔案和儲存空間不足時仍會先詢問。</string>
     <string name="shared_copy_mode_ask">每次都詢問</string>
     <string name="shared_copy_mode_ask_summary">儲存副本前，每個分享的檔案都會先詢問。</string>
+
+    <plurals name="hide_delay_seconds">
+        <item quantity="other">%d 秒</item>
+    </plurals>
 </resources>

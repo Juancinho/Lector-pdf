@@ -474,6 +474,7 @@
     <string name="highlights_saved">Cambios guardados</string>
     <string name="highlight_failed">No se pudo agregar el resaltado</string>
     <string name="search_results">Resultados de Búsqueda</string>
+    <string name="search_result_page_label">PÁGINA\n%1$d</string>
     <string name="copy">Copiar</string>
     <string name="copy_all">Copiar Todo</string>
     <string name="highlight_update_failed">No se pudo actualizar el resaltado</string>
@@ -546,8 +547,8 @@
     <string name="dracula">Drácula</string>
     <string name="text_size">Tamaño de texto</string>
     <string name="go_to_page">Ir a la Página</string>
-    <string name="no_input">¡Sin Entrada!</string>
     <string name="go_to">Ir a</string>
+    <string name="go_to_page_current_hint">Página actual %1$d/%2$d</string>
     <string name="all_pages">Todas las Páginas</string>
     <string name="grid_columns">Columnas</string>
     <string name="page_thumbnail_description">Miniatura de página</string>
@@ -662,6 +663,7 @@
     <string name="home_scan_locations_save">Guardar</string>
     <string name="home_scan_locations_up">Subir</string>
     <string name="home_menu_scan_locations">Ubicaciones de escaneo</string>
+    <string name="home_menu_full_rescan">Volver a escanear todo</string>
     <string name="home_search_hint">Buscar en su biblioteca</string>
     <string name="home_tab_recent">Recientes</string>
     <string name="home_tab_library">Biblioteca</string>
@@ -683,7 +685,9 @@
     <string name="home_chip_abandoned">Abandonado</string>
     <string name="home_chip_all_files">Todos los Archivos</string>
     <string name="home_hero_progress_template">%1$d%% · %2$d/%3$d</string>
-    <string name="home_scanning_progress">Escaneando… %1$d PDF encontrados</string>
+    <string name="home_scan_finding">Buscando PDF… %1$d encontrados</string>
+    <string name="home_scan_reading_details">Leyendo detalles de PDF… %1$d de %2$d</string>
+    <string name="home_scan_incomplete">Escaneo incompleto… %1$d PDF encontrados</string>
     <string name="home_menu_title">Menú de la Biblioteca</string>
     <string name="home_menu_view">Vista</string>
     <string name="home_menu_stats">Estadísticas de la Biblioteca</string>
@@ -888,7 +892,7 @@
     <string name="auto_backup_failure_notice">La última copia de seguridad automática falló.</string>
     <string name="auto_backup_stale_notice">La copia de seguridad automática no se ha ejecutado durante más de un día.</string>
     <string name="auto_backup_notice_action">Configuración de copia de seguridad</string>
-    <string name="home_recent_permission_message">Sus libros necesitan acceso a archivos para volver a abrirse. Permita el acceso para desbloquearlos.</string>
+    <string name="home_recent_permission_message">Algunos documentos recientes no se pueden comprobar sin acceso a los archivos. Permita el acceso para que MJ PDF pueda comprobarlos y abrirlos si aún están disponibles.</string>
     <string name="home_list_badges_title">Insignias de Tarjeta de Lista</string>
     <string name="home_list_badges_summary">Elija qué detalles se muestran debajo de los nombres de archivo en la vista de lista.</string>
     <string name="home_badge_pages">Número de páginas</string>
@@ -938,4 +942,9 @@
     <string name="shared_copy_mode_always_summary">Las copias se guardan sin preguntar. Los archivos muy grandes y el almacenamiento bajo aún preguntan primero.</string>
     <string name="shared_copy_mode_ask">Preguntar cada vez</string>
     <string name="shared_copy_mode_ask_summary">Cada archivo compartido pregunta antes de guardar una copia.</string>
+
+    <plurals name="hide_delay_seconds">
+        <item quantity="one">%d segundo</item>
+        <item quantity="other">%d segundos</item>
+    </plurals>
 </resources>

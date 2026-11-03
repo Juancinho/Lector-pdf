@@ -474,6 +474,7 @@
     <string name="highlights_saved">Modifiche salvate</string>
     <string name="highlight_failed">Impossibile aggiungere l\'evidenziazione</string>
     <string name="search_results">Risultati di ricerca</string>
+    <string name="search_result_page_label">PAGINA\n%1$d</string>
     <string name="copy">Copia</string>
     <string name="copy_all">Copia tutto</string>
     <string name="highlight_update_failed">Impossibile aggiornare l\'evidenziazione</string>
@@ -546,8 +547,8 @@
     <string name="dracula">Dracula</string>
     <string name="text_size">Dimensione testo</string>
     <string name="go_to_page">Vai alla pagina</string>
-    <string name="no_input">Nessun input!</string>
     <string name="go_to">Vai a</string>
+    <string name="go_to_page_current_hint">Pagina corrente %1$d/%2$d</string>
     <string name="all_pages">Tutte le pagine</string>
     <string name="grid_columns">Colonne</string>
     <string name="page_thumbnail_description">Miniatura della pagina</string>
@@ -662,6 +663,7 @@
     <string name="home_scan_locations_save">Salva</string>
     <string name="home_scan_locations_up">Su</string>
     <string name="home_menu_scan_locations">Posizioni di scansione</string>
+    <string name="home_menu_full_rescan">Ripeti scansione completa</string>
     <string name="home_search_hint">Cerca nella tua libreria</string>
     <string name="home_tab_recent">Recenti</string>
     <string name="home_tab_library">Libreria</string>
@@ -683,7 +685,9 @@
     <string name="home_chip_abandoned">Abbandonato</string>
     <string name="home_chip_all_files">Tutti i file</string>
     <string name="home_hero_progress_template">%1$d%% · %2$d/%3$d</string>
-    <string name="home_scanning_progress">Scansione in corso… %1$d PDF trovati</string>
+    <string name="home_scan_finding">Ricerca dei PDF… %1$d trovati</string>
+    <string name="home_scan_reading_details">Lettura dei dettagli PDF… %1$d di %2$d</string>
+    <string name="home_scan_incomplete">Scansione incompleta… %1$d PDF trovati</string>
     <string name="home_menu_title">Menu della libreria</string>
     <string name="home_menu_view">Vista</string>
     <string name="home_menu_stats">Statistiche della libreria</string>
@@ -888,7 +892,7 @@
     <string name="auto_backup_failure_notice">L\'ultimo backup automatico non è riuscito.</string>
     <string name="auto_backup_stale_notice">Il backup automatico non viene eseguito da più di un giorno.</string>
     <string name="auto_backup_notice_action">Impostazioni di backup</string>
-    <string name="home_recent_permission_message">I tuoi libri hanno bisogno dell\'accesso ai file per aprirsi di nuovo. Consenti l\'accesso per sbloccarli.</string>
+    <string name="home_recent_permission_message">Alcuni documenti recenti non possono essere verificati senza l\'accesso ai file. Consenti l\'accesso affinché MJ PDF possa verificarli e aprirli se sono ancora disponibili.</string>
     <string name="home_list_badges_title">Badge delle schede in elenco</string>
     <string name="home_list_badges_summary">Scegli quali dettagli mostrare sotto i nomi dei file nella vista elenco.</string>
     <string name="home_badge_pages">Conteggio pagine</string>
@@ -938,4 +942,9 @@
     <string name="shared_copy_mode_always_summary">Le copie vengono salvate senza chiedere conferma. I file molto grandi e la memoria insufficiente chiedono comunque prima.</string>
     <string name="shared_copy_mode_ask">Chiedi ogni volta</string>
     <string name="shared_copy_mode_ask_summary">Ogni file condiviso chiede conferma prima che una copia venga salvata.</string>
+
+    <plurals name="hide_delay_seconds">
+        <item quantity="one">%d secondo</item>
+        <item quantity="other">%d secondi</item>
+    </plurals>
 </resources>
