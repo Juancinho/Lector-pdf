@@ -8,6 +8,7 @@ import androidx.test.ext.junit.runners.AndroidJUnit4
 import androidx.test.filters.LargeTest
 import androidx.test.uiautomator.By
 import com.gitlab.mudlej.MjPdfReader.R
+import com.gitlab.mudlej.MjPdfReader.core.debug.ReaderTestHooks
 import com.gitlab.mudlej.MjPdfReader.data.Preferences
 import com.gitlab.mudlej.MjPdfReader.suite.core.Await
 import com.gitlab.mudlej.MjPdfReader.suite.core.ReaderProbe
@@ -121,6 +122,32 @@ class FileChangedUnderneathTest : ResilienceTestCase() {
         val preservedRecord = Records.awaitRowExists(originalHash)
         assertEquals("the old document keeps its reading position", originalRecord.pageNumber, preservedRecord.pageNumber)
         assertEquals("the old document keeps its page count", originalRecord.length, preservedRecord.length)
+        ReaderProbe.finishAndRemoveReaderTasks()
+    }
+
+    @Test
+    @TestId("RES-55")
+    fun aReplacementThatCannotBeIdentifiedDoesNotInheritTheOldIdentity() {
+        SettingsSeeder.seed(Preferences.homeDisabledKey, true)
+        val file = fixture(ResilienceFixtures.NORMAL)
+        launchReaderOutsideScenario(ReaderRobot.viewIntent(file))
+        val originalHash = reader.awaitFileHashResolved()
+        jumpToPage(STORED_PAGE)
+        Records.awaitStoredPage(originalHash, STORED_PAGE, Await.LONG_TIMEOUT_MS)
+        val loadsBefore = ReaderTestHooks.documentLoadStarts()
+
+        file.writeBytes(ByteArray(0))
+        assertEquals("the replacement must be empty on disk before the reload", 0L, file.length())
+
+        ReaderProbe.onReader { it.reloadPdf() }
+        Await.until("the reload starts a new document load", Await.LONG_TIMEOUT_MS) {
+            ReaderTestHooks.documentLoadStarts() > loadsBefore
+        }
+        reader.awaitState(
+            "the reloaded reader drops the identity of the document that was replaced",
+            Await.LONG_TIMEOUT_MS,
+        ) { it.fileHash != originalHash }
+        Records.assertStoredPageStays(originalHash, STORED_PAGE)
         ReaderProbe.finishAndRemoveReaderTasks()
     }
 

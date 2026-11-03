@@ -4,10 +4,13 @@ package com.gitlab.mudlej.MjPdfReader.ui.reader.actions
 
 import org.junit.Assert.assertArrayEquals
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNotEquals
+import org.junit.Assert.assertThrows
 import org.junit.Rule
 import org.junit.Test
 import org.junit.rules.TemporaryFolder
+import java.io.IOException
 import java.util.concurrent.Executors
 
 class ScreenshotFileTest {
@@ -51,5 +54,32 @@ class ScreenshotFileTest {
         } finally {
             workers.shutdownNow()
         }
+    }
+
+    @Test
+    fun aFailedWriteRemovesTheReservedImage() {
+        val directory = temporary.newFolder()
+        val image = reserveScreenshotFile(directory, "normal - 2026_09_30-04_53_33.jpg")
+
+        assertThrows(IOException::class.java) {
+            writeScreenshotFile(image) {
+                it.write(byteArrayOf(1, 2))
+                throw IOException("disk full")
+            }
+        }
+
+        assertFalse(image.exists())
+        assertEquals(0, directory.listFiles()!!.size)
+    }
+
+    @Test
+    fun aSuccessfulWriteKeepsTheImageBytes() {
+        val directory = temporary.newFolder()
+        val image = reserveScreenshotFile(directory, "normal - 2026_09_30-04_53_33.jpg")
+        val bytes = byteArrayOf(1, 2, 3, 4)
+
+        writeScreenshotFile(image) { it.write(bytes) }
+
+        assertArrayEquals(bytes, image.readBytes())
     }
 }

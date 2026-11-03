@@ -146,8 +146,9 @@ class DocumentLoader(
         scheduleLoadProgress(loadToken, documentUri)
         scope.launch {
             com.gitlab.mudlej.MjPdfReader.core.debug.ReaderTestHooks.awaitDocumentLoadRelease()
-            val hash = if (vm.revalidateDocumentOnLoad) {
-                resolveDocumentIdentity(documentUri) ?: previousHash
+            val revalidating = vm.revalidateDocumentOnLoad
+            val hash = if (revalidating) {
+                resolveDocumentIdentity(documentUri)
             } else {
                 previousHash ?: resolveDocumentIdentity(documentUri)
             }
@@ -155,6 +156,14 @@ class DocumentLoader(
                 return@launch
             }
             vm.revalidateDocumentOnLoad = false
+            if (revalidating) {
+                if (hash == null) {
+                    doc.fileHash = null
+                }
+                if (hash == null || historyPolicy.canRecord()) {
+                    doc.readingDirectionResolved = false
+                }
+            }
             if (previousHash != null && hash != null && hash != previousHash && documentUri != null) {
                 emit { it.onDocumentReset() }
                 vm.beginNewDocument(documentUri, pref.getAlwaysHideMargins())

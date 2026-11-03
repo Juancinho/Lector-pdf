@@ -62,8 +62,8 @@ class ScreenshotController(
     }
 
     @Throws(IOException::class)
-    private fun saveImage(bitmap: Bitmap, fileName: String): Uri? {
-        val (fileOutputStream: OutputStream?, imageUri: Uri?) = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+    private fun saveImage(bitmap: Bitmap, fileName: String): Uri {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
             val contentValues = ContentValues()
             contentValues.put(MediaStore.MediaColumns.DISPLAY_NAME, fileName)
             contentValues.put(MediaStore.MediaColumns.MIME_TYPE, "image/*")
@@ -73,23 +73,38 @@ class ScreenshotController(
                 Environment.DIRECTORY_PICTURES + "/${activity.getString(R.string.mj_app_name)}/"
             )
 
-            val imageUri = activity.contentResolver.insert(MediaStore.Images.Media.EXTERNAL_CONTENT_URI, contentValues)
-            Pair(imageUri?.let { activity.contentResolver.openOutputStream(it) }, imageUri)
+            val resolver = activity.contentResolver
+            val imageUri = resolver.insert(MediaStore.Images.Media.EXTERNAL_CONTENT_URI, contentValues)
+                ?: throw IOException("MediaStore did not create a row for $fileName")
+            try {
+                val stream = resolver.openOutputStream(imageUri)
+                    ?: throw IOException("Cannot open $imageUri for writing")
+                stream.use { writeScreenshotJpeg(bitmap, it) }
+            } catch (e: Throwable) {
+                runCatching { resolver.delete(imageUri, null, null) }
+                throw e
+            }
+            return imageUri
         }
-        else {
-            val imagesDir = Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_PICTURES).toString()
-            val image = reserveScreenshotFile(File(imagesDir), fileName)
-            Pair(FileOutputStream(image), image.toUri())
+        val imagesDir = Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_PICTURES).toString()
+        val image = reserveScreenshotFile(File(imagesDir), fileName)
+        writeScreenshotFile(image) { writeScreenshotJpeg(bitmap, it) }
+        return image.toUri()
+    }
+
+    private fun writeScreenshotJpeg(bitmap: Bitmap, stream: OutputStream) {
+        if (!bitmap.compress(Bitmap.CompressFormat.JPEG, PDF.SCREENSHOT_IMAGE_QUALITY, stream)) {
+            throw IOException("JPEG encoding of the screenshot failed")
         }
-        if (fileOutputStream != null) {
-            bitmap.compress(
-                Bitmap.CompressFormat.JPEG,
-                PDF.SCREENSHOT_IMAGE_QUALITY,
-                fileOutputStream
-            )
-        }
-        fileOutputStream?.close()
-        return imageUri
+    }
+}
+
+internal fun writeScreenshotFile(image: File, write: (OutputStream) -> Unit) {
+    try {
+        FileOutputStream(image).use(write)
+    } catch (e: Throwable) {
+        image.delete()
+        throw e
     }
 }
 

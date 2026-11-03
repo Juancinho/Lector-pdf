@@ -21,6 +21,13 @@ object Records {
 
     fun rowCount(): Int = all().size
 
+    fun storeReadingDirectionOverride(fileHash: String, direction: String?) {
+        val updated = database.pdfRecordDao().updateReadingDirectionOverride(fileHash, direction)
+        if (updated != 1) {
+            throw AssertionError("Expected to update one PdfRecord row for $fileHash, updated $updated")
+        }
+    }
+
     fun bookmarksOf(fileHash: String): List<UserBookmark> =
         database.userBookmarkDao().findByHash(fileHash)
 

@@ -11,6 +11,7 @@ import androidx.test.uiautomator.UiObject2
 import com.gitlab.mudlej.MjPdfReader.R
 import com.gitlab.mudlej.MjPdfReader.pdf.ReadingDirection
 import com.gitlab.mudlej.MjPdfReader.suite.core.Await
+import com.gitlab.mudlej.MjPdfReader.suite.core.ReaderProbe
 import com.gitlab.mudlej.MjPdfReader.suite.core.TestEnvironment
 import com.gitlab.mudlej.MjPdfReader.suite.core.TestId
 import com.gitlab.mudlej.MjPdfReader.suite.data.Records
@@ -148,6 +149,32 @@ class ReadingDirectionTest : ViewTestCase() {
             ltrItem.isChecked,
         )
         tapDialogNegative()
+    }
+
+    @Test
+    @TestId("VIEW-60")
+    fun aReloadAppliesTheReadingDirectionAnotherWindowStored() {
+        seedHorizontalLayout()
+        openReader(ViewFixtures.ARABIC)
+        val fileHash = reader.awaitFileHashResolved()
+        Records.awaitRow(fileHash, "the document is detected right to left first", Await.LONG_TIMEOUT_MS) {
+            it?.detectedReadingDirection == ReadingDirection.RIGHT_TO_LEFT.id
+        }
+        assertEquals("the detected right to left order is applied", true as Boolean?, state().readingDirectionRtl)
+        val identityBefore = readerIdentity()
+
+        Records.storeReadingDirectionOverride(fileHash, ReadingDirection.LEFT_TO_RIGHT.id)
+        ReaderProbe.onReader { it.reloadPdf() }
+        awaitReaderRecreated(identityBefore)
+
+        assertEquals(
+            "the reload must apply the left to right override stored by another window",
+            false as Boolean?,
+            state().readingDirectionRtl,
+        )
+        Records.assertHolds("the reload must not write the stale direction back over the stored override") {
+            Records.byHash(fileHash)?.readingDirectionOverride == ReadingDirection.LEFT_TO_RIGHT.id
+        }
     }
 
     private fun seedHorizontalLayout() {
