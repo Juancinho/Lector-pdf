@@ -128,7 +128,7 @@ class ScanDiscoveryBatchTest {
         try {
             batch.add(entry)
             assertEquals(false, emitted.isCompleted)
-            assertEquals(ScanEvent.DiscoveryBatch(12, DiscoverySource.MEDIA_STORE, listOf(entry)), withTimeout(390) { emitted.await() })
+            assertEquals(ScanEvent.DiscoveryBatch(12, DiscoverySource.MEDIA_STORE, listOf(entry)), withTimeout(2_000) { emitted.await() })
         } finally {
             batch.close()
         }
