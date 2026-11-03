@@ -136,6 +136,52 @@ The repository is three modules:
 | `AndroidPdfViewer` | MJ PDF's viewer library: rendering, gestures, text selection, highlights |
 | `PdfiumAndroid` | MJ PDF's bindings to the PDFium engine |
 
+## The test suite
+MJ PDF is tested end to end on real Android, not mocked. The suite drives the actual app on emulators the way a person does: it taps, scrolls, rotates the screen, kills the process mid-task, swaps files underneath the reader, and then checks what ended up on screen, in the database and on disk.
+
+- **1,463 end to end tests** in 353 classes, covering all 14 areas of the app:
+
+  | Area | Tests | Area | Tests |
+  |---|--:|---|--:|
+  | History, settings and backup | 207 | Reader navigation | 98 |
+  | Reader display and gestures | 155 | App entry and onboarding | 87 |
+  | Home and library | 139 | Rendering and performance | 66 |
+  | Annotations and forms | 116 | Localization and layout | 59 |
+  | Text mode and selection | 114 | Document intake | 55 |
+  | Saving and produced artifacts | 109 | Search | 52 |
+  | Privacy and security | 105 | Reliability and resource use | 101 |
+
+- **Android 9 to the newest release:** the suite runs on emulators at API 28, 33, 34, 35, 36 and 37, with both GPU and software rendering.
+- **Generated fixtures:** 185 fixture PDFs come from scripts, byte for byte identical on every run. They range from malformed, encrypted and hostile files to Arabic text, huge documents and a 100,000-file library. One real book, [The Linux Command Line](https://linuxcommand.org/tlcl.php), anchors the rendering baselines.
+- **Pixel checked rendering:** pages are compared against 62 reviewed golden screenshots.
+- **Process death and restarts:** 12 multi-process scenarios kill the app mid-task, revoke storage access between runs or force a cold start, and check what survives.
+- **A purpose built runner** in Python. It shards the suite across many emulators in parallel, balances them by test duration, and pins screen size, density, locale and time zone. It isolates every test with Android Test Orchestrator and fails a run that leaves files behind in shared storage.
+- **More layers of tests:** 283 JVM unit tests for the app and the viewer library, 19 macrobenchmarks, 28 PDFium C++ tests for MJ PDF's own engine patches, and 258 tests for the runner and the build tooling.
+
+The full suite passed five times in a row on ten emulators, with zero failures.
+
+To run it:
+```sh
+python3 testing/fixtures/generate.py
+python3 testing/runner/run.py
+```
+The second command opens an interactive setup for picking emulators and areas. See [testing/runner/README.md](testing/runner/README.md) for running single classes, multi-process scenarios and every option.
+
+## Code size
+Lines of code at each layer of MJ PDF, from the app down to the PDF engine, as of November 2026:
+
+| Layer | Language | Code | Tests | Total |
+|---|---|--:|--:|--:|
+| App | Kotlin | 34,930 | 97,741 | 132,671 |
+| Viewer library | Java | 11,322 | 1,589 | 12,911 |
+| PDFium bindings | Java, C++ | 3,773 | 0 | 3,773 |
+| PDFium patches | C++ | 1,476 | 1,415 | 2,891 |
+| **Total** | | **51,501** | **100,745** | **152,246** |
+
+The tooling around them adds 21,906 more lines, mostly Python: 19,902 for the test runner and fixture generators, and 2,004 for the native build and its tests. That's 174,152 lines in all.
+
+Counts are non-blank, non-comment lines in the repository. They leave out upstream PDFium and its public headers, and the PDFium patches count only the lines they add.
+
 ## Contributing
 - **Bugs and requests**: open an issue on [GitLab](https://gitlab.com/mudlej_android/mj_pdf_reader/-/issues). If you do not have a GitLab account, use the [GitHub mirror](https://github.com/mudlej/mj_pdf/).
 - **Translations**: MJ PDF is available in 15 languages: Arabic, Chinese, Dutch, English, French, German, Hindi, Italian, Persian, Polish, Portuguese (Brazil), Russian, Spanish, Ukrainian and Turkish. To add or improve one, edit `app/src/main/res/values-<lang>/strings.xml` and open a merge request.
