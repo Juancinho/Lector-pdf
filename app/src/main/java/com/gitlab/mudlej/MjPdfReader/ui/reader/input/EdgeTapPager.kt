@@ -26,26 +26,40 @@ class EdgeTapPager(
         if (pdfView.zoom > 1f) {
             return false
         }
-        val step = when (zones) {
-            TapToTurnZones.LEFT_RIGHT -> {
-                val forward = if (pdfView.isHorizontalReadingDirectionRtl) -1 else 1
-                when {
-                    event.x >= pdfView.width * 0.75f -> forward
-                    event.x < pdfView.width * 0.25f -> -forward
-                    else -> return false
-                }
-            }
-            TapToTurnZones.TOP_BOTTOM -> when {
-                event.y >= pdfView.height * 0.75f -> 1
-                event.y < pdfView.height * 0.25f -> -1
-                else -> return false
-            }
-            TapToTurnZones.OFF -> return false
-        }
+        val step = edgeTapStep(zones, event.x, event.y, pdfView.width, pdfView.height,
+            pdfView.isHorizontalReadingDirectionRtl, pdfView.zoom) ?: return false
         if (pdfView.hasLinkAt(event.x, event.y)) {
             return false
         }
         pdfView.jumpTo(pdfView.getPageAfterRowStep(pdf.pageNumber, step), true)
         return true
+    }
+}
+
+internal fun edgeTapStep(
+    zones: TapToTurnZones,
+    x: Float,
+    y: Float,
+    width: Int,
+    height: Int,
+    rtl: Boolean,
+    zoom: Float,
+): Int? {
+    if (zoom > 1f) return null
+    return when (zones) {
+        TapToTurnZones.LEFT_RIGHT -> {
+            val forward = if (rtl) -1 else 1
+            when {
+                x >= width * 0.75f -> forward
+                x < width * 0.25f -> -forward
+                else -> null
+            }
+        }
+        TapToTurnZones.TOP_BOTTOM -> when {
+            y >= height * 0.75f -> 1
+            y < height * 0.25f -> -1
+            else -> null
+        }
+        TapToTurnZones.OFF -> null
     }
 }

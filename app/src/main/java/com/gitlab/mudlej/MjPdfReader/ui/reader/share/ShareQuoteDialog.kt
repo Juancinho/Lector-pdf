@@ -90,7 +90,7 @@ fun showShareQuoteDialog(
         .show()
 }
 
-private fun shortenQuote(quote: String): String? {
+internal fun shortenQuote(quote: String): String? {
     if (quote.length <= QuoteImageRenderer.MAX_QUOTE_CHARS) {
         return null
     }

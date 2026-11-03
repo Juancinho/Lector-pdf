@@ -10,10 +10,20 @@ import com.github.barteksc.pdfviewer.PDFView
 import com.gitlab.mudlej.MjPdfReader.BuildConfig
 import com.gitlab.mudlej.MjPdfReader.R
 
-class ReaderHistoryManager(
-    private val pdfView: () -> PDFView,
+class ReaderHistoryManager internal constructor(
+    private val viewport: HistoryViewport,
     private val onChanged: () -> Unit,
+    private val elapsedRealtime: () -> Long = SystemClock::elapsedRealtime,
+    private val wallClock: () -> Long = System::currentTimeMillis,
+    private val dwellThresholdMillis: () -> Long = { DWELL_THRESHOLD_MS },
 ) {
+    constructor(
+        pdfView: () -> PDFView,
+        onChanged: () -> Unit,
+        elapsedRealtime: () -> Long = SystemClock::elapsedRealtime,
+        wallClock: () -> Long = System::currentTimeMillis,
+        dwellThresholdMillis: () -> Long = defaultDwellThreshold(pdfView),
+    ) : this(PdfHistoryViewport(pdfView), onChanged, elapsedRealtime, wallClock, dwellThresholdMillis)
 
     enum class Origin(@StringRes val labelRes: Int) {
         LINK(R.string.history_origin_link),
@@ -40,21 +50,11 @@ class ReaderHistoryManager(
     private var currentPageIndex = -1
     private var arrivedAtElapsed = 0L
 
-    private val debugDwellThresholdMs: Long by lazy {
-        val preferences = PreferenceManager.getDefaultSharedPreferences(pdfView().context)
-        runCatching { preferences.getLong(debugDwellThresholdKey, DWELL_THRESHOLD_MS) }
-            .getOrDefault(DWELL_THRESHOLD_MS)
-    }
-
-    private fun dwellThresholdMs(): Long {
-        return if (BuildConfig.DEBUG) debugDwellThresholdMs else DWELL_THRESHOLD_MS
-    }
-
     fun elapsedDwellMs(): Long {
         if (currentPageIndex < 0) {
             return 0L
         }
-        return SystemClock.elapsedRealtime() - arrivedAtElapsed
+        return elapsedRealtime() - arrivedAtElapsed
     }
 
     fun canGoBack() = backStack.isNotEmpty()
@@ -68,7 +68,7 @@ class ReaderHistoryManager(
     fun forwardEntries(): List<Entry> = forwardStack.toList()
 
     fun recordJump(origin: Origin, targetPageIndex: Int? = null) {
-        val view = pdfView()
+        val view = viewport
         if (targetPageIndex != null && targetPageIndex == view.currentPage) {
             return
         }
@@ -134,7 +134,7 @@ class ReaderHistoryManager(
     }
 
     fun onPageChanged(pageIndex: Int) {
-        val now = SystemClock.elapsedRealtime()
+        val now = elapsedRealtime()
         val leftPage = currentPageIndex
         val dwellMs = now - arrivedAtElapsed
         val skipDwell = navigatingInternally || suppressDwellOnce
@@ -145,13 +145,13 @@ class ReaderHistoryManager(
         if (leftPage < 0 || leftPage == pageIndex || skipDwell) {
             return
         }
-        if (dwellMs < dwellThresholdMs()) {
+        if (dwellMs < dwellThresholdMillis()) {
             return
         }
         if (backStack.lastOrNull()?.pageIndex == leftPage) {
             return
         }
-        pushBack(Entry(leftPage, null, System.currentTimeMillis(), Origin.DWELL))
+        pushBack(Entry(leftPage, null, wallClock(), Origin.DWELL))
         forwardStack.clear()
         onChanged()
     }
@@ -172,20 +172,29 @@ class ReaderHistoryManager(
     }
 
     fun restoreState(savedState: Bundle) {
-        restoreStack(savedState, backStack, backPagesKey, backOriginsKey, backTimesKey)
-        restoreStack(savedState, forwardStack, forwardPagesKey, forwardOriginsKey, forwardTimesKey)
+        restoreSnapshots(
+            HistorySnapshot.fromArrays(savedState.getIntArray(backPagesKey),
+                savedState.getStringArray(backOriginsKey), savedState.getLongArray(backTimesKey)),
+            HistorySnapshot.fromArrays(savedState.getIntArray(forwardPagesKey),
+                savedState.getStringArray(forwardOriginsKey), savedState.getLongArray(forwardTimesKey)),
+        )
+    }
+
+    internal fun restoreSnapshots(back: HistorySnapshot?, forward: HistorySnapshot?) {
+        restoreStack(back, backStack)
+        restoreStack(forward, forwardStack)
         onChanged()
     }
 
     private fun currentEntry(origin: Origin): Entry {
-        val view = pdfView()
-        return Entry(view.currentPage, view.captureViewState(), System.currentTimeMillis(), origin)
+        val view = viewport
+        return Entry(view.currentPage, view.captureViewState(), wallClock(), origin)
     }
 
     private fun navigate(entry: Entry) {
         removePage(backStack, entry.pageIndex)
         removePage(forwardStack, entry.pageIndex)
-        val view = pdfView()
+        val view = viewport
         navigatingInternally = entry.pageIndex != view.currentPage
         if (!view.applyViewState(entry.viewState)) {
             view.jumpTo(entry.pageIndex)
@@ -225,32 +234,28 @@ class ReaderHistoryManager(
         originsKey: String,
         timesKey: String,
     ) {
-        outState.putIntArray(pagesKey, stack.map { it.pageIndex }.toIntArray())
-        outState.putStringArray(originsKey, stack.map { it.origin.name }.toTypedArray())
-        outState.putLongArray(timesKey, stack.map { it.timestamp }.toLongArray())
+        val arrays = HistorySnapshot(stack.toList()).toArrays()
+        outState.putIntArray(pagesKey, arrays.pages)
+        outState.putStringArray(originsKey, arrays.origins)
+        outState.putLongArray(timesKey, arrays.times)
     }
 
-    private fun restoreStack(
-        savedState: Bundle,
-        stack: ArrayDeque<Entry>,
-        pagesKey: String,
-        originsKey: String,
-        timesKey: String,
-    ) {
-        val pages = savedState.getIntArray(pagesKey) ?: return
-        val origins = savedState.getStringArray(originsKey) ?: return
-        val times = savedState.getLongArray(timesKey) ?: return
-        if (pages.size != origins.size || pages.size != times.size) {
-            return
-        }
+    private fun restoreStack(snapshot: HistorySnapshot?, stack: ArrayDeque<Entry>) {
+        if (snapshot == null) return
         stack.clear()
-        pages.indices.forEach { index ->
-            val origin = Origin.entries.firstOrNull { it.name == origins[index] } ?: Origin.HISTORY
-            pushUnique(stack, Entry(pages[index], null, times[index], origin))
-        }
+        snapshot.entries.forEach { pushUnique(stack, it) }
     }
 
     companion object {
+        private fun defaultDwellThreshold(pdfView: () -> PDFView): () -> Long {
+            val debugThreshold by lazy {
+                val preferences = PreferenceManager.getDefaultSharedPreferences(pdfView().context)
+                runCatching { preferences.getLong(debugDwellThresholdKey, DWELL_THRESHOLD_MS) }
+                    .getOrDefault(DWELL_THRESHOLD_MS)
+            }
+            return { if (BuildConfig.DEBUG) debugThreshold else DWELL_THRESHOLD_MS }
+        }
+
         private const val DWELL_THRESHOLD_MS = 30_000L
         private const val MAX_ENTRIES = 50
         const val debugDwellThresholdKey = "debugDwellThresholdMs"
@@ -260,5 +265,41 @@ class ReaderHistoryManager(
         private const val forwardPagesKey = "readerHistoryForwardPages"
         private const val forwardOriginsKey = "readerHistoryForwardOrigins"
         private const val forwardTimesKey = "readerHistoryForwardTimes"
+    }
+}
+
+internal interface HistoryViewport {
+    val currentPage: Int
+    fun captureViewState(): PDFView.ViewState?
+    fun applyViewState(state: PDFView.ViewState?): Boolean
+    fun jumpTo(pageIndex: Int)
+}
+
+private class PdfHistoryViewport(private val pdfView: () -> PDFView) : HistoryViewport {
+    override val currentPage: Int get() = pdfView().currentPage
+    override fun captureViewState(): PDFView.ViewState? = pdfView().captureViewState()
+    override fun applyViewState(state: PDFView.ViewState?): Boolean = pdfView().applyViewState(state)
+    override fun jumpTo(pageIndex: Int) = pdfView().jumpTo(pageIndex)
+}
+
+internal data class HistorySnapshot(val entries: List<ReaderHistoryManager.Entry>) {
+    data class Arrays(val pages: IntArray, val origins: Array<String>, val times: LongArray)
+
+    fun toArrays() = Arrays(
+        entries.map { it.pageIndex }.toIntArray(),
+        entries.map { it.origin.name }.toTypedArray(),
+        entries.map { it.timestamp }.toLongArray(),
+    )
+
+    companion object {
+        fun fromArrays(pages: IntArray?, origins: Array<String>?, times: LongArray?): HistorySnapshot? {
+            if (pages == null || origins == null || times == null
+                || pages.size != origins.size || pages.size != times.size) return null
+            return HistorySnapshot(pages.indices.map { index ->
+                val origin = ReaderHistoryManager.Origin.entries.firstOrNull { it.name == origins[index] }
+                    ?: ReaderHistoryManager.Origin.HISTORY
+                ReaderHistoryManager.Entry(pages[index], null, times[index], origin)
+            })
+        }
     }
 }

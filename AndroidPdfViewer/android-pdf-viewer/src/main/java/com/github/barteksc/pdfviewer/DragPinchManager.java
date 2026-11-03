@@ -249,7 +249,7 @@ class DragPinchManager implements GestureDetector.OnGestureListener, GestureDete
         return true;
     }
 
-    private float applyAxisLock(MotionEvent e1, MotionEvent e2, float distanceX, float distanceY) {
+    float applyAxisLock(MotionEvent e1, MotionEvent e2, float distanceX, float distanceY) {
         if (axisLock == AxisLock.UNDECIDED && e1 != null) {
             float totalDx = e2.getX() - e1.getX();
             float totalDy = e2.getY() - e1.getY();

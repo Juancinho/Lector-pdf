@@ -4,6 +4,7 @@ package com.github.barteksc.pdfviewer;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
+import static org.mockito.ArgumentMatchers.anyFloat;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.mockConstruction;
 import static org.mockito.Mockito.mockStatic;
@@ -202,6 +203,17 @@ public class DragPinchManagerTest {
 
         assertEquals(0, confirmedCalls[0]);
         verify(pdfView, never()).performClick();
+    }
+
+    @Test
+    public void disabledZoomRejectsDoubleTapWithoutStartingAnAnimation() {
+        when(pdfView.isDoubleTapEnabled()).thenReturn(true);
+        when(pdfView.isZoomDisabled()).thenReturn(true);
+
+        assertFalse(manager.onDoubleTap(eventWithDownTime(700L)));
+
+        verify(pdfView, never()).zoomWithAnimation(anyFloat(), anyFloat(), anyFloat());
+        verify(pdfView, never()).resetZoomToFitPageWithAnimation();
     }
 
     private MotionEvent eventWithDownTime(long downTime) {

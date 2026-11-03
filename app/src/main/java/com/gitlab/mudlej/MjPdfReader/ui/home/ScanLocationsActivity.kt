@@ -35,6 +35,7 @@ class ScanLocationsActivity : AppCompatActivity() {
     private lateinit var volumes: List<File>
     private var currentDir: File? = null
     private val selected = linkedSetOf<String>()
+    private val selection = ScanLocationSelection(selected)
     private lateinit var previousMode: ScanMode
     private lateinit var previousLocations: Set<String>
     private var currentChildren: List<Pair<String, String>> = emptyList()
@@ -144,8 +145,8 @@ class ScanLocationsActivity : AppCompatActivity() {
             ScanLocationRow(
                 path = path,
                 name = name,
-                checkedState = stateOf(path),
-                checkboxEnabled = selected.none { it != path && path.startsWith("$it${File.separatorChar}") },
+                checkedState = selection.stateOf(path),
+                checkboxEnabled = !selection.isLocked(path),
             )
         }
         locationsAdapter.submitList(rows)
@@ -163,21 +164,8 @@ class ScanLocationsActivity : AppCompatActivity() {
             .sortedBy { it.name.lowercase() }
     }
 
-    private fun stateOf(path: String): Int {
-        return when {
-            selected.any { path == it || path.startsWith("$it${File.separatorChar}") } ->
-                MaterialCheckBox.STATE_CHECKED
-            selected.any { it.startsWith("$path${File.separatorChar}") } ->
-                MaterialCheckBox.STATE_INDETERMINATE
-            else -> MaterialCheckBox.STATE_UNCHECKED
-        }
-    }
-
     private fun toggle(path: String) {
-        if (!selected.remove(path)) {
-            selected.removeAll { it.startsWith("$path${File.separatorChar}") }
-            selected.add(path)
-        }
+        selection.toggle(path)
         binding.saveLocationsButton.isEnabled = selected.isNotEmpty()
         renderRows()
     }
@@ -185,9 +173,7 @@ class ScanLocationsActivity : AppCompatActivity() {
     private fun save() {
         val locations = ScanScope.normalize(selected).toSet()
         if (locations.isEmpty()) return
-        if (previousMode != ScanMode.SELECTED_LOCATIONS ||
-            locations != ScanScope.normalize(previousLocations).toSet()
-        ) {
+        if (shouldPersist(previousMode, previousLocations, selected)) {
             pref.setScanScope(ScanMode.SELECTED_LOCATIONS, locations)
             setResult(
                 Activity.RESULT_OK,
@@ -215,24 +201,7 @@ class ScanLocationsActivity : AppCompatActivity() {
         }
     }
 
-    private fun crumbsFor(dir: File): List<Crumb> {
-        val volume = volumes.firstOrNull { volume ->
-            dir.absolutePath == volume.absolutePath
-                || dir.absolutePath.startsWith("${volume.absolutePath}${File.separatorChar}")
-        } ?: return emptyList()
-
-        val crumbs = mutableListOf(Crumb(volumeLabel(volume), volume.absolutePath))
-        if (dir.absolutePath == volume.absolutePath) {
-            return crumbs
-        }
-        val relative = dir.absolutePath.removePrefix(volume.absolutePath).trim(File.separatorChar)
-        var current = volume.absolutePath
-        for (segment in relative.split(File.separatorChar)) {
-            current = "$current${File.separatorChar}$segment"
-            crumbs.add(Crumb(segment, current))
-        }
-        return crumbs
-    }
+    private fun crumbsFor(dir: File): List<Crumb> = crumbsFor(volumes, dir, ::volumeLabel)
 
     companion object {
         const val EXTRA_PREVIOUS_MODE = "scanLocationsPreviousMode"

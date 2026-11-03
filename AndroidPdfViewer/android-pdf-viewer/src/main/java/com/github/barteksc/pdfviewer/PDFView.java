@@ -142,7 +142,6 @@ public class PDFView extends RelativeLayout {
     public static final float NORMAL_SCALE = 1.0f;
 
     private static final float HIGHLIGHT_HIT_TOLERANCE = 2.5f;
-    private static final float HIGHLIGHT_MATCH_TOLERANCE = 1.5f;
 
     private static final int FORM_FIELD_FILL_COLOR = 0x282196F3; // 16% Material blue tint
 
@@ -988,14 +987,7 @@ public class PDFView extends RelativeLayout {
      */
     public float getPositionOffset() {
         if (pdfFile == null) return 0;
-
-        float offset;
-        if (swipeVertical) {
-            offset = -currentYOffset / (pdfFile.getDocLen(zoom) - getHeight());
-        } else {
-            offset = -currentXOffset / (pdfFile.getDocLen(zoom) - getWidth());
-        }
-        return MathUtils.limit(offset, 0, 1);
+        return ViewportMath.getPositionOffset(pdfFile, getWidth(), getHeight(), zoom, swipeVertical, currentXOffset, currentYOffset);
     }
 
     /**
@@ -1007,9 +999,9 @@ public class PDFView extends RelativeLayout {
         if (pdfFile == null) return;
 
         if (swipeVertical) {
-            moveTo(currentXOffset, (-pdfFile.getDocLen(zoom) + getHeight()) * progress, moveHandle);
+            moveTo(currentXOffset, ViewportMath.positionOffset(pdfFile.getDocLen(zoom), getHeight(), progress), moveHandle);
         } else {
-            moveTo((-pdfFile.getDocLen(zoom) + getWidth()) * progress, currentYOffset, moveHandle);
+            moveTo(ViewportMath.positionOffset(pdfFile.getDocLen(zoom), getWidth(), progress), currentYOffset, moveHandle);
         }
         loadPageByOffset();
     }
@@ -1024,34 +1016,8 @@ public class PDFView extends RelativeLayout {
         }
 
         int pageIndex = pdfFile.determineValidPageNumberFrom(findFocusPage(currentXOffset, currentYOffset));
-        float centerX = -currentXOffset + getWidth() * 0.5f;
-        float centerY = -currentYOffset + getHeight() * 0.5f;
-        float relativeCrossAxisCenter;
-        float pageCenterOffsetRatio;
-
-        if (swipeVertical) {
-            relativeCrossAxisCenter = ratioOrDefault(centerX, pdfFile.getMaxPageWidth(), 0.5f);
-            pageCenterOffsetRatio = ratioOrDefault(
-                    centerY - pdfFile.getPageOffset(pageIndex, zoom),
-                    pdfFile.getPageLength(pageIndex, zoom),
-                    0.5f);
-        } else {
-            relativeCrossAxisCenter = ratioOrDefault(centerY, pdfFile.getMaxPageHeight(), 0.5f);
-            pageCenterOffsetRatio = ratioOrDefault(
-                    centerX - pdfFile.getPageOffset(pageIndex, zoom),
-                    pdfFile.getPageLength(pageIndex, zoom),
-                    0.5f);
-        }
-
-        return new ViewState(
-                zoom,
-                pageIndex,
-                swipeVertical,
-                isHorizontalReadingDirectionRtl(),
-                relativeCrossAxisCenter,
-                MathUtils.limit(pageCenterOffsetRatio, 0f, 1f),
-                pdfFile.getPagesPerRow(),
-                pdfFile.isFirstPageAlone());
+        return ViewportMath.captureViewState(pdfFile, getWidth(), getHeight(), zoom, swipeVertical, currentXOffset, currentYOffset,
+                pageIndex, isHorizontalReadingDirectionRtl(), pdfFile.getPagesPerRow(), pdfFile.isFirstPageAlone());
     }
 
     public void stopFling() {
@@ -1649,22 +1615,8 @@ public class PDFView extends RelativeLayout {
     }
 
     private long visiblePageRange() {
-        if (pdfFile == null) {
-            return -1L;
-        }
-        int count = pdfFile.getPagesCount();
-        if (count <= 0) {
-            return -1L;
-        }
-        float offset = swipeVertical ? currentYOffset : currentXOffset;
-        float viewSize = swipeVertical ? getHeight() : getWidth();
-        float startDist = Math.max(0f, -offset);
-        float endDist = Math.max(0f, -offset + viewSize);
-        int first = pdfFile.getPageAtOffset(startDist, zoom);
-        int last = pdfFile.getPageAtOffset(endDist, zoom);
-        int from = Math.max(0, Math.min(first, last) - 1);
-        int to = Math.min(count - 1, Math.max(first, last) + 1);
-        return ((long) from << 32) | (to & 0xFFFFFFFFL);
+        if (pdfFile == null) return -1L;
+        return ViewportMath.visiblePageRange(pdfFile, getWidth(), getHeight(), zoom, swipeVertical, currentXOffset, currentYOffset, pdfFile.getPagesCount());
     }
 
     private void drawPreview(Canvas canvas, int page, Bitmap bitmap) {
@@ -1900,33 +1852,13 @@ public class PDFView extends RelativeLayout {
             return true;
         }
 
-        float pageCenterOffsetRatio = isValidNumber(viewState.pageCenterOffsetRatio)
-                ? MathUtils.limit(viewState.pageCenterOffsetRatio, 0f, 1f)
-                : 0.5f;
-        float relativeCrossAxisCenter = isValidNumber(viewState.relativeCrossAxisCenter)
-                ? viewState.relativeCrossAxisCenter
-                : 0.5f;
-        float pageCenterOffset = pdfFile.getPageOffset(pageIndex, zoom) + pageLength * pageCenterOffsetRatio;
-
-        float offsetX;
-        float offsetY;
-        if (swipeVertical) {
-            float crossAxisSize = pdfFile.getMaxPageWidth();
-            if (!isUsable(crossAxisSize)) {
-                jumpTo(pageIndex, false);
-                return true;
-            }
-            offsetX = -(relativeCrossAxisCenter * crossAxisSize) + getWidth() * 0.5f;
-            offsetY = -pageCenterOffset + getHeight() * 0.5f;
-        } else {
-            float crossAxisSize = pdfFile.getMaxPageHeight();
-            if (!isUsable(crossAxisSize)) {
-                jumpTo(pageIndex, false);
-                return true;
-            }
-            offsetX = -pageCenterOffset + getWidth() * 0.5f;
-            offsetY = -(relativeCrossAxisCenter * crossAxisSize) + getHeight() * 0.5f;
+        float[] offsets = ViewportMath.applyViewState(pdfFile, getWidth(), getHeight(), zoom, swipeVertical, viewState, pageIndex, pageLength);
+        if (offsets == null) {
+            jumpTo(pageIndex, false);
+            return true;
         }
+        float offsetX = offsets[0];
+        float offsetY = offsets[1];
 
         pageTrackingSuppressed = true;
         try {
@@ -2011,70 +1943,17 @@ public class PDFView extends RelativeLayout {
             return;
         }
 
-        if (swipeVertical) {
-            // Check X offset
-            float scaledPageWidth = toCurrentScale(pdfFile.getMaxPageWidth());
-            if (scaledPageWidth < getWidth()) {
-                offsetX = getWidth() / 2 - scaledPageWidth / 2;
-            } else {
-                if (offsetX > 0) {
-                    offsetX = 0;
-                } else if (offsetX + scaledPageWidth < getWidth()) {
-                    offsetX = getWidth() - scaledPageWidth;
-                }
-            }
-
-            // Check Y offset
-            float contentHeight = pdfFile.getDocLen(zoom);
-            if (contentHeight < getHeight()) { // whole document height visible on screen
-                offsetY = (getHeight() - contentHeight) / 2;
-            } else {
-                if (offsetY > 0) { // top visible
-                    offsetY = 0;
-                } else if (offsetY + contentHeight < getHeight()) { // bottom visible
-                    offsetY = -contentHeight + getHeight();
-                }
-            }
-
-            if (offsetY < currentYOffset) {
-                scrollDir = ScrollDir.END;
-            } else if (offsetY > currentYOffset) {
-                scrollDir = ScrollDir.START;
-            } else {
-                scrollDir = ScrollDir.NONE;
-            }
+        float[] offsets = ViewportMath.moveTo(pdfFile, getWidth(), getHeight(), zoom, swipeVertical, offsetX, offsetY);
+        offsetX = offsets[0];
+        offsetY = offsets[1];
+        float offset = swipeVertical ? offsetY : offsetX;
+        float currentOffset = swipeVertical ? currentYOffset : currentXOffset;
+        if (offset < currentOffset) {
+            scrollDir = ScrollDir.END;
+        } else if (offset > currentOffset) {
+            scrollDir = ScrollDir.START;
         } else {
-            // Check Y offset
-            float scaledPageHeight = toCurrentScale(pdfFile.getMaxPageHeight());
-            if (scaledPageHeight < getHeight()) {
-                offsetY = getHeight() / 2 - scaledPageHeight / 2;
-            } else {
-                if (offsetY > 0) {
-                    offsetY = 0;
-                } else if (offsetY + scaledPageHeight < getHeight()) {
-                    offsetY = getHeight() - scaledPageHeight;
-                }
-            }
-
-            // Check X offset
-            float contentWidth = pdfFile.getDocLen(zoom);
-            if (contentWidth < getWidth()) { // whole document width visible on screen
-                offsetX = (getWidth() - contentWidth) / 2;
-            } else {
-                if (offsetX > 0) { // left visible
-                    offsetX = 0;
-                } else if (offsetX + contentWidth < getWidth()) { // right visible
-                    offsetX = -contentWidth + getWidth();
-                }
-            }
-
-            if (offsetX < currentXOffset) {
-                scrollDir = ScrollDir.END;
-            } else if (offsetX > currentXOffset) {
-                scrollDir = ScrollDir.START;
-            } else {
-                scrollDir = ScrollDir.NONE;
-            }
+            scrollDir = ScrollDir.NONE;
         }
 
         if (scrollDir == ScrollDir.END) {
@@ -2161,69 +2040,23 @@ public class PDFView extends RelativeLayout {
      * Find the edge to snap to when showing the specified page
      */
     SnapEdge findSnapEdge(int page) {
-        if (!pageSnap || page < 0) {
-            return SnapEdge.NONE;
-        }
-        int row = pdfFile.getRowOfPage(page);
-        float currentOffset = swipeVertical ? currentYOffset : currentXOffset;
-        float offset = -pdfFile.getRowOffset(row, zoom);
-        int length = swipeVertical ? getHeight() : getWidth();
-        float pageLength = pdfFile.getRowLength(row, zoom);
-
-        if (length >= pageLength) {
-            return SnapEdge.CENTER;
-        }
-        else if (currentOffset >= offset) {
-            return SnapEdge.START;
-        }
-        else if (offset - pageLength > currentOffset - length) {
-            return SnapEdge.END;
-        }
-        else {
-            return SnapEdge.NONE;
-        }
+        return ViewportMath.findSnapEdge(pdfFile, getWidth(), getHeight(), zoom, swipeVertical, currentXOffset, currentYOffset, pageSnap, page);
     }
 
     /**
      * Get the offset to move to in order to snap to the page
      */
     float snapOffsetForPage(int pageIndex, SnapEdge edge) {
-        int row = pdfFile.getRowOfPage(pageIndex);
-        float offset = pdfFile.getRowOffset(row, zoom);
-
-        float length = swipeVertical ? getHeight() : getWidth();
-        float pageLength = pdfFile.getRowLength(row, zoom);
-
-        if (edge == SnapEdge.CENTER) {
-            offset = offset - length / 2f + pageLength / 2f;
-        } else if (edge == SnapEdge.END) {
-            offset = offset - length + pageLength;
-        }
-        return offset;
+        return ViewportMath.snapOffsetForPage(pdfFile, getWidth(), getHeight(), zoom, swipeVertical, pageIndex, edge);
     }
 
     int findFocusPage(float xOffset, float yOffset) {
-        float currOffset = swipeVertical ? yOffset : xOffset;
-        float length = swipeVertical ? getHeight() : getWidth();
-        // make sure first and last page can be found
-        if (currOffset > -1) {
-            return pdfFile.getRowFirstPage(pdfFile.getRowAtLayoutIndex(0));
-        } else if (currOffset < -pdfFile.getDocLen(zoom) + length + 1) {
-            int lastRow = pdfFile.getRowAtLayoutIndex(pdfFile.getRowCount() - 1);
-            return pdfFile.getRowFirstPage(lastRow) + pdfFile.getPagesInRow(lastRow) - 1;
-        }
-        // else find page in center
-        float center = currOffset - length / 2f;
-        return pdfFile.getPageAtOffset(-center, zoom);
+        return ViewportMath.findFocusPage(pdfFile, getWidth(), getHeight(), zoom, swipeVertical, xOffset, yOffset);
     }
 
     public int getPageAfterRowStep(int fromPage, int direction) {
-        if (pdfFile == null || pdfFile.getPagesCount() == 0) {
-            return fromPage;
-        }
-        int row = pdfFile.getRowOfPage(pdfFile.determineValidPageNumberFrom(fromPage));
-        int targetRow = Math.max(0, Math.min(pdfFile.getRowCount() - 1, row + direction));
-        return pdfFile.getRowFirstPage(targetRow);
+        if (pdfFile == null || pdfFile.getPagesCount() == 0) return fromPage;
+        return ViewportMath.getPageAfterRowStep(pdfFile, pdfFile.determineValidPageNumberFrom(fromPage), direction);
     }
 
     public int getRowFirstPage(int pageIndex) {
@@ -2280,17 +2113,8 @@ public class PDFView extends RelativeLayout {
      * @return true if single page fills the entire screen in the scrolling direction
      */
     public boolean pageFillsScreen() {
-        if (pdfFile == null) {
-            return false;
-        }
-        int row = pdfFile.getRowOfPage(currentPage);
-        float start = -pdfFile.getRowOffset(row, zoom);
-        float end = start - pdfFile.getRowLength(row, zoom);
-        if (isSwipeVertical()) {
-            return start > currentYOffset && end < currentYOffset - getHeight();
-        } else {
-            return start > currentXOffset && end < currentXOffset - getWidth();
-        }
+        if (pdfFile == null) return false;
+        return ViewportMath.pageFillsScreen(pdfFile, getWidth(), getHeight(), zoom, isSwipeVertical(), currentPage, currentXOffset, currentYOffset);
     }
 
     /**
@@ -2402,26 +2226,11 @@ public class PDFView extends RelativeLayout {
     }
 
     private float validZoom(float value) {
-        if (!isValidNumber(value)) {
-            return NORMAL_SCALE;
-        }
-        return MathUtils.limit(value, minZoom, maxZoom);
-    }
-
-    private static float ratioOrDefault(float numerator, float denominator, float fallback) {
-        if (!isUsable(denominator)) {
-            return fallback;
-        }
-        float ratio = numerator / denominator;
-        return isValidNumber(ratio) ? ratio : fallback;
+        return ViewportMath.validZoom(value, minZoom, maxZoom);
     }
 
     private static boolean isUsable(float value) {
-        return isValidNumber(value) && value > 0f;
-    }
-
-    private static boolean isValidNumber(float value) {
-        return !Float.isNaN(value) && !Float.isInfinite(value);
+        return ViewportMath.isUsable(value);
     }
 
     TextSelectionManager getTextSelectionManager() {
@@ -2695,7 +2504,7 @@ public class PDFView extends RelativeLayout {
                 continue;
             }
             RectF bounds = candidate.getBounds();
-            if (bounds != null && pdfRectContainsPoint(bounds, point.x, point.y, HIGHLIGHT_HIT_TOLERANCE)) {
+            if (bounds != null && HighlightHitTesting.pdfRectContainsPoint(bounds, point.x, point.y, HIGHLIGHT_HIT_TOLERANCE)) {
                 hit = candidate;
                 break;
             }
@@ -2705,7 +2514,8 @@ public class PDFView extends RelativeLayout {
         }
 
         String hitGroup = hit.getGroupKey();
-        RectF pdfBounds = unionGroupBounds(annotations, hitGroup, hit.getBounds());
+        float[] union = HighlightHitTesting.unionGroupBounds(annotations, hitGroup, hit.getBounds());
+        RectF pdfBounds = union == null ? null : new RectF(union[0], union[1], union[2], union[3]);
         RectF viewBounds = null;
         if (pdfBounds != null) {
             viewBounds = pdfFile.pdfRectToDocument(
@@ -2778,19 +2588,7 @@ public class PDFView extends RelativeLayout {
         if (annotations == null || annotations.isEmpty()) {
             return null;
         }
-        if (groupKey != null && !groupKey.isEmpty()) {
-            for (PdfDocument.HighlightAnnotation candidate : annotations) {
-                if (groupKey.equals(candidate.getGroupKey())) {
-                    return candidate.getBounds();
-                }
-            }
-        }
-        for (PdfDocument.HighlightAnnotation candidate : annotations) {
-            if (candidate.getAnnotationIndex() == annotationIndex) {
-                return candidate.getBounds();
-            }
-        }
-        return null;
+        return HighlightHitTesting.findHighlightPdfBounds(annotations, groupKey, annotationIndex);
     }
 
     public HighlightAnnotation findHighlightAnnotationMatching(HighlightRequest request) {
@@ -2812,27 +2610,12 @@ public class PDFView extends RelativeLayout {
             return null;
         }
 
-        Map<String, List<PdfDocument.HighlightAnnotation>> groups = new HashMap<>();
-        for (PdfDocument.HighlightAnnotation candidate : annotations) {
-            String group = candidate.getGroupKey();
-            if (group == null || group.isEmpty()) {
-                continue;
-            }
-            List<PdfDocument.HighlightAnnotation> members = groups.get(group);
-            if (members == null) {
-                members = new ArrayList<>();
-                groups.put(group, members);
-            }
-            members.add(candidate);
-        }
-
-        for (Map.Entry<String, List<PdfDocument.HighlightAnnotation>> entry : groups.entrySet()) {
-            if (!groupMatchesRects(entry.getValue(), request.pdfRects)) {
-                continue;
-            }
-            PdfDocument.HighlightAnnotation first = entry.getValue().get(0);
-            String group = entry.getKey();
-            RectF pdfBounds = unionGroupBounds(annotations, group, first.getBounds());
+        PdfDocument.HighlightAnnotation first = HighlightHitTesting.findHighlightAnnotationMatching(
+                annotations, request.pdfRects);
+        if (first != null) {
+            String group = first.getGroupKey();
+            float[] union = HighlightHitTesting.unionGroupBounds(annotations, group, first.getBounds());
+            RectF pdfBounds = union == null ? null : new RectF(union[0], union[1], union[2], union[3]);
             RectF viewBounds = null;
             if (pdfBounds != null) {
                 viewBounds = pdfFile.pdfRectToDocument(
@@ -2858,77 +2641,6 @@ public class PDFView extends RelativeLayout {
             );
         }
         return null;
-    }
-
-    private static boolean groupMatchesRects(List<PdfDocument.HighlightAnnotation> members, List<RectF> rects) {
-        if (members.size() != rects.size()) {
-            return false;
-        }
-        boolean[] used = new boolean[members.size()];
-        for (RectF rect : rects) {
-            boolean matched = false;
-            for (int i = 0; i < members.size(); i++) {
-                if (used[i]) {
-                    continue;
-                }
-                RectF bounds = members.get(i).getBounds();
-                if (bounds != null && pdfRectsAlmostEqual(rect, bounds, HIGHLIGHT_MATCH_TOLERANCE)) {
-                    used[i] = true;
-                    matched = true;
-                    break;
-                }
-            }
-            if (!matched) {
-                return false;
-            }
-        }
-        return true;
-    }
-
-    private static boolean pdfRectsAlmostEqual(RectF a, RectF b, float tolerance) {
-        return Math.abs(Math.min(a.left, a.right) - Math.min(b.left, b.right)) <= tolerance
-                && Math.abs(Math.max(a.left, a.right) - Math.max(b.left, b.right)) <= tolerance
-                && Math.abs(Math.min(a.top, a.bottom) - Math.min(b.top, b.bottom)) <= tolerance
-                && Math.abs(Math.max(a.top, a.bottom) - Math.max(b.top, b.bottom)) <= tolerance;
-    }
-
-    private static boolean pdfRectContainsPoint(RectF rect, float x, float y, float tolerance) {
-        float left = Math.min(rect.left, rect.right);
-        float right = Math.max(rect.left, rect.right);
-        float bottom = Math.min(rect.top, rect.bottom);
-        float top = Math.max(rect.top, rect.bottom);
-        return x >= left - tolerance && x <= right + tolerance
-                && y >= bottom - tolerance && y <= top + tolerance;
-    }
-
-    private static RectF unionGroupBounds(List<PdfDocument.HighlightAnnotation> annotations,
-                                          String group, RectF fallback) {
-        if (group == null || group.isEmpty()) {
-            return fallback;
-        }
-        float left = Float.MAX_VALUE;
-        float right = -Float.MAX_VALUE;
-        float top = -Float.MAX_VALUE;
-        float bottom = Float.MAX_VALUE;
-        boolean found = false;
-        for (PdfDocument.HighlightAnnotation candidate : annotations) {
-            if (!group.equals(candidate.getGroupKey())) {
-                continue;
-            }
-            RectF b = candidate.getBounds();
-            if (b == null) {
-                continue;
-            }
-            left = Math.min(left, Math.min(b.left, b.right));
-            right = Math.max(right, Math.max(b.left, b.right));
-            top = Math.max(top, Math.max(b.top, b.bottom));
-            bottom = Math.min(bottom, Math.min(b.top, b.bottom));
-            found = true;
-        }
-        if (!found) {
-            return fallback;
-        }
-        return new RectF(left, top, right, bottom);
     }
 
     public boolean setHighlightAnnotationColor(HighlightAnnotation annotation, int color) {
@@ -3011,7 +2723,7 @@ public class PDFView extends RelativeLayout {
         try {
             float tolerance = formFieldTouchTolerance(page, docX, docY, point);
             float[] rects = pdfFile.peekFormFieldRects(page);
-            if (rects != null && !pointNearFormFieldRect(rects, point.x, point.y, tolerance)) {
+            if (rects != null && !HighlightHitTesting.pointNearFormFieldRect(rects, point.x, point.y, tolerance)) {
                 return null;
             }
             PdfDocument.FormField field = pdfFile.getFormFieldAtPoint(page, point.x, point.y, tolerance);
@@ -3020,19 +2732,6 @@ public class PDFView extends RelativeLayout {
             Log.e(TAG, "findFormFieldAt: failed to hit-test form field", throwable);
             return null;
         }
-    }
-
-    private static boolean pointNearFormFieldRect(float[] rects, float pdfX, float pdfY, float tolerance) {
-        for (int i = 0; i + 3 < rects.length; i += 4) {
-            float left = Math.min(rects[i], rects[i + 2]) - tolerance;
-            float right = Math.max(rects[i], rects[i + 2]) + tolerance;
-            float bottom = Math.min(rects[i + 1], rects[i + 3]) - tolerance;
-            float top = Math.max(rects[i + 1], rects[i + 3]) + tolerance;
-            if (pdfX >= left && pdfX <= right && pdfY >= bottom && pdfY <= top) {
-                return true;
-            }
-        }
-        return false;
     }
 
     private float formFieldTouchTolerance(int page, float docX, float docY, PointF pdfPoint) {
@@ -3173,33 +2872,11 @@ public class PDFView extends RelativeLayout {
     }
 
     private float clampTargetXOffset(float offsetX, float targetZoom) {
-        if (swipeVertical) {
-            float scaledPageWidth = pdfFile.getMaxPageWidth() * targetZoom;
-            if (scaledPageWidth < getWidth()) {
-                return getWidth() / 2f - scaledPageWidth / 2f;
-            }
-            return Math.max(Math.min(offsetX, 0), getWidth() - scaledPageWidth);
-        }
-        float contentWidth = pdfFile.getDocLen(targetZoom);
-        if (contentWidth < getWidth()) {
-            return (getWidth() - contentWidth) / 2f;
-        }
-        return Math.max(Math.min(offsetX, 0), getWidth() - contentWidth);
+        return ViewportMath.clampTargetXOffset(pdfFile, getWidth(), getHeight(), targetZoom, swipeVertical, offsetX);
     }
 
     private float clampTargetYOffset(float offsetY, float targetZoom) {
-        if (swipeVertical) {
-            float contentHeight = pdfFile.getDocLen(targetZoom);
-            if (contentHeight < getHeight()) {
-                return (getHeight() - contentHeight) / 2f;
-            }
-            return Math.max(Math.min(offsetY, 0), getHeight() - contentHeight);
-        }
-        float scaledPageHeight = pdfFile.getMaxPageHeight() * targetZoom;
-        if (scaledPageHeight < getHeight()) {
-            return getHeight() / 2f - scaledPageHeight / 2f;
-        }
-        return Math.max(Math.min(offsetY, 0), getHeight() - scaledPageHeight);
+        return ViewportMath.clampTargetYOffset(pdfFile, getWidth(), getHeight(), targetZoom, swipeVertical, offsetY);
     }
 
     public void zoomWithAnimation(float scale) {
@@ -3220,7 +2897,7 @@ public class PDFView extends RelativeLayout {
         if (pdfFile == null) {
             return 0;
         }
-        return pdfFile.getPageAtOffset(pdfFile.getDocLen(zoom) * positionOffset, zoom);
+        return ViewportMath.getPageAtPositionOffset(pdfFile, zoom, positionOffset);
     }
 
     public float getMinZoom() {

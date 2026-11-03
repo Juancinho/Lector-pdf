@@ -34,9 +34,10 @@ fun showBackupExportOptionsDialog(
         }
     }
 
-    val settingsCheckbox = checkbox(checked = true)
-    val historyCheckbox = checkbox(checked = true)
-    val passwordsCheckbox = checkbox(checked = false)
+    val selection = BackupExportSelection()
+    val settingsCheckbox = checkbox(checked = selection.settings)
+    val historyCheckbox = checkbox(checked = selection.history)
+    val passwordsCheckbox = checkbox(checked = selection.passwords)
 
     val container = LinearLayout(context).apply {
         orientation = LinearLayout.VERTICAL
@@ -53,13 +54,7 @@ fun showBackupExportOptionsDialog(
         .setTitle(R.string.backup_export_title)
         .setView(container)
         .setPositiveButton(R.string.backup_export_action) { _, _ ->
-            onExport(
-                BackupExportOptions(
-                    includeSettings = settingsCheckbox.isChecked,
-                    includeHistory = historyCheckbox.isChecked,
-                    includePasswords = historyCheckbox.isChecked && passwordsCheckbox.isChecked,
-                )
-            )
+            onExport(selection.result())
         }
         .setNegativeButton(R.string.cancel, null)
         .create()
@@ -67,27 +62,26 @@ fun showBackupExportOptionsDialog(
 
     val exportButton = dialog.getButton(DialogInterface.BUTTON_POSITIVE)
     fun refresh() {
-        val historyOn = historyCheckbox.isChecked
-        passwordsCheckbox.isEnabled = historyOn
+        val historyOn = selection.history
+        settingsCheckbox.isChecked = selection.settings
+        historyCheckbox.isChecked = selection.history
+        passwordsCheckbox.isChecked = selection.passwords
+        passwordsCheckbox.isEnabled = selection.passwordsEnabled
         passwordsRow.alpha = if (historyOn) 1f else 0.5f
-        exportButton.isEnabled = settingsCheckbox.isChecked || historyOn
+        exportButton.isEnabled = selection.canExport
     }
     refresh()
 
     settingsRow.setOnClickListener {
-        settingsCheckbox.isChecked = !settingsCheckbox.isChecked
+        selection.toggleSettings()
         refresh()
     }
     historyRow.setOnClickListener {
-        historyCheckbox.isChecked = !historyCheckbox.isChecked
-        if (!historyCheckbox.isChecked) {
-            passwordsCheckbox.isChecked = false
-        }
+        selection.toggleHistory()
         refresh()
     }
     passwordsRow.setOnClickListener {
-        if (historyCheckbox.isChecked) {
-            passwordsCheckbox.isChecked = !passwordsCheckbox.isChecked
-        }
+        selection.togglePasswords()
+        passwordsCheckbox.isChecked = selection.passwords
     }
 }

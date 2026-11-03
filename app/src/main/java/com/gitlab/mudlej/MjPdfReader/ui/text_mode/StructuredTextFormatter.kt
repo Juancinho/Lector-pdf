@@ -55,7 +55,7 @@ object StructuredTextFormatter {
     private const val DETRACK_GAP_FACTOR = 1.6f
     private const val DROP_CAP_SIZE_RATIO = 1.8f
     private val HEADING_SPAN_SIZES = floatArrayOf(1.35f, 1.2f, 1.1f)
-    private val NUMBERED_HEADING_START = Regex("^\\d+(\\.\\d+)*[.)]?\\s")
+    private val NUMBERED_HEADING_START = Regex("^\\p{Nd}+(\\.\\p{Nd}+)*[.)]?\\s")
     private const val HEADING_END_DISQUALIFIERS = ",;،؛"
 
     fun format(

@@ -261,7 +261,7 @@ class ReaderNavigationController(
         if (resultCode == Activity.RESULT_OK) {
             val pageIndex = intent?.getIntExtra(PDF.pageNumberKey, pdf.pageNumber) ?: return
             val pageCount = binding.pdfView.pageCount
-            val boundedPageIndex = if (pageCount > 0) pageIndex.coerceIn(0, pageCount - 1) else pageIndex.coerceAtLeast(0)
+            val boundedPageIndex = textModeResultPage(pageIndex, pageCount)
             historyManager.recordJump(ReaderHistoryManager.Origin.TEXT_MODE, boundedPageIndex)
             binding.pdfView.jumpTo(boundedPageIndex)
         }
@@ -278,7 +278,7 @@ class ReaderNavigationController(
     fun handleLinksResult(resultCode: Int, intent: Intent?) {
         if (resultCode == PDF.LINK_RESULT_OK) {
             val pageNumber = intent?.getIntExtra(PDF.linkResultKey, pdf.pageNumber) ?: return
-            val pageIndex = pageNumber - 1
+            val pageIndex = linksResultPage(pageNumber)
             historyManager.recordJump(ReaderHistoryManager.Origin.LINK, pageIndex)
             binding.pdfView.jumpTo(pageIndex)
         }
@@ -342,3 +342,8 @@ class ReaderNavigationController(
         }
     }
 }
+
+internal fun textModeResultPage(pageIndex: Int, pageCount: Int): Int =
+    if (pageCount > 0) pageIndex.coerceIn(0, pageCount - 1) else pageIndex.coerceAtLeast(0)
+
+internal fun linksResultPage(pageNumber: Int): Int = pageNumber - 1

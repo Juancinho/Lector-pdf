@@ -10,7 +10,7 @@ object TranslationUrlBuilder {
     const val langPlaceholder = "{lang}"
     private const val maxTextLength = 1000
 
-    fun build(settings: TranslationSettings, text: String): String? {
+    fun build(settings: TranslationSettings, text: String, encode: (String) -> String = Uri::encode): String? {
         val template = if (settings.engine == TranslationEngine.CUSTOM) {
             settings.customTemplate
         } else {
@@ -29,6 +29,6 @@ object TranslationUrlBuilder {
         }
         return template
             .replace(langPlaceholder, language)
-            .replace(textPlaceholder, Uri.encode(prepared))
+            .replace(textPlaceholder, encode(prepared))
     }
 }

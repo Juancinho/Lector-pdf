@@ -156,7 +156,8 @@ MJ PDF is tested end to end on real Android, not mocked. The suite drives the ac
 - **Pixel checked rendering:** pages are compared against 62 reviewed golden screenshots.
 - **Process death and restarts:** 12 multi-process scenarios kill the app mid-task, revoke storage access between runs or force a cold start, and check what survives.
 - **A purpose built runner** in Python. It shards the suite across many emulators in parallel, balances them by test duration, and pins screen size, density, locale and time zone. It isolates every test with Android Test Orchestrator and fails a run that leaves files behind in shared storage.
-- **More layers of tests:** 283 JVM unit tests for the app and the viewer library, 19 macrobenchmarks, 28 PDFium C++ tests for MJ PDF's own engine patches, and 258 tests for the runner and the build tooling.
+- **1,142 JVM unit tests** underneath the screens, running in seconds without an emulator: 805 for the app, 306 for the viewer library and 31 for the PDFium bindings. They pin the decisions the E2E suite cannot reach one input at a time: page layout and coordinate math, the tile cache and render queue, crop margin detection, the backup codec and import validation, document identity hashing, search snippets, text mode reflow, reader history, settings search and the Arabic text normalization. 57 of them document suspected bugs that await a decision and are skipped until then. See [testing/jvm-tests.md](testing/jvm-tests.md).
+- **More layers of tests:** 19 macrobenchmarks, 28 PDFium C++ tests for MJ PDF's own engine patches, and 258 tests for the runner and the build tooling.
 
 The full suite passed five times in a row on ten emulators, with zero failures.
 
@@ -172,13 +173,13 @@ Lines of code at each layer of MJ PDF, from the app down to the PDF engine, as o
 
 | Layer | Language | Code | Tests | Total |
 |---|---|--:|--:|--:|
-| App | Kotlin | 34,930 | 97,741 | 132,671 |
-| Viewer library | Java | 11,322 | 1,589 | 12,911 |
-| PDFium bindings | Java, C++ | 3,773 | 0 | 3,773 |
+| App | Kotlin | 35,500 | 104,148 | 139,648 |
+| Viewer library | Java | 11,535 | 5,049 | 16,584 |
+| PDFium bindings | Java, C++ | 3,782 | 296 | 4,078 |
 | PDFium patches | C++ | 1,476 | 1,415 | 2,891 |
-| **Total** | | **51,501** | **100,745** | **152,246** |
+| **Total** | | **52,293** | **110,908** | **163,201** |
 
-The tooling around them adds 21,906 more lines, mostly Python: 19,902 for the test runner and fixture generators, and 2,004 for the native build and its tests. That's 174,152 lines in all.
+The tooling around them adds 21,906 more lines, mostly Python: 19,902 for the test runner and fixture generators, and 2,004 for the native build and its tests. That's 185,107 lines in all.
 
 Counts are non-blank, non-comment lines in the repository. They leave out upstream PDFium and its public headers, and the PDFium patches count only the lines they add.
 

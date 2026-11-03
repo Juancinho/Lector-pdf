@@ -150,16 +150,15 @@ internal class DocumentRecords(
         val canonicalFile = source.canonicalFile(currentUri)
         val durableUri = canonicalFile?.let(Uri::fromFile) ?: currentUri
         val storedUri = pdfRepository.findRecord(fileHash)?.uri
-        if (storedUri?.toString() == durableUri.toString()) {
-            return
-        }
-        if (canonicalFile == null && storedUri != null && source.isReadable(storedUri)) {
+        val storedReadable = storedUri?.toString() != durableUri.toString() &&
+            canonicalFile == null && storedUri != null && source.isReadable(storedUri)
+        if (!shouldUpdateRecordUri(storedUri?.toString(), durableUri.toString(), canonicalFile != null, storedReadable)) {
             return
         }
         pdfRepository.updateRecordIdentity(
             fileHash,
             durableUri,
-            doc.name.removeSuffix(".pdf"),
+            recordFileName(doc.name),
             LocalDateTime.now(),
         )
     }
@@ -168,3 +167,8 @@ internal class DocumentRecords(
         const val TAG = "DocumentLoader"
     }
 }
+
+internal fun shouldUpdateRecordUri(storedUri: String?, durableUri: String, hasCanonicalFile: Boolean, storedReadable: Boolean): Boolean =
+    storedUri != durableUri && (hasCanonicalFile || storedUri == null || !storedReadable)
+
+internal fun recordFileName(name: String): String = name.removeSuffix(".pdf")

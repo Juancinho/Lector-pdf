@@ -10,8 +10,7 @@ import com.google.android.material.snackbar.Snackbar
 
 fun openDocumentLink(anchor: View, url: String): Boolean {
     val uri = Uri.parse(url)
-    if (uri.scheme != null && !uri.scheme.equals("file", ignoreCase = true) &&
-        !url.any { it.isISOControl() } && !Uri.decode(url).any { it.isISOControl() }
+    if (isOpenableDocumentLink(uri.scheme, url, Uri.decode(url))
     ) {
         try {
             anchor.context.startActivity(Intent(Intent.ACTION_VIEW, uri))
@@ -22,3 +21,7 @@ fun openDocumentLink(anchor: View, url: String): Boolean {
     AppSnackbar.make(anchor, R.string.no_app_to_open_link, Snackbar.LENGTH_LONG).show()
     return false
 }
+
+internal fun isOpenableDocumentLink(scheme: String?, url: String, decoded: String): Boolean =
+    scheme != null && !scheme.equals("file", ignoreCase = true) &&
+        !url.any { it.isISOControl() } && !decoded.any { it.isISOControl() }

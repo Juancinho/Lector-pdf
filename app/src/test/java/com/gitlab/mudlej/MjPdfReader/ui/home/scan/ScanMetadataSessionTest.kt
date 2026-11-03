@@ -7,18 +7,15 @@ import android.content.Context
 import android.content.ContextWrapper
 import android.content.Intent
 import android.content.ServiceConnection
-import android.os.IBinder
-import android.os.IInterface
 import com.gitlab.mudlej.MjPdfReader.core.debug.MetadataWorkerTestHooks
 import com.gitlab.mudlej.MjPdfReader.data.AppDatabase_Impl
 import com.gitlab.mudlej.MjPdfReader.data.PdfRepository
 import com.gitlab.mudlej.MjPdfReader.data.entity.ScannedPdfEntry
 import com.gitlab.mudlej.MjPdfReader.data.entity.SourceFingerprint
 import com.gitlab.mudlej.MjPdfReader.data.entity.fingerprint
-import com.gitlab.mudlej.MjPdfReader.ui.home.metadata.IPdfMetadataCallback
-import com.gitlab.mudlej.MjPdfReader.ui.home.metadata.IPdfMetadataService
 import com.gitlab.mudlej.MjPdfReader.ui.home.metadata.MetadataMemorySample
 import com.gitlab.mudlej.MjPdfReader.ui.home.metadata.MetadataProtocol
+import com.gitlab.mudlej.MjPdfReader.support.RecordingMetadataService
 import com.gitlab.mudlej.MjPdfReader.ui.home.metadata.PdfMetadataClient
 import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.CoroutineScope
@@ -486,46 +483,4 @@ class ScanMetadataSessionTest {
         maxActiveDocuments = 1,
     )
 
-    private class RecordingMetadataService : IPdfMetadataService.Stub() {
-        var registration: Pair<Long, Long>? = null
-        val processCalls = mutableListOf<Pair<SourceFingerprint, Int>>()
-        val acknowledgements = mutableListOf<Pair<SourceFingerprint, Int>>()
-        val memoryRequests = mutableListOf<Pair<Long, Long>>()
-
-        override fun queryLocalInterface(descriptor: String): IInterface = this
-
-        override fun linkToDeath(recipient: IBinder.DeathRecipient, flags: Int) = Unit
-
-        override fun unlinkToDeath(recipient: IBinder.DeathRecipient, flags: Int): Boolean = true
-
-        override fun registerCallback(callback: IPdfMetadataCallback?, generation: Long, connectionToken: Long) {
-            registration = generation to connectionToken
-        }
-
-        override fun sampleMemory(generation: Long, connectionToken: Long) {
-            memoryRequests += generation to connectionToken
-        }
-
-        override fun process(
-            generation: Long,
-            connectionToken: Long,
-            path: String,
-            size: Long,
-            lastModified: Long,
-            debugBehavior: Int,
-        ) {
-            processCalls += SourceFingerprint(path, size, lastModified) to debugBehavior
-        }
-
-        override fun acknowledge(
-            generation: Long,
-            connectionToken: Long,
-            path: String,
-            size: Long,
-            lastModified: Long,
-            action: Int,
-        ) {
-            acknowledgements += SourceFingerprint(path, size, lastModified) to action
-        }
-    }
 }

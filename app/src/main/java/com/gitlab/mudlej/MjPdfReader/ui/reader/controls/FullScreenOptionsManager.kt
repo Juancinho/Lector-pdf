@@ -230,42 +230,11 @@ class FullScreenOptionsManager(
     }
 
     private fun getPageInfo(context: Context, settings: FullScreenInfoSettings): String? {
-        val pageNumber = minOf(vm.doc.pageRangeStart, vm.doc.pageNumber) + 1
-        val rangeEnd = (vm.doc.pageRangeEnd + 1).coerceAtLeast(pageNumber)
-        val pageCount = vm.doc.length.coerceAtLeast(rangeEnd)
-        val percentage = rangeEnd.divideToPercent(pageCount).coerceIn(1, 100)
-
-        return when {
-            settings.showPageNumber && settings.showReadingPercentage && rangeEnd > pageNumber -> context.getString(
-                R.string.fullscreen_page_range_info,
-                pageNumber,
-                rangeEnd,
-                pageCount,
-                percentage,
-            )
-            settings.showPageNumber && settings.showReadingPercentage -> context.getString(
-                R.string.fullscreen_page_info,
-                pageNumber,
-                pageCount,
-                percentage,
-            )
-            settings.showPageNumber && rangeEnd > pageNumber -> context.getString(
-                R.string.fullscreen_page_range_number_info,
-                pageNumber,
-                rangeEnd,
-                pageCount,
-            )
-            settings.showPageNumber -> context.getString(
-                R.string.fullscreen_page_number_info,
-                pageNumber,
-                pageCount,
-            )
-            settings.showReadingPercentage -> context.getString(
-                R.string.fullscreen_percentage_info,
-                percentage,
-            )
-            else -> null
-        }
+        val info = pageInfo(
+            vm.doc.pageRangeStart, vm.doc.pageNumber, vm.doc.pageRangeEnd, vm.doc.length,
+            PageInfoFlags(settings.showPageNumber, settings.showReadingPercentage),
+        ) ?: return null
+        return context.getString(info.variant, *info.arguments.toTypedArray())
     }
 
 
@@ -479,4 +448,39 @@ class FullScreenOptionsManager(
         }
     }
 
+}
+
+internal data class PageInfoFlags(val showPageNumber: Boolean, val showReadingPercentage: Boolean)
+
+internal data class PageInfo(val variant: Int, val arguments: List<Int>)
+
+internal fun pageInfo(rangeStart: Int, page: Int, rangeEnd: Int, length: Int, flags: PageInfoFlags): PageInfo? {
+    val pageNumber = minOf(rangeStart, page) + 1
+    val displayedRangeEnd = (rangeEnd + 1).coerceAtLeast(pageNumber)
+    val pageCount = length.coerceAtLeast(displayedRangeEnd)
+    val percentage = displayedRangeEnd.divideToPercent(pageCount).coerceIn(1, 100)
+
+    return when {
+        flags.showPageNumber && flags.showReadingPercentage && displayedRangeEnd > pageNumber -> PageInfo(
+            R.string.fullscreen_page_range_info,
+            listOf(pageNumber, displayedRangeEnd, pageCount, percentage),
+        )
+        flags.showPageNumber && flags.showReadingPercentage -> PageInfo(
+            R.string.fullscreen_page_info,
+            listOf(pageNumber, pageCount, percentage),
+        )
+        flags.showPageNumber && displayedRangeEnd > pageNumber -> PageInfo(
+            R.string.fullscreen_page_range_number_info,
+            listOf(pageNumber, displayedRangeEnd, pageCount),
+        )
+        flags.showPageNumber -> PageInfo(
+            R.string.fullscreen_page_number_info,
+            listOf(pageNumber, pageCount),
+        )
+        flags.showReadingPercentage -> PageInfo(
+            R.string.fullscreen_percentage_info,
+            listOf(percentage),
+        )
+        else -> null
+    }
 }

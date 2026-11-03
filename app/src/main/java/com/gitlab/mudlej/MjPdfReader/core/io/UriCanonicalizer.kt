@@ -39,16 +39,7 @@ object UriCanonicalizer {
 
     private fun fromExternalStorageDocument(uri: Uri): File? {
         val docId = runCatching { DocumentsContract.getDocumentId(uri) }.getOrNull() ?: return null
-        val split = docId.split(":", limit = 2)
-        if (split.size != 2) {
-            return null
-        }
-        val (volume, relativePath) = split
-        return if (volume.equals(PRIMARY_VOLUME, ignoreCase = true)) {
-            File(Environment.getExternalStorageDirectory(), relativePath)
-        } else {
-            File("/storage/$volume", relativePath)
-        }
+        return pathForExternalStorageDocId(docId, Environment.getExternalStorageDirectory())
     }
 
     private fun fromDownloadsDocument(context: Context, uri: Uri): File? {
@@ -56,16 +47,31 @@ object UriCanonicalizer {
         if (docId.startsWith(RAW_PREFIX)) {
             return File(docId.removePrefix(RAW_PREFIX))
         }
-        val mediaStoreId = docId
-            .removePrefix(MEDIA_STORE_FILE_PREFIX)
-            .removePrefix(MEDIA_STORE_DOCUMENT_PREFIX)
-            .toLongOrNull()
+        val mediaStoreId = downloadsDocumentId(docId)
         if (mediaStoreId != null && Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
             val mediaStoreUri = ContentUris.withAppendedId(MediaStore.Downloads.EXTERNAL_CONTENT_URI, mediaStoreId)
             fromMediaStoreData(context, mediaStoreUri)?.let { return it }
         }
         return fromMediaStoreData(context, uri)
     }
+
+    internal fun pathForExternalStorageDocId(docId: String, primaryRoot: File): File? {
+        val split = docId.split(":", limit = 2)
+        if (split.size != 2) {
+            return null
+        }
+        val (volume, relativePath) = split
+        return if (volume.equals(PRIMARY_VOLUME, ignoreCase = true)) {
+            File(primaryRoot, relativePath)
+        } else {
+            File("/storage/$volume", relativePath)
+        }
+    }
+
+    internal fun downloadsDocumentId(docId: String): Long? = docId
+        .removePrefix(MEDIA_STORE_FILE_PREFIX)
+        .removePrefix(MEDIA_STORE_DOCUMENT_PREFIX)
+        .toLongOrNull()
 
     private fun fromMediaStoreData(context: Context, uri: Uri): File? {
         return runCatching {

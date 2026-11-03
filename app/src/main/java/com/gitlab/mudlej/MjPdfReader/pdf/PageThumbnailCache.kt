@@ -154,11 +154,11 @@ class PageThumbnailCache(
 
     private fun key(pageIndex: Int, bucket: Int) = "p$pageIndex-w$bucket"
 
-    private fun bucketFor(widthPx: Int) = WIDTH_BUCKETS.firstOrNull { it >= widthPx } ?: WIDTH_BUCKETS.last()
-
     data class ClosedCacheSnapshot(val stats: LruCacheStats, val keys: List<String>)
 
     companion object {
+        internal fun bucketFor(widthPx: Int) = WIDTH_BUCKETS.firstOrNull { it >= widthPx } ?: WIDTH_BUCKETS.last()
+
         private val debugInstances = if (BuildConfig.DEBUG) WeakRegistry<PageThumbnailCache>() else null
 
         @Volatile

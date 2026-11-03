@@ -51,14 +51,9 @@ class SearchNavigationController(
     private val launchSearch: (Intent) -> Unit,
 ) {
 
-    private var hits: List<SearchSessionCache.Hit> = emptyList()
-    private var currentPosition = -1
-    private var hasFullSession = false
-    private var subscribedToActiveSearch = false
+    private val cursor = SearchHitCursor()
     private var query = ""
     private var ignoreAccents = false
-    private var pendingAutoJump = false
-    private var autoJumpAnchorPage = 0
     private var activeHighlightPageNumber: Int? = null
     private var snackbar: Snackbar? = null
     private var counterView: TextView? = null
@@ -74,24 +69,16 @@ class SearchNavigationController(
         override fun onProgress(pagesScanned: Int, pageCount: Int) = Unit
 
         override fun onResults(results: List<SearchResult>, finished: Boolean) {
-            if (!subscribedToActiveSearch) {
+            if (!cursor.subscribedToActiveSearch) {
                 return
             }
-            val currentResultIndex = hits.getOrNull(currentPosition)?.resultIndex
-            hits = SearchCoordinator.appendHits(hits, results)
-            if (finished) {
-                subscribedToActiveSearch = false
-                hasFullSession = hits.isNotEmpty()
-            }
-            if (pendingAutoJump) {
-                maybeAutoJump(finished)
+            val wasPending = cursor.pendingAutoJump
+            cursor.onResults(results, finished)
+            if (wasPending) {
+                maybeAutoJump()
                 updateControls()
                 return
             }
-            currentPosition = hits
-                .indexOfFirst { it.resultIndex == currentResultIndex }
-                .takeIf { it >= 0 }
-                ?: currentPosition.coerceIn(0, hits.lastIndex.coerceAtLeast(0))
             updateControls()
         }
     }
@@ -105,8 +92,8 @@ class SearchNavigationController(
         ignoreAccents = resultIgnoreAccents
         unsubscribeFromActiveSearch()
         val session = SearchSessionCache.get(pdf.fileHash, query, ignoreAccents)
-        hasFullSession = session != null
-        hits = session?.hits?.sortedBy { it.resultIndex }
+        cursor.hasFullSession = session != null
+        cursor.hits = session?.hits?.sortedBy { it.resultIndex }
             ?: listOf(
                 SearchSessionCache.Hit(
                     pageNumber = searchResult.pageNumber,
@@ -118,13 +105,10 @@ class SearchNavigationController(
                 )
             )
         if (session == null) {
-            subscribedToActiveSearch =
+            cursor.subscribedToActiveSearch =
                 SearchCoordinator.subscribeIfRunning(pdf.fileHash, query, ignoreAccents, activeSearchListener)
         }
-        currentPosition = hits
-            .indexOfFirst { it.resultIndex == searchResult.searchResultIndexInList }
-            .takeIf { it >= 0 }
-            ?: 0
+        cursor.restorePosition(searchResult.searchResultIndexInList)
         historyManager.recordJump(ReaderHistoryManager.Origin.SEARCH, searchResult.pageNumber - 1)
         showSnackbar()
         showCurrentHit()
@@ -134,27 +118,27 @@ class SearchNavigationController(
         reset()
         query = rawQuery.trim()
         ignoreAccents = rawIgnoreAccents
-        autoJumpAnchorPage = binding.pdfView.visiblePageIndex
+        cursor.autoJumpAnchorPage = binding.pdfView.visiblePageIndex
         val session = SearchSessionCache.get(pdf.fileHash, query, ignoreAccents)
         if (session != null) {
-            hasFullSession = true
-            hits = session.hits.sortedBy { it.resultIndex }
+            cursor.hasFullSession = true
+            cursor.hits = session.hits.sortedBy { it.resultIndex }
             showSnackbar()
-            if (hits.isEmpty()) {
+            if (cursor.hits.isEmpty()) {
                 enterNoResultsState()
                 updateControls()
                 return
             }
-            currentPosition = hits
-                .indexOfFirst { it.pageNumber - 1 >= autoJumpAnchorPage }
+            cursor.currentPosition = cursor.hits
+                .indexOfFirst { it.pageNumber - 1 >= cursor.autoJumpAnchorPage }
                 .takeIf { it >= 0 }
                 ?: 0
-            historyManager.recordJump(ReaderHistoryManager.Origin.SEARCH, hits[currentPosition].pageNumber - 1)
+            historyManager.recordJump(ReaderHistoryManager.Origin.SEARCH, cursor.hits[cursor.currentPosition].pageNumber - 1)
             showCurrentHit()
             return
         }
-        pendingAutoJump = true
-        subscribedToActiveSearch = true
+        cursor.pendingAutoJump = true
+        cursor.subscribedToActiveSearch = true
         showSnackbar()
         updateControls()
         SearchCoordinator.startOrSubscribe(
@@ -168,31 +152,19 @@ class SearchNavigationController(
         )
     }
 
-    private fun maybeAutoJump(finished: Boolean) {
-        val position = hits.indexOfFirst { it.pageNumber - 1 >= autoJumpAnchorPage }
-        if (position >= 0) {
-            pendingAutoJump = false
-            currentPosition = position
-            historyManager.recordJump(ReaderHistoryManager.Origin.SEARCH, hits[position].pageNumber - 1)
+    private fun maybeAutoJump() {
+        val position = cursor.autoJumpTarget()
+        if (position != null) {
+            historyManager.recordJump(ReaderHistoryManager.Origin.SEARCH, cursor.hits[position].pageNumber - 1)
             showCurrentHit()
-            return
-        }
-        if (!finished) {
-            return
-        }
-        pendingAutoJump = false
-        if (hits.isEmpty()) {
+        } else if (cursor.noResults) {
             enterNoResultsState()
-            return
         }
-        currentPosition = 0
-        historyManager.recordJump(ReaderHistoryManager.Origin.SEARCH, hits[0].pageNumber - 1)
-        showCurrentHit()
     }
 
     private fun unsubscribeFromActiveSearch() {
-        pendingAutoJump = false
-        subscribedToActiveSearch = false
+        cursor.pendingAutoJump = false
+        cursor.subscribedToActiveSearch = false
         SearchCoordinator.unsubscribe(activeSearchListener)
     }
 
@@ -211,9 +183,9 @@ class SearchNavigationController(
         rawTextCache = null
         clearHighlight()
         dismissSnackbar()
-        hits = emptyList()
-        currentPosition = -1
-        hasFullSession = false
+        cursor.hits = emptyList()
+        cursor.currentPosition = -1
+        cursor.hasFullSession = false
     }
 
     fun resetAndReload() {
@@ -332,19 +304,7 @@ class SearchNavigationController(
     }
 
     private fun showPrevious() {
-        if (hits.isEmpty()) {
-            return
-        }
-        if (pendingAutoJump) {
-            pendingAutoJump = false
-            currentPosition = hits.lastIndex
-        }
-        else if (hits.size < 2) {
-            return
-        }
-        else {
-            currentPosition = if (currentPosition > 0) currentPosition - 1 else hits.lastIndex
-        }
+        if (!cursor.previous()) return
         if (BuildConfig.DEBUG) {
             SearchTestHooks.noteNavigationAction()
         }
@@ -352,19 +312,7 @@ class SearchNavigationController(
     }
 
     private fun showNext() {
-        if (hits.isEmpty()) {
-            return
-        }
-        if (pendingAutoJump) {
-            pendingAutoJump = false
-            currentPosition = 0
-        }
-        else if (hits.size < 2) {
-            return
-        }
-        else {
-            currentPosition = if (currentPosition < hits.lastIndex) currentPosition + 1 else 0
-        }
+        if (!cursor.next()) return
         if (BuildConfig.DEBUG) {
             SearchTestHooks.noteNavigationAction()
         }
@@ -373,14 +321,14 @@ class SearchNavigationController(
 
     private fun showCurrentHit() {
         cancelPendingLabelRestore()
-        val hit = hits.getOrNull(currentPosition) ?: return
+        val hit = cursor.hits.getOrNull(cursor.currentPosition) ?: return
         showHitJob?.cancel()
         showHitJob = scope.launch {
             val cached = if (rawTextCachePage == hit.pageNumber) rawTextCache else null
             val rawText = cached ?: withContext(Dispatchers.IO) {
                 binding.pdfView.getPageRawText(hit.pageNumber)
             }
-            if (hits.getOrNull(currentPosition) !== hit) {
+            if (cursor.hits.getOrNull(cursor.currentPosition) !== hit) {
                 return@launch
             }
             rawTextCachePage = hit.pageNumber
@@ -474,7 +422,7 @@ class SearchNavigationController(
     }
 
     private fun updateControls() {
-        val controlsVisible = (hasFullSession || subscribedToActiveSearch) && hits.isNotEmpty()
+        val controlsVisible = cursor.controlsVisible()
         val visibility = if (controlsVisible) View.VISIBLE else View.GONE
         previousButton?.visibility = visibility
         counterView?.visibility = visibility
@@ -482,9 +430,9 @@ class SearchNavigationController(
         if (!controlsVisible) {
             return
         }
-        counterView?.text = activity.getString(R.string.search_result_counter, currentPosition + 1, hits.size)
-        setButtonEnabled(previousButton, hits.size > 1)
-        setButtonEnabled(nextButton, hits.size > 1)
+        counterView?.text = activity.getString(R.string.search_result_counter, cursor.currentPosition + 1, cursor.hits.size)
+        setButtonEnabled(previousButton, cursor.hits.size > 1)
+        setButtonEnabled(nextButton, cursor.hits.size > 1)
     }
 
     private fun setButtonEnabled(button: ImageButton?, enabled: Boolean) {
@@ -501,7 +449,7 @@ class SearchNavigationController(
     }
 
     private fun openResultsList() {
-        pendingAutoJump = false
+        cursor.pendingAutoJump = false
         Intent(activity, SearchActivity::class.java).also { searchIntent ->
             searchIntent.putExtra(PDF.filePathKey, pdf.uri.toString())
             searchIntent.putExtra(PDF.passwordKey, pdf.password)
@@ -510,7 +458,7 @@ class SearchNavigationController(
             if (query.isNotBlank()) {
                 searchIntent.putExtra(PDF.searchQueryKey, query)
             }
-            hits.getOrNull(currentPosition)?.let { hit ->
+            cursor.hits.getOrNull(cursor.currentPosition)?.let { hit ->
                 searchIntent.putExtra(PDF.resultPositionInListKey, hit.resultIndex)
             }
             searchIntent.grantPdfReadAccess(pdf.uri.toString())
@@ -522,4 +470,80 @@ class SearchNavigationController(
         private const val BOTTOM_AREA_START = 0.6f
         private const val FAILED_HIGHLIGHT_LABEL_MILLIS = 1600L
     }
+}
+
+internal class SearchHitCursor {
+    var hits: List<SearchSessionCache.Hit> = emptyList()
+    var currentPosition = -1
+    var hasFullSession = false
+    var subscribedToActiveSearch = false
+    var pendingAutoJump = false
+    var autoJumpAnchorPage = 0
+    private var finished = false
+    var noResults = false
+        private set
+
+    fun onResults(results: List<SearchResult>, finished: Boolean) {
+        val currentResultIndex = hits.getOrNull(currentPosition)?.resultIndex
+        hits = SearchCoordinator.appendHits(hits, results)
+        this.finished = finished
+        if (finished) {
+            subscribedToActiveSearch = false
+            hasFullSession = hits.isNotEmpty()
+        }
+        if (pendingAutoJump) return
+        currentPosition = hits.indexOfFirst { it.resultIndex == currentResultIndex }
+            .takeIf { it >= 0 }
+            ?: currentPosition.coerceIn(0, hits.lastIndex.coerceAtLeast(0))
+    }
+
+    fun restorePosition(resultIndex: Int) {
+        currentPosition = hits.indexOfFirst { it.resultIndex == resultIndex }.takeIf { it >= 0 } ?: 0
+    }
+
+    fun autoJumpTarget(): Int? {
+        noResults = false
+        val position = hits.indexOfFirst { it.pageNumber - 1 >= autoJumpAnchorPage }
+        if (position >= 0) {
+            pendingAutoJump = false
+            currentPosition = position
+            return position
+        }
+        if (!finished) return null
+        pendingAutoJump = false
+        if (hits.isEmpty()) {
+            noResults = true
+            return null
+        }
+        currentPosition = 0
+        return 0
+    }
+
+    fun previous(): Boolean {
+        if (hits.isEmpty()) return false
+        if (pendingAutoJump) {
+            pendingAutoJump = false
+            currentPosition = hits.lastIndex
+        } else if (hits.size < 2) {
+            return false
+        } else {
+            currentPosition = if (currentPosition > 0) currentPosition - 1 else hits.lastIndex
+        }
+        return true
+    }
+
+    fun next(): Boolean {
+        if (hits.isEmpty()) return false
+        if (pendingAutoJump) {
+            pendingAutoJump = false
+            currentPosition = 0
+        } else if (hits.size < 2) {
+            return false
+        } else {
+            currentPosition = if (currentPosition < hits.lastIndex) currentPosition + 1 else 0
+        }
+        return true
+    }
+
+    fun controlsVisible(): Boolean = (hasFullSession || subscribedToActiveSearch) && hits.isNotEmpty()
 }

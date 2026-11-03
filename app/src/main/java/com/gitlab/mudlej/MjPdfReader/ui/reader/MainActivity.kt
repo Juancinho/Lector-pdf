@@ -56,7 +56,6 @@ import com.gitlab.mudlej.MjPdfReader.core.ui.showOptionalIcons
 import com.gitlab.mudlej.MjPdfReader.pdf.PDF
 import com.gitlab.mudlej.MjPdfReader.pdf.PdfPropertiesSummary
 import com.gitlab.mudlej.MjPdfReader.ui.reader.annotation.ReaderAnnotationDebug
-import com.gitlab.mudlej.MjPdfReader.ui.reader.load.DocumentUnreachableException
 import com.gitlab.mudlej.MjPdfReader.ui.reader.load.LoadState
 import com.gitlab.mudlej.MjPdfReader.ui.settings.SettingsActivity
 import com.gitlab.mudlej.MjPdfReader.ui.settings.SettingsPage
@@ -232,18 +231,7 @@ class MainActivity : AppCompatActivity(), ReaderUi {
 
     private fun sharedTextLink(): Uri? {
         val sharedText = intent.getStringExtra(Intent.EXTRA_TEXT) ?: return null
-        val trimChars = charArrayOf(
-            '<', '>', '(', ')', '[', ']', '{', '}', '"', '\'', '.', ',', ';', ':', '!', '?',
-        )
-        val link = sharedText
-            .split(Regex("\\s+"))
-            .map { it.trim(*trimChars) }
-            .firstOrNull { token ->
-                (token.startsWith("http://", ignoreCase = true)
-                        || token.startsWith("https://", ignoreCase = true))
-                        && Patterns.WEB_URL.matcher(token).matches()
-            } ?: return null
-        return Uri.parse(link)
+        return sharedTextLink(sharedText) { Patterns.WEB_URL.matcher(it).matches() }?.let(Uri::parse)
     }
 
     override fun onNewIntent(intent: Intent) {
@@ -755,17 +743,6 @@ class MainActivity : AppCompatActivity(), ReaderUi {
         return isStaleDocumentFailure(exception)
     }
 
-    private fun isStaleDocumentFailure(exception: Throwable): Boolean {
-        var cause: Throwable? = exception
-        while (cause != null) {
-            if (cause is SecurityException || cause is FileNotFoundException || cause is DocumentUnreachableException) {
-                return true
-            }
-            cause = cause.cause
-        }
-        return false
-    }
-
     private fun hasRecoverableUri(): Boolean {
         val scheme = pdf.uri?.scheme
         return scheme == "content" || scheme == "file"
@@ -783,12 +760,14 @@ class MainActivity : AppCompatActivity(), ReaderUi {
     }
 
     private fun couldNotOpenFileDueToMissingPermission(e: Throwable): Boolean {
-        if (ContextCompat.checkSelfPermission(this, Manifest.permission.READ_EXTERNAL_STORAGE)
-            == PackageManager.PERMISSION_GRANTED
-        ) return false
-        val exceptionMessage = e.message
-        return e is FileNotFoundException && exceptionMessage != null
-            && exceptionMessage.contains(getString(R.string.permission_denied))
+        val granted = ContextCompat.checkSelfPermission(this, Manifest.permission.READ_EXTERNAL_STORAGE) ==
+            PackageManager.PERMISSION_GRANTED
+        val permissionDeniedText = if (!granted && e is FileNotFoundException && e.message != null) {
+            getString(R.string.permission_denied)
+        } else {
+            ""
+        }
+        return couldNotOpenFileDueToMissingPermission(e, granted, permissionDeniedText)
     }
 
     internal fun restartAppIfGranted(isPermissionGranted: Boolean) {

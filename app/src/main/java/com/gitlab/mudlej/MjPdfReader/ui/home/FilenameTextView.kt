@@ -65,28 +65,7 @@ class FilenameTextView @JvmOverloads constructor(
             boundaries.add(boundary)
             boundary = iterator.next()
         }
-        val characters = boundaries.size - 1
-        fun candidate(kept: Int): String {
-            val prefix = if (ellipsize == TextUtils.TruncateAt.MIDDLE) (kept + 1) / 2 else 0
-            val suffix = kept - prefix
-            return original.substring(0, boundaries[prefix]) + "…" +
-                original.substring(boundaries[characters - suffix])
-        }
-
-        var low = 0
-        var high = characters - 1
-        var result = "…"
-        while (low <= high) {
-            val kept = (low + high) / 2
-            val value = candidate(kept)
-            if (fits(value)) {
-                result = value
-                low = kept + 1
-            } else {
-                high = kept - 1
-            }
-        }
-        return result
+        return shortenFilename(original, boundaries.toIntArray(), ellipsize == TextUtils.TruncateAt.MIDDLE, ::fits)
     }
 
     private class FilenameTransformation(
@@ -104,4 +83,34 @@ class FilenameTextView @JvmOverloads constructor(
             previouslyFocusedRect: Rect?,
         ) = Unit
     }
+}
+
+internal fun shortenFilename(
+    original: String,
+    boundaries: IntArray,
+    middle: Boolean,
+    fits: (String) -> Boolean,
+): String {
+    val characters = boundaries.size - 1
+    fun candidate(kept: Int): String {
+        val prefix = if (middle) (kept + 1) / 2 else 0
+        val suffix = kept - prefix
+        return original.substring(0, boundaries[prefix]) + "…" +
+            original.substring(boundaries[characters - suffix])
+    }
+
+    var low = 0
+    var high = characters - 1
+    var result = "…"
+    while (low <= high) {
+        val kept = (low + high) / 2
+        val value = candidate(kept)
+        if (fits(value)) {
+            result = value
+            low = kept + 1
+        } else {
+            high = kept - 1
+        }
+    }
+    return result
 }

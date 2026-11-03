@@ -205,12 +205,12 @@ sealed class AnnotationEdit {
         private fun rectsFromJson(array: JsonArray): List<RectF> {
             return array.map { element ->
                 val values = element.asJsonArray
-                RectF(
-                    values.get(0).asFloat,
-                    values.get(1).asFloat,
-                    values.get(2).asFloat,
-                    values.get(3).asFloat,
-                )
+                RectF().apply {
+                    left = values.get(0).asFloat
+                    top = values.get(1).asFloat
+                    right = values.get(2).asFloat
+                    bottom = values.get(3).asFloat
+                }
             }
         }
 
@@ -224,12 +224,12 @@ sealed class AnnotationEdit {
         }
 
         private fun rectFromJson(values: JsonArray): RectF {
-            return RectF(
-                values.get(0).asFloat,
-                values.get(1).asFloat,
-                values.get(2).asFloat,
-                values.get(3).asFloat,
-            )
+            return RectF().apply {
+                left = values.get(0).asFloat
+                top = values.get(1).asFloat
+                right = values.get(2).asFloat
+                bottom = values.get(3).asFloat
+            }
         }
 
         private fun strokesToJson(strokes: List<FloatArray>): JsonArray {

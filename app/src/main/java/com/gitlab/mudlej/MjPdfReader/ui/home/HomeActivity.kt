@@ -39,7 +39,6 @@ import com.gitlab.mudlej.MjPdfReader.core.ui.ColorUtil
 import com.gitlab.mudlej.MjPdfReader.data.AppDatabase
 import com.gitlab.mudlej.MjPdfReader.ui.about.WhatsNewActivity
 import com.gitlab.mudlej.MjPdfReader.ui.about.WhatsNewRelease
-import com.gitlab.mudlej.MjPdfReader.ui.about.whatsNewReleaseForUpgrade
 import com.gitlab.mudlej.MjPdfReader.ui.reader.MainActivity
 import com.gitlab.mudlej.MjPdfReader.ui.intro.MainIntroActivity
 import com.gitlab.mudlej.MjPdfReader.ui.settings.SettingsActivity
@@ -175,12 +174,16 @@ class HomeActivity : AppCompatActivity(), HomeItemFunctions {
     }
 
     private fun launchIntroOnFirstInstall(): Boolean {
-        val launchIntro = pref.getFirstInstall()
-        if (launchIntro) {
+        val plan = LaunchPlan.decide(
+            firstInstall = pref.getFirstInstall(),
+            homeDisabled = false,
+            showFeaturesDialog = false,
+            lastSeenVersionCode = BuildConfig.VERSION_CODE,
+            currentVersionCode = BuildConfig.VERSION_CODE,
+        )
+        if (plan.launchIntro) {
             homeViewModel.introInProgress = true
-            pref.setFirstInstall(false)
-            pref.setShowFeaturesDialog(true)
-            pref.setLastSeenVersionCode(BuildConfig.VERSION_CODE)
+            applyLaunchWrites(plan.writes)
             introLauncher.launch(Intent(this, MainIntroActivity::class.java))
         }
         return homeViewModel.introInProgress
@@ -201,12 +204,25 @@ class HomeActivity : AppCompatActivity(), HomeItemFunctions {
     }
 
     private fun consumeWhatsNewDue(): WhatsNewRelease? {
-        val release = whatsNewReleaseForUpgrade(
+        val plan = LaunchPlan.decide(
+            firstInstall = false,
+            homeDisabled = true,
+            showFeaturesDialog = false,
             lastSeenVersionCode = pref.getLastSeenVersionCode(),
             currentVersionCode = BuildConfig.VERSION_CODE,
-        ) ?: return null
-        pref.setLastSeenVersionCode(BuildConfig.VERSION_CODE)
-        return release
+        )
+        applyLaunchWrites(plan.writes)
+        return plan.release
+    }
+
+    private fun applyLaunchWrites(writes: List<LaunchPlan.PreferenceWrite>) {
+        writes.forEach { write ->
+            when (write) {
+                is LaunchPlan.PreferenceWrite.FirstInstall -> pref.setFirstInstall(write.value)
+                is LaunchPlan.PreferenceWrite.ShowFeaturesDialog -> pref.setShowFeaturesDialog(write.value)
+                is LaunchPlan.PreferenceWrite.LastSeenVersionCode -> pref.setLastSeenVersionCode(write.value)
+            }
+        }
     }
 
     private fun setupWindowChrome() {
@@ -428,12 +444,15 @@ class HomeActivity : AppCompatActivity(), HomeItemFunctions {
     private fun currentTab(): HomeTab = HomeTab.entries[binding.homePager.currentItem]
 
     private fun showWhatsNewOnFirstRun(release: WhatsNewRelease? = null) {
-        val requestedRelease = release ?: if (pref.getShowFeaturesDialog()) {
-            WhatsNewRelease.CURRENT
-        } else {
-            return
-        }
-        pref.setShowFeaturesDialog(false)
+        val plan = LaunchPlan.decide(
+            firstInstall = false,
+            homeDisabled = false,
+            showFeaturesDialog = release != null || pref.getShowFeaturesDialog(),
+            lastSeenVersionCode = BuildConfig.VERSION_CODE,
+            currentVersionCode = BuildConfig.VERSION_CODE,
+        )
+        val requestedRelease = release ?: plan.release ?: return
+        applyLaunchWrites(plan.writes)
         lifecycleScope.launch {
             delay(500)
             if (!isFinishing) {

@@ -829,6 +829,10 @@ public class PdfiumCore {
     }
 
     public String normalizeExtractedText(String text) {
+        return normalizeExtractedTextStatic(text);
+    }
+
+    static String normalizeExtractedTextStatic(String text) {
         if (text == null || text.isEmpty()) {
             return "";
         }
@@ -983,16 +987,10 @@ public class PdfiumCore {
                 String[] entries = nativeGetPageFonts(pagePtr);
                 if (entries != null) {
                     for (String entry : entries) {
-                        if (entry == null || entry.isEmpty()) {
-                            continue;
+                        PdfDocument.FontInfo font = parseFontEntry(entry);
+                        if (font != null) {
+                            result.add(font);
                         }
-                        int separator = entry.lastIndexOf('\t');
-                        if (separator <= 0) {
-                            continue;
-                        }
-                        String name = entry.substring(0, separator);
-                        boolean embedded = "1".equals(entry.substring(separator + 1));
-                        result.add(new PdfDocument.FontInfo(name, embedded));
                     }
                 }
             } finally {
@@ -1002,6 +1000,19 @@ public class PdfiumCore {
             }
             return result;
         }
+    }
+
+    static PdfDocument.FontInfo parseFontEntry(String entry) {
+        if (entry == null || entry.isEmpty()) {
+            return null;
+        }
+        int separator = entry.lastIndexOf('\t');
+        if (separator <= 0) {
+            return null;
+        }
+        String name = entry.substring(0, separator);
+        boolean embedded = "1".equals(entry.substring(separator + 1));
+        return new PdfDocument.FontInfo(name, embedded);
     }
 
     public boolean setHighlightAnnotationColor(PdfDocument doc, int pageIndex, int annotationIndex,

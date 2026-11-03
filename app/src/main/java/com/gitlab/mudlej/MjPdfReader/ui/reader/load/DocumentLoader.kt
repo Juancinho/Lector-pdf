@@ -147,7 +147,7 @@ class DocumentLoader(
         scope.launch {
             com.gitlab.mudlej.MjPdfReader.core.debug.ReaderTestHooks.awaitDocumentLoadRelease()
             val revalidating = vm.revalidateDocumentOnLoad
-            val hash = if (revalidating) {
+            val resolvedHash = if (revalidating) {
                 resolveDocumentIdentity(documentUri)
             } else {
                 previousHash ?: resolveDocumentIdentity(documentUri)
@@ -156,15 +156,22 @@ class DocumentLoader(
                 return@launch
             }
             vm.revalidateDocumentOnLoad = false
-            if (revalidating) {
-                if (hash == null) {
-                    doc.fileHash = null
-                }
-                if (hash == null || historyPolicy.canRecord()) {
-                    doc.readingDirectionResolved = false
-                }
+            val identity = decideIdentity(
+                revalidating = revalidating,
+                previousHash = previousHash,
+                resolvedHash = resolvedHash,
+                canRecord = revalidating && resolvedHash != null && historyPolicy.canRecord(),
+                hasUri = documentUri != null,
+                pageNumber = doc.pageNumber,
+            )
+            val hash = identity.hash
+            if (identity.clearFileHash) {
+                doc.fileHash = null
             }
-            if (previousHash != null && hash != null && hash != previousHash && documentUri != null) {
+            if (identity.resetReadingDirection) {
+                doc.readingDirectionResolved = false
+            }
+            if (identity.resetDocument && documentUri != null) {
                 emit { it.onDocumentReset() }
                 vm.beginNewDocument(documentUri, pref.getAlwaysHideMargins())
                 doc.password = null
@@ -173,7 +180,7 @@ class DocumentLoader(
                 scheduleLoadProgress(loadToken, documentUri)
             }
             val viewState = vm.pendingViewState
-            if (hash == null && doc.pageNumber == 0) {
+            if (identity.useHashlessPath) {
                 if (!canLoadWithoutHash(loadToken, documentUri, savePassword)) {
                     return@launch
                 }
@@ -188,11 +195,13 @@ class DocumentLoader(
                 return@launch
             }
 
-            val openAtFirstPageOverride = doc.pageNumber == 0 && pref.getAlwaysOpenAtFirstPage()
-            val pageNumber = if (doc.pageNumber == 0 && hash != null && !openAtFirstPageOverride) {
-                pdfRepository.findPageNumber(hash)
+            val opening = decideDocumentOpening(
+                doc.pageNumber, hash, doc.pageNumber == 0 && pref.getAlwaysOpenAtFirstPage(),
+            )
+            val pageNumber = if (opening.restoreStoredPage && hash != null) {
+                opening.pageToOpen(pdfRepository.findPageNumber(hash))
             } else {
-                doc.pageNumber
+                opening.pageToOpen()
             }
             if (!vm.isCurrent(loadToken, documentUri)) {
                 return@launch
@@ -213,7 +222,7 @@ class DocumentLoader(
                 return@launch
             }
             vm.setPage(pageNumber)
-            if (openAtFirstPageOverride) {
+            if (opening.suppressPositionPersist) {
                 vm.suppressPositionPersistAt(pageNumber)
             } else {
                 vm.clearPositionPersistSuppression()
@@ -266,11 +275,9 @@ class DocumentLoader(
     }
 
     fun applyTileRenderingPreferences() {
-        val partSize = pref.getPartSize()
-        Constants.PART_SIZE = partSize
-        val tilePixels = partSize * partSize
-        Constants.Cache.CACHE_SIZE =
-            (TILE_CACHE_PIXEL_BUDGET / tilePixels).toInt().coerceIn(MIN_TILE_CACHE_SIZE, MAX_TILE_CACHE_SIZE)
+        val values = tileRenderingPreferences(pref.getPartSize())
+        Constants.PART_SIZE = values.partSize
+        Constants.Cache.CACHE_SIZE = values.cacheSize
     }
 
     fun showFailedToComputeHashError() {
@@ -523,8 +530,56 @@ class DocumentLoader(
     private companion object {
         const val TAG = "DocumentLoader"
         const val LOCAL_LOAD_PROGRESS_DELAY_MS = 150L
-        const val TILE_CACHE_PIXEL_BUDGET = 2 * 120 * 256 * 256
-        const val MIN_TILE_CACHE_SIZE = 24
-        const val MAX_TILE_CACHE_SIZE = 480
     }
+}
+
+internal data class IdentityDecision(
+    val hash: String?,
+    val clearFileHash: Boolean,
+    val resetReadingDirection: Boolean,
+    val resetDocument: Boolean,
+    val useHashlessPath: Boolean,
+)
+
+internal fun decideIdentity(
+    revalidating: Boolean,
+    previousHash: String?,
+    resolvedHash: String?,
+    canRecord: Boolean,
+    hasUri: Boolean,
+    pageNumber: Int,
+): IdentityDecision {
+    val hash = if (revalidating) resolvedHash else previousHash ?: resolvedHash
+    return IdentityDecision(
+        hash = hash,
+        clearFileHash = revalidating && hash == null,
+        resetReadingDirection = revalidating && (hash == null || canRecord),
+        resetDocument = previousHash != null && hash != null && hash != previousHash && hasUri,
+        useHashlessPath = hash == null && pageNumber == 0,
+    )
+}
+
+internal data class DocumentOpeningDecision(
+    val currentPage: Int,
+    val restoreStoredPage: Boolean,
+    val suppressPositionPersist: Boolean,
+) {
+    fun pageToOpen(storedPage: Int = currentPage): Int = if (restoreStoredPage) storedPage else currentPage
+}
+
+internal fun decideDocumentOpening(
+    pageNumber: Int,
+    hash: String?,
+    alwaysOpenAtFirstPage: Boolean,
+): DocumentOpeningDecision {
+    val override = pageNumber == 0 && alwaysOpenAtFirstPage
+    return DocumentOpeningDecision(pageNumber, pageNumber == 0 && hash != null && !override, override)
+}
+
+internal data class TileRenderingPreferences(val partSize: Float, val cacheSize: Int)
+
+internal fun tileRenderingPreferences(partSize: Float): TileRenderingPreferences {
+    val tileCachePixelBudget = 2 * 120 * 256 * 256
+    val tilePixels = partSize * partSize
+    return TileRenderingPreferences(partSize, (tileCachePixelBudget / tilePixels).toInt().coerceIn(24, 480))
 }

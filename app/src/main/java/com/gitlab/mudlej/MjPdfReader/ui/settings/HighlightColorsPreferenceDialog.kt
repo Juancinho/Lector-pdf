@@ -14,7 +14,6 @@ import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import com.gitlab.mudlej.MjPdfReader.R
 import com.gitlab.mudlej.MjPdfReader.core.ui.toast
-import com.gitlab.mudlej.MjPdfReader.ui.reader.annotation.HighlightPalette
 import com.gitlab.mudlej.MjPdfReader.data.Preferences
 import com.google.android.material.checkbox.MaterialCheckBox
 import com.google.android.material.color.MaterialColors
@@ -25,14 +24,9 @@ fun showHighlightColorsPreferenceDialog(
     preferences: Preferences,
     onSaved: () -> Unit,
 ) {
-    val selected = preferences.getHighlightColors()
-        .mapNotNull(HighlightPalette::fromColor)
-        .toSet()
-    val rows = HighlightPalette.selectable
-        .map { HighlightColorRow(it, enabled = it in selected) }
-        .toMutableList()
+    val selection = HighlightColorSelection(preferences.getHighlightColors())
     var onSelectionChanged: () -> Unit = {}
-    val adapter = HighlightColorAdapter(rows) { onSelectionChanged() }
+    val adapter = HighlightColorAdapter(selection) { onSelectionChanged() }
     val recyclerView = RecyclerView(context).apply {
         layoutManager = LinearLayoutManager(context)
         this.adapter = adapter
@@ -43,7 +37,7 @@ fun showHighlightColorsPreferenceDialog(
         .setTitle(R.string.highlight_colors)
         .setView(recyclerView)
         .setPositiveButton(R.string.apply) { _, _ ->
-            preferences.setHighlightColors(rows.filter { it.enabled }.map { it.color })
+            preferences.setHighlightColors(selection.appliedColors)
             onSaved()
         }
         .setNegativeButton(R.string.cancel, null)
@@ -53,12 +47,12 @@ fun showHighlightColorsPreferenceDialog(
     dialog.setOnShowListener {
         val applyButton = dialog.getButton(DialogInterface.BUTTON_POSITIVE)
         fun refreshApplyEnabled() {
-            applyButton.isEnabled = rows.count { it.enabled } == Preferences.highlightColorsCount
+            applyButton.isEnabled = selection.canApply
         }
         onSelectionChanged = ::refreshApplyEnabled
         refreshApplyEnabled()
         dialog.getButton(DialogInterface.BUTTON_NEUTRAL).setOnClickListener {
-            rows.forEach { it.enabled = it.color in HighlightPalette.defaultSelection }
+            selection.reset()
             adapter.notifyDataSetChanged()
             refreshApplyEnabled()
         }
@@ -66,13 +60,8 @@ fun showHighlightColorsPreferenceDialog(
     dialog.show()
 }
 
-private data class HighlightColorRow(
-    val color: HighlightPalette,
-    var enabled: Boolean,
-)
-
 private class HighlightColorAdapter(
-    private val rows: MutableList<HighlightColorRow>,
+    private val selection: HighlightColorSelection,
     private val onSelectionChanged: () -> Unit,
 ) : RecyclerView.Adapter<HighlightColorViewHolder>() {
 
@@ -81,16 +70,13 @@ private class HighlightColorAdapter(
     }
 
     override fun onBindViewHolder(holder: HighlightColorViewHolder, position: Int) {
-        holder.bind(rows[position], ::requestToggle)
+        holder.bind(selection.rows[position], ::requestToggle)
     }
 
-    override fun getItemCount() = rows.size
+    override fun getItemCount() = selection.rows.size
 
     private fun requestToggle(row: HighlightColorRow): Boolean {
-        val target = !row.enabled
-        val selectedCount = rows.count { it.enabled }
-        if (target && selectedCount >= Preferences.highlightColorsCount) return false
-        row.enabled = target
+        if (!selection.toggle(row)) return false
         onSelectionChanged()
         return true
     }

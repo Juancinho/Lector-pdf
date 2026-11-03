@@ -19,25 +19,14 @@ private val pdfDateFormatter: DateTimeFormatter = DateTimeFormatter.ofPattern("'
 fun pdfDateNow(): String = LocalDateTime.now().format(pdfDateFormatter)
 
 fun formatRelativeDate(context: Context, dateTime: LocalDateTime): String {
-    val date = dateTime.toLocalDate()
-    val today = LocalDate.now()
-    val days = ChronoUnit.DAYS.between(date, today)
-    return when {
-        days <= 0L -> context.getString(R.string.home_relative_today)
-        days == 1L -> context.getString(R.string.home_relative_yesterday)
-        days < 7L -> context.getString(R.string.home_relative_days_ago, days)
-        days < 30L -> {
-            val weeks = (days / 7L).toInt()
-            context.resources.getQuantityString(R.plurals.home_relative_weeks_ago, weeks, weeks)
-        }
-        days < 365L -> {
-            val months = ChronoUnit.MONTHS.between(date, today).toInt().coerceAtLeast(1)
-            context.resources.getQuantityString(R.plurals.home_relative_months_ago, months, months)
-        }
-        else -> {
-            val years = ChronoUnit.YEARS.between(date, today).toInt().coerceAtLeast(1)
-            context.resources.getQuantityString(R.plurals.home_relative_years_ago, years, years)
-        }
+    val (unit, count) = relativeDateBucket(dateTime.toLocalDate(), LocalDate.now())
+    return when (unit) {
+        RelativeDateUnit.TODAY -> context.getString(R.string.home_relative_today)
+        RelativeDateUnit.YESTERDAY -> context.getString(R.string.home_relative_yesterday)
+        RelativeDateUnit.DAYS -> context.getString(R.string.home_relative_days_ago, count.toLong())
+        RelativeDateUnit.WEEKS -> context.resources.getQuantityString(R.plurals.home_relative_weeks_ago, count, count)
+        RelativeDateUnit.MONTHS -> context.resources.getQuantityString(R.plurals.home_relative_months_ago, count, count)
+        RelativeDateUnit.YEARS -> context.resources.getQuantityString(R.plurals.home_relative_years_ago, count, count)
     }
 }
 
@@ -92,4 +81,18 @@ private fun parsePdfUtcOffset(zone: String): ZoneOffset? {
     val hours = numbers.substring(0, 2).toIntOrNull() ?: return null
     val minutes = if (numbers.length >= 4) numbers.substring(2, 4).toIntOrNull() ?: 0 else 0
     return runCatching { ZoneOffset.ofHoursMinutes(sign * hours, sign * minutes) }.getOrNull()
+}
+
+internal enum class RelativeDateUnit { TODAY, YESTERDAY, DAYS, WEEKS, MONTHS, YEARS }
+
+internal fun relativeDateBucket(date: LocalDate, today: LocalDate): Pair<RelativeDateUnit, Int> {
+    val days = ChronoUnit.DAYS.between(date, today)
+    return when {
+        days <= 0L -> RelativeDateUnit.TODAY to 0
+        days == 1L -> RelativeDateUnit.YESTERDAY to 1
+        days < 7L -> RelativeDateUnit.DAYS to days.toInt()
+        days < 30L -> RelativeDateUnit.WEEKS to (days / 7L).toInt()
+        days < 365L -> RelativeDateUnit.MONTHS to ChronoUnit.MONTHS.between(date, today).toInt().coerceAtLeast(1)
+        else -> RelativeDateUnit.YEARS to ChronoUnit.YEARS.between(date, today).toInt().coerceAtLeast(1)
+    }
 }

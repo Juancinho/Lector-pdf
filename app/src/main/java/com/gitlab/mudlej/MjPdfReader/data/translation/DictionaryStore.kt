@@ -49,7 +49,7 @@ object DictionaryStore {
         }.getOrNull()
     }
 
-    private fun normalize(word: String): String {
+    internal fun normalize(word: String): String {
         return word.lowercase(Locale.ROOT)
             .replace('’', '\'')
             .removeSuffix("'s")
@@ -57,12 +57,18 @@ object DictionaryStore {
     }
 
     private fun candidates(db: SQLiteDatabase, word: String): List<String> {
-        val list = mutableListOf(word)
+        val exceptions = mutableListOf<String>()
         db.rawQuery("SELECT lemma FROM exceptions WHERE inflected = ?", arrayOf(word)).use { cursor ->
             while (cursor.moveToNext()) {
-                list.add(cursor.getString(0))
+                exceptions.add(cursor.getString(0))
             }
         }
+        return candidates(word, exceptions)
+    }
+
+    internal fun candidates(word: String, exceptions: List<String> = emptyList()): List<String> {
+        val list = mutableListOf(word)
+        list.addAll(exceptions)
         suffixRules.forEach { (suffix, replacement) ->
             if (word.endsWith(suffix) && word.length > suffix.length + 1) {
                 list.add(word.dropLast(suffix.length) + replacement)

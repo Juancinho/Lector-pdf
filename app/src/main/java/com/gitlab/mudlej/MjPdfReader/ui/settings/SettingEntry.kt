@@ -18,12 +18,14 @@ internal class SettingEntry(
         return preferenceBuilder.invoke(factory, breadcrumb)
     }
 
-    fun matches(context: Context, query: String): Boolean {
+    fun matches(context: Context, query: String): Boolean = matches(context::getString, query)
+
+    fun matches(resolve: (Int) -> String, query: String): Boolean {
         val terms = query.lowercase().split(" ").filter { it.isNotBlank() }
         val searchableText = buildList {
-            add(context.getString(titleRes))
-            add(context.getString(page.titleRes))
-            summaryRes?.let { add(context.getString(it)) }
+            add(resolve(titleRes))
+            add(resolve(page.titleRes))
+            summaryRes?.let { add(resolve(it)) }
             addAll(keywords)
         }.joinToString(" ").lowercase()
 

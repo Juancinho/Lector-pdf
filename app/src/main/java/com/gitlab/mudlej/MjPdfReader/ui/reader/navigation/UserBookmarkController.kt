@@ -53,9 +53,11 @@ class UserBookmarkController(
         }
         val pageIndex = doc.pageNumber
         val rowPages = visibleRowPages(pageIndex)
-        val bookmarkedRowPages = rowPages.filter { vm.bookmarkedPages.contains(it) }
-        val adding = bookmarkedRowPages.isEmpty()
-        if (adding && isIncognito()) {
+        val toggle = userBookmarkToggle(rowPages, vm.bookmarkedPages, pageIndex,
+            isIncognito, historyPolicy::canRecord)
+        val bookmarkedRowPages = toggle.removals
+        val adding = toggle.addition != null
+        if (toggle.blocked == BookmarkToggleBlock.INCOGNITO) {
             val context = binding.root.context
             confirmDialog(
                 context,
@@ -66,12 +68,12 @@ class UserBookmarkController(
             )
             return
         }
-        if (adding && !historyPolicy.canRecord()) {
+        if (toggle.blocked == BookmarkToggleBlock.HISTORY_DISABLED) {
             AppSnackbar.make(binding.root, R.string.history_action_blocked, Snackbar.LENGTH_SHORT).show()
             return
         }
         if (adding) {
-            vm.bookmarkedPages.add(pageIndex)
+            vm.bookmarkedPages.add(checkNotNull(toggle.addition))
         } else {
             vm.bookmarkedPages.removeAll(bookmarkedRowPages.toSet())
         }
@@ -112,4 +114,26 @@ class UserBookmarkController(
             onBookmarkStateChanged()
         }
     }
+}
+
+internal enum class BookmarkToggleBlock { INCOGNITO, HISTORY_DISABLED }
+
+internal data class BookmarkToggle(
+    val addition: Int? = null,
+    val removals: List<Int> = emptyList(),
+    val blocked: BookmarkToggleBlock? = null,
+)
+
+internal fun userBookmarkToggle(
+    rowPages: IntRange,
+    bookmarkedPages: Set<Int>,
+    currentPage: Int,
+    isIncognito: () -> Boolean,
+    canRecord: () -> Boolean,
+): BookmarkToggle {
+    val removals = rowPages.filter { bookmarkedPages.contains(it) }
+    if (removals.isNotEmpty()) return BookmarkToggle(removals = removals)
+    if (isIncognito()) return BookmarkToggle(blocked = BookmarkToggleBlock.INCOGNITO)
+    if (!canRecord()) return BookmarkToggle(blocked = BookmarkToggleBlock.HISTORY_DISABLED)
+    return BookmarkToggle(addition = currentPage)
 }

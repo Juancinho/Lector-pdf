@@ -14,33 +14,20 @@ class TableOfContentsAdapter(
     val activity: TableOfContentsActivity
 ) : ListAdapter<TableOfContentsRow, TableOfContentsViewHolder>(TableOfContentsComparator()) {
 
-    private val expandedEntryPaths = mutableSetOf<String>()
-    private var roots: List<TableOfContentsEntry> = emptyList()
+    private val tree = TableOfContentsTree()
 
-    var query: String? = null
+    var query: String?
+        get() = tree.query
+        set(value) { tree.query = value }
     var currentEntryPath: String? = null
 
     fun submitEntries(newRoots: List<TableOfContentsEntry>, commitCallback: (() -> Unit)? = null) {
-        roots = newRoots
-        submitList(buildRows(), commitCallback)
+        tree.roots = newRoots
+        refresh(commitCallback)
     }
 
     fun refresh(commitCallback: (() -> Unit)? = null) {
-        submitList(buildRows(), commitCallback)
-    }
-
-    private fun buildRows(): List<TableOfContentsRow> {
-        val rows = mutableListOf<TableOfContentsRow>()
-        roots.filter(::matchesSelfOrDescendant).forEach { addRow(it, rows) }
-        return rows
-    }
-
-    private fun addRow(entry: TableOfContentsEntry, rows: MutableList<TableOfContentsRow>) {
-        val children = visibleChildren(entry)
-        val expandable = children.isNotEmpty()
-        val expanded = expandable && isExpanded(entry)
-        rows.add(TableOfContentsRow(entry, expandable, expanded))
-        if (expanded) children.forEach { addRow(it, rows) }
+        submitList(tree.buildRows(), commitCallback)
     }
 
     fun onToggleClicked(entry: TableOfContentsEntry) {
@@ -50,85 +37,24 @@ class TableOfContentsAdapter(
     }
 
     fun expandAll() {
-        addExpandablePaths(roots)
+        tree.expandAll()
         refresh()
     }
 
     fun collapseAll() {
-        expandedEntryPaths.clear()
+        tree.collapseAll()
         refresh()
     }
 
-    private fun addExpandablePaths(entries: List<TableOfContentsEntry>) {
-        entries.forEach { entry ->
-            if (entry.hasSubEntries()) {
-                expandedEntryPaths.add(entry.path)
-                addExpandablePaths(entry.subEntries)
-            }
-        }
-    }
-
-    fun expandAncestors(path: String) {
-        val parts = path.split('.')
-        for (length in 1 until parts.size) {
-            expandedEntryPaths.add(parts.take(length).joinToString("."))
-        }
-    }
-
-    fun setExpandedEntryPaths(paths: Collection<String>) {
-        expandedEntryPaths.clear()
-        expandedEntryPaths.addAll(paths)
-    }
-
-    fun getExpandedEntryPaths(): ArrayList<String> {
-        return ArrayList(expandedEntryPaths)
-    }
-
-    fun toggleExpanded(entry: TableOfContentsEntry): Boolean {
-        if (isFiltering()) return isExpanded(entry)
-
-        if (!expandedEntryPaths.add(entry.path)) {
-            expandedEntryPaths.remove(entry.path)
-        }
-        return isExpanded(entry)
-    }
-
-    fun isExpanded(entry: TableOfContentsEntry): Boolean {
-        return hasMatchingVisibleChild(entry) || expandedEntryPaths.contains(entry.path)
-    }
-
-    fun visibleChildren(entry: TableOfContentsEntry): List<TableOfContentsEntry> {
-        return if (query.isNullOrBlank()) {
-            entry.subEntries
-        } else {
-            entry.subEntries.filter(::matchesSelfOrDescendant)
-        }
-    }
-
-    fun matchesSelfOrDescendant(entry: TableOfContentsEntry): Boolean {
-        if (!isFiltering()) return true
-        return matchesSelf(entry) || entry.subEntries.any(::matchesSelfOrDescendant)
-    }
-
-    fun visibleEntryCount(entries: List<TableOfContentsEntry>): Int {
-        return entries.sumOf { entry -> 1 + visibleEntryCount(visibleChildren(entry)) }
-    }
-
-    fun isFiltering(): Boolean {
-        return !query.isNullOrBlank()
-    }
-
-    private fun hasMatchingVisibleChild(entry: TableOfContentsEntry): Boolean {
-        return isFiltering() && entry.subEntries.any(::matchesSelfOrDescendant)
-    }
-
-    private fun matchesSelf(entry: TableOfContentsEntry): Boolean {
-        val activeQuery = query?.trim() ?: return true
-        if (activeQuery.isBlank()) return true
-
-        return entry.title.orEmpty().contains(activeQuery, ignoreCase = true)
-                || (entry.pageIdx + 1).toString().contains(activeQuery)
-    }
+    fun expandAncestors(path: String) = tree.expandAncestors(path)
+    fun setExpandedEntryPaths(paths: Collection<String>) = tree.setExpandedEntryPaths(paths)
+    fun getExpandedEntryPaths(): ArrayList<String> = tree.getExpandedEntryPaths()
+    fun toggleExpanded(entry: TableOfContentsEntry): Boolean = tree.toggleExpanded(entry)
+    fun isExpanded(entry: TableOfContentsEntry): Boolean = tree.isExpanded(entry)
+    fun visibleChildren(entry: TableOfContentsEntry): List<TableOfContentsEntry> = tree.visibleChildren(entry)
+    fun matchesSelfOrDescendant(entry: TableOfContentsEntry): Boolean = tree.matchesSelfOrDescendant(entry)
+    fun visibleEntryCount(entries: List<TableOfContentsEntry>): Int = tree.visibleEntryCount(entries)
+    fun isFiltering(): Boolean = tree.isFiltering()
 
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): TableOfContentsViewHolder {
         return TableOfContentsViewHolder(

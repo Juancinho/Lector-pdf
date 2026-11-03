@@ -160,31 +160,8 @@ class BackupManager(
             ?: throw BackupException(R.string.backup_error_open_read)
         val json = input.use { stream -> readBounded(stream) }.toString(Charsets.UTF_8)
         val data = BackupCodec.decode(json)
-        if (data.schemaVersion < 1) {
-            throw BackupException(R.string.backup_error_not_valid)
-        }
-        if (data.schemaVersion > SCHEMA_VERSION) {
-            throw BackupException(R.string.backup_error_newer_version)
-        }
+        validateSchemaVersion(data.schemaVersion)
         return data
-    }
-
-    private fun readBounded(stream: InputStream): ByteArray {
-        val output = ByteArrayOutputStream()
-        val chunk = ByteArray(64 * 1024)
-        var total = 0L
-        while (true) {
-            val read = stream.read(chunk)
-            if (read < 0) {
-                break
-            }
-            total += read
-            if (total > MAX_BACKUP_BYTES) {
-                throw BackupException(R.string.backup_error_too_large)
-            }
-            output.write(chunk, 0, read)
-        }
-        return output.toByteArray()
     }
 
     fun prepareImport(data: BackupData): ImportPlan {
@@ -194,8 +171,8 @@ class BackupManager(
         val settings = data.settings?.let { validateSettings(it) }
         return ImportPlan(
             includesHistory = data.includesHistory,
-            records = toRecords(data.pdfRecords.orEmpty()),
-            bookmarks = toBookmarks(data.userBookmarks.orEmpty()),
+            records = BackupImportMapping.toRecords(data.pdfRecords.orEmpty()),
+            bookmarks = BackupImportMapping.toBookmarks(data.userBookmarks.orEmpty()),
             settingsPuts = settings?.first,
             skippedSettingsCount = settings?.second ?: 0,
         )
@@ -258,50 +235,6 @@ class BackupManager(
         }
     }
 
-    private fun toRecords(records: List<BackupPdfRecord>): List<PdfRecord> {
-        return records.mapNotNull { backup ->
-            val hash = backup.hash?.takeIf { it.isNotBlank() } ?: return@mapNotNull null
-            PdfRecord(
-                hash = hash,
-                pageNumber = backup.pageNumber,
-                uri = Uri.parse(backup.uri.orEmpty()),
-                length = backup.length,
-                fileName = backup.fileName.orEmpty(),
-                password = backup.password,
-                lastOpened = parseDate(backup.lastOpened) ?: LocalDateTime.MIN,
-                reading = parseReadingStatus(backup.reading),
-                favorite = backup.favorite,
-                cropMargins = backup.cropMargins,
-                cropMarginsVersion = backup.cropMarginsVersion,
-                autoScrollSpeed = backup.autoScrollSpeed,
-                readingDirectionOverride = backup.readingDirectionOverride,
-                detectedReadingDirection = backup.detectedReadingDirection,
-                documentTitle = backup.documentTitle,
-                textModeJoinParagraphs = backup.textModeJoinParagraphs,
-                textModeDetectHeadings = backup.textModeDetectHeadings,
-                textModeCodeBlocks = backup.textModeCodeBlocks,
-                hidden = backup.hidden,
-                sourceUri = backup.sourceUri,
-            )
-        }
-    }
-
-    private fun toBookmarks(bookmarks: List<BackupUserBookmark>): List<UserBookmark> {
-        return bookmarks.mapNotNull { backup ->
-            val hash = backup.fileHash?.takeIf { it.isNotBlank() } ?: return@mapNotNull null
-            if (backup.pageIndex < 0) {
-                return@mapNotNull null
-            }
-            UserBookmark(
-                fileHash = hash,
-                pageIndex = backup.pageIndex,
-                label = backup.label,
-                createdAt = parseDate(backup.createdAt) ?: LocalDateTime.now(),
-                sortOrder = backup.sortOrder.takeIf { it >= 0 } ?: backup.pageIndex,
-            )
-        }
-    }
-
     private fun PdfRecord.toBackup(includePasswords: Boolean): BackupPdfRecord {
         return BackupPdfRecord(
             hash = hash,
@@ -335,17 +268,6 @@ class BackupManager(
             createdAt = createdAt.toString(),
             sortOrder = sortOrder,
         )
-    }
-
-    private fun parseDate(value: String?): LocalDateTime? {
-        if (value.isNullOrBlank()) {
-            return null
-        }
-        return runCatching { LocalDateTime.parse(value) }.getOrNull()
-    }
-
-    private fun parseReadingStatus(value: String?, fallback: ReadingStatus = ReadingStatus.UNSET): ReadingStatus {
-        return ReadingStatus.entries.firstOrNull { it.name == value } ?: fallback
     }
 
     private fun appVersionCode(): Long {
@@ -387,6 +309,33 @@ class BackupManager(
             Preferences.autoBackupEnabledAtKey,
             Preferences.importResultPendingKey,
         )
+
+        internal fun validateSchemaVersion(schemaVersion: Int) {
+            if (schemaVersion < 1) {
+                throw BackupException(R.string.backup_error_not_valid)
+            }
+            if (schemaVersion > SCHEMA_VERSION) {
+                throw BackupException(R.string.backup_error_newer_version)
+            }
+        }
+
+        internal fun readBounded(stream: InputStream): ByteArray {
+            val output = ByteArrayOutputStream()
+            val chunk = ByteArray(64 * 1024)
+            var total = 0L
+            while (true) {
+                val read = stream.read(chunk)
+                if (read < 0) {
+                    break
+                }
+                total += read
+                if (total > MAX_BACKUP_BYTES) {
+                    throw BackupException(R.string.backup_error_too_large)
+                }
+                output.write(chunk, 0, read)
+            }
+            return output.toByteArray()
+        }
 
         internal fun validateSettings(
             settings: List<BackupSetting>,
@@ -431,5 +380,68 @@ class BackupManager(
             }
             return puts to skipped
         }
+    }
+}
+
+internal object BackupImportMapping {
+    fun toRecords(
+        records: List<BackupPdfRecord>,
+        parseUri: (String) -> Uri = Uri::parse,
+    ): List<PdfRecord> {
+        return records.mapNotNull { backup ->
+            val hash = backup.hash?.takeIf { it.isNotBlank() } ?: return@mapNotNull null
+            PdfRecord(
+                hash = hash,
+                pageNumber = backup.pageNumber,
+                uri = parseUri(backup.uri.orEmpty()),
+                length = backup.length,
+                fileName = backup.fileName.orEmpty(),
+                password = backup.password,
+                lastOpened = parseDate(backup.lastOpened) ?: LocalDateTime.MIN,
+                reading = parseReadingStatus(backup.reading),
+                favorite = backup.favorite,
+                cropMargins = backup.cropMargins,
+                cropMarginsVersion = backup.cropMarginsVersion,
+                autoScrollSpeed = backup.autoScrollSpeed,
+                readingDirectionOverride = backup.readingDirectionOverride,
+                detectedReadingDirection = backup.detectedReadingDirection,
+                documentTitle = backup.documentTitle,
+                textModeJoinParagraphs = backup.textModeJoinParagraphs,
+                textModeDetectHeadings = backup.textModeDetectHeadings,
+                textModeCodeBlocks = backup.textModeCodeBlocks,
+                hidden = backup.hidden,
+                sourceUri = backup.sourceUri,
+            )
+        }
+    }
+
+    fun toBookmarks(
+        bookmarks: List<BackupUserBookmark>,
+        now: () -> LocalDateTime = LocalDateTime::now,
+    ): List<UserBookmark> {
+        return bookmarks.mapNotNull { backup ->
+            val hash = backup.fileHash?.takeIf { it.isNotBlank() } ?: return@mapNotNull null
+            if (backup.pageIndex < 0) {
+                return@mapNotNull null
+            }
+            UserBookmark(
+                fileHash = hash,
+                pageIndex = backup.pageIndex,
+                label = backup.label,
+                createdAt = parseDate(backup.createdAt) ?: now(),
+                sortOrder = backup.sortOrder.takeIf { it >= 0 } ?: backup.pageIndex,
+            )
+        }
+    }
+
+    fun parseDate(value: String?): LocalDateTime? {
+        if (value.isNullOrBlank()) {
+            return null
+        }
+        return runCatching { LocalDateTime.parse(value) }.getOrNull()
+    }
+
+    fun parseReadingStatus(value: String?, fallback: ReadingStatus = ReadingStatus.UNSET): ReadingStatus {
+        return ReadingStatus.entries.firstOrNull { it.name == value } ?: fallback
     }
 }

@@ -686,6 +686,32 @@ final class TextSelectionManager {
         endHandleRtl = TextDirectionUtil.isRtl(pdfFile.charUnicode(page, clamp(selection.endChar() - 1, 0, charCount - 1)));
 
         float[] values = pdfFile.textRects(page, start, end - start);
+        groupLines(values, new LooseGlyphLookup() {
+            @Override
+            public int charIndexAtPoint(float x, float y, float tolerance) {
+                return pdfFile.charIndexAtPagePoint(page, x, y, tolerance);
+            }
+
+            @Override
+            public boolean looseCharBox(int glyph, float[] out) {
+                return pdfFile.looseCharBox(page, glyph, out);
+            }
+        }, boxScratch, pdfRunRects);
+    }
+
+    interface LooseGlyphLookup {
+        int charIndexAtPoint(float x, float y, float tolerance);
+        boolean looseCharBox(int glyph, float[] out);
+    }
+
+    static List<RectF> groupLines(float[] values, LooseGlyphLookup lookup, float[] boxScratch) {
+        List<RectF> output = new ArrayList<>();
+        groupLines(values, lookup, boxScratch, output);
+        return output;
+    }
+
+    private static void groupLines(float[] values, LooseGlyphLookup lookup, float[] boxScratch,
+                                   List<RectF> output) {
         List<RectF> runs = new ArrayList<>();
         for (int i = 0; i + 3 < values.length; i += 4) {
             float left = Math.min(values[i], values[i + 2]);
@@ -707,19 +733,20 @@ final class TextSelectionManager {
                 lineBottom = Math.min(lineBottom, runs.get(lineEnd).bottom);
                 lineEnd++;
             }
-            appendLineRects(pdfFile, page, runs.subList(index, lineEnd), lineTop, lineBottom);
+            appendLineRects(lookup, boxScratch, output, runs.subList(index, lineEnd), lineTop, lineBottom);
             index = lineEnd;
         }
     }
 
-    private boolean isSameLine(float lineTop, float lineBottom, RectF run) {
+    private static boolean isSameLine(float lineTop, float lineBottom, RectF run) {
         float overlap = Math.min(lineTop, run.top) - Math.max(lineBottom, run.bottom);
         float smaller = Math.min(lineTop - lineBottom, run.top - run.bottom);
         return smaller > 0f && overlap / smaller >= LINE_OVERLAP_THRESHOLD;
     }
 
-    private void appendLineRects(PdfFile pdfFile, int page, List<RectF> lineRuns,
-                                 float tightTop, float tightBottom) {
+    private static void appendLineRects(LooseGlyphLookup lookup, float[] boxScratch,
+                                        List<RectF> output, List<RectF> lineRuns,
+                                        float tightTop, float tightBottom) {
         float tightHeight = tightTop - tightBottom;
         if (tightHeight <= 0f || lineRuns.isEmpty()) {
             return;
@@ -729,9 +756,9 @@ final class TextSelectionManager {
         float bottom = tightBottom;
         boolean loosened = false;
         RectF firstRun = lineRuns.get(0);
-        int glyph = pdfFile.charIndexAtPagePoint(page, (firstRun.left + firstRun.right) * 0.5f,
+        int glyph = lookup.charIndexAtPoint((firstRun.left + firstRun.right) * 0.5f,
                 (tightTop + tightBottom) * 0.5f, tightHeight * 0.5f);
-        if (glyph >= 0 && pdfFile.looseCharBox(page, glyph, boxScratch)) {
+        if (glyph >= 0 && lookup.looseCharBox(glyph, boxScratch)) {
             float looseBottom = Math.min(boxScratch[1], boxScratch[3]);
             float looseTop = Math.max(boxScratch[1], boxScratch[3]);
             float looseHeight = looseTop - looseBottom;
@@ -761,12 +788,12 @@ final class TextSelectionManager {
                 current.right = Math.max(current.right, run.right);
             } else {
                 current = pdfRect(run.left, bottom, run.right, top);
-                pdfRunRects.add(current);
+                output.add(current);
             }
         }
     }
 
-    private RectF pdfRect(float left, float bottom, float right, float top) {
+    private static RectF pdfRect(float left, float bottom, float right, float top) {
         RectF rect = new RectF();
         rect.left = left;
         rect.top = top;
@@ -775,7 +802,7 @@ final class TextSelectionManager {
         return rect;
     }
 
-    private String normalizeCopiedText(String text) {
+    static String normalizeCopiedText(String text) {
         if (text == null || text.isEmpty()) {
             return "";
         }
@@ -789,7 +816,7 @@ final class TextSelectionManager {
                 .replace('\r', '\n');
     }
 
-    private boolean isWordChar(int codePoint) {
+    static boolean isWordChar(int codePoint) {
         return Character.isLetterOrDigit(codePoint)
                 || codePoint == '_'
                 || Character.getType(codePoint) == Character.NON_SPACING_MARK;
