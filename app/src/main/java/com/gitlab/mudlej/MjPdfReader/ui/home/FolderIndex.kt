@@ -21,6 +21,7 @@ data class Crumb(
 class FolderIndex(
     entries: List<ScannedPdfEntry>,
     private val primaryLabel: String,
+    private val primaryRoot: String = Environment.getExternalStorageDirectory().absolutePath,
 ) {
 
     private val filesByDir: Map<String, List<ScannedPdfEntry>> =
@@ -34,7 +35,7 @@ class FolderIndex(
     init {
         val rootsFound = sortedSetOf<String>()
         for (entry in entries) {
-            val root = rootOf(entry.path) ?: continue
+            val root = rootOf(entry.path, primaryRoot) ?: continue
             rootsFound.add(root)
 
             var dir = File(entry.path).parent ?: continue
@@ -80,7 +81,7 @@ class FolderIndex(
     }
 
     fun crumbsFor(dir: String): List<Crumb> {
-        val root = rootOf(dir + File.separator) ?: return emptyList()
+        val root = rootOf(dir + File.separator, primaryRoot) ?: return emptyList()
         val crumbs = mutableListOf(Crumb(rootLabel(root), if (roots.size > 1) root else null))
         if (dir == root) {
             return crumbs
@@ -95,7 +96,7 @@ class FolderIndex(
     }
 
     fun parentOf(dir: String): String? {
-        val root = rootOf(dir + File.separator) ?: return null
+        val root = rootOf(dir + File.separator, primaryRoot) ?: return null
         if (dir == root) {
             return null
         }
@@ -104,7 +105,7 @@ class FolderIndex(
     }
 
     private fun parentLabel(dir: String): String? {
-        val root = rootOf(dir + File.separator) ?: return null
+        val root = rootOf(dir + File.separator, primaryRoot) ?: return null
         val parent = File(dir).parent ?: return null
         if (parent == root) {
             return rootLabel(root)
@@ -116,10 +117,10 @@ class FolderIndex(
     companion object {
 
 
-        private val primaryRoot: String =
-            Environment.getExternalStorageDirectory().absolutePath
+        fun rootOf(path: String): String? =
+            rootOf(path, Environment.getExternalStorageDirectory().absolutePath)
 
-        fun rootOf(path: String): String? {
+        internal fun rootOf(path: String, primaryRoot: String): String? {
             if (path.startsWith("$primaryRoot${File.separator}")) {
                 return primaryRoot
             }

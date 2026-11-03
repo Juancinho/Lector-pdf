@@ -188,38 +188,26 @@ class LibraryAdapter(
             }
         }
 
-        private fun buildMetaParts(item: HomeItem): List<Pair<String, Boolean>> {
+        private fun buildMetaParts(item: HomeItem): List<Badge> {
             val context = binding.root.context
-            val parts = mutableListOf<Pair<String, Boolean>>()
-            if (pref.getHomeBadgePages() && item.length > 0) {
-                if (item.readingStarted) {
-                    parts.add("${item.pageNumber + 1}/${item.length}" to false)
-                } else {
-                    parts.add(
-                        context.resources.getQuantityString(
-                            R.plurals.home_pages, item.length, item.length
-                        ) to false
-                    )
-                }
-            }
-            if (metaStyle == ListMetaStyle.FOLDERS) {
-                if (pref.getHomeBadgeFileSize() && item.sizeBytes > 0) {
-                    parts.add(Formatter.formatShortFileSize(context, item.sizeBytes) to false)
-                }
-            } else {
-                if (pref.getHomeBadgeProgress() && item.progressPercent > 0) {
-                    parts.add("${item.progressPercent}%" to false)
-                }
-                if (pref.getHomeBadgeLastOpened() && item.hasBeenOpened) {
-                    parts.add(formatRelativeDate(context, item.lastOpened) to false)
-                }
-            }
-            if (pref.getHomeBadgeStatus() && metaStyle == ListMetaStyle.RECENT
-                && item.readingStatus != ReadingStatus.UNSET
-            ) {
-                parts.add(item.readingStatus.name.formatEnumToTitle() to true)
-            }
-            return parts
+            return metaBadges(
+                metaStyle,
+                BadgeToggles(
+                    pages = pref.getHomeBadgePages(),
+                    fileSize = metaStyle == ListMetaStyle.FOLDERS && pref.getHomeBadgeFileSize(),
+                    progress = metaStyle != ListMetaStyle.FOLDERS && pref.getHomeBadgeProgress(),
+                    lastOpened = metaStyle != ListMetaStyle.FOLDERS && pref.getHomeBadgeLastOpened(),
+                    status = pref.getHomeBadgeStatus(),
+                ),
+                item.pageNumber, item.length, item.readingStarted, item.progressPercent,
+                item.hasBeenOpened, item.sizeBytes, item.readingStatus,
+                BadgeFormatters(
+                    pages = { context.resources.getQuantityString(R.plurals.home_pages, it, it) },
+                    size = { Formatter.formatShortFileSize(context, it) },
+                    lastOpened = { formatRelativeDate(context, item.lastOpened) },
+                    status = { it.name.formatEnumToTitle() },
+                ),
+            )
         }
     }
 
@@ -242,4 +230,49 @@ class HomeItemComparator : DiffUtil.ItemCallback<HomeItem>() {
     override fun areContentsTheSame(oldItem: HomeItem, newItem: HomeItem): Boolean {
         return oldItem == newItem
     }
+}
+
+internal data class Badge(val text: String, val accent: Boolean = false)
+
+internal data class BadgeToggles(
+    val pages: Boolean,
+    val fileSize: Boolean,
+    val progress: Boolean,
+    val lastOpened: Boolean,
+    val status: Boolean,
+)
+
+internal data class BadgeFormatters(
+    val pages: (Int) -> String,
+    val size: (Long) -> String,
+    val lastOpened: () -> String,
+    val status: (ReadingStatus) -> String,
+)
+
+internal fun metaBadges(
+    style: ListMetaStyle,
+    toggles: BadgeToggles,
+    pageNumber: Int,
+    length: Int,
+    readingStarted: Boolean,
+    progressPercent: Int,
+    hasBeenOpened: Boolean,
+    sizeBytes: Long,
+    status: ReadingStatus,
+    formatters: BadgeFormatters,
+): List<Badge> {
+    val parts = mutableListOf<Badge>()
+    if (toggles.pages && length > 0) {
+        parts.add(Badge(if (readingStarted) "${pageNumber + 1}/$length" else formatters.pages(length)))
+    }
+    if (style == ListMetaStyle.FOLDERS) {
+        if (toggles.fileSize && sizeBytes > 0) parts.add(Badge(formatters.size(sizeBytes)))
+    } else {
+        if (toggles.progress && progressPercent > 0) parts.add(Badge("$progressPercent%"))
+        if (toggles.lastOpened && hasBeenOpened) parts.add(Badge(formatters.lastOpened()))
+    }
+    if (toggles.status && style == ListMetaStyle.RECENT && status != ReadingStatus.UNSET) {
+        parts.add(Badge(formatters.status(status), true))
+    }
+    return parts
 }

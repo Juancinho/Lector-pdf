@@ -26,16 +26,11 @@ class AutoScrollManager(
     private companion object {
         const val SPEED_UPDATE_DELAY = 100L
         const val PAGES_LOAD_INTERVAL_MS = 300L
-        const val MAX_FRAME_DELTA_SECONDS = 0.1
-        const val SPEED_FACTOR = 50
     }
 
     private val speedUpdateHandler = Handler(Looper.getMainLooper())
     private var speedUpdateRunnable: Runnable? = null
-    private var scrollBy = 0.0
-    private var interactionPointerCount = 0
-    private var pausedByInteraction = false
-    private var lastFrameTimeNanos = 0L
+    private val state = AutoScrollState(System::nanoTime)
     private var lastPagesLoadMs = 0L
     private var frameScheduled = false
 
@@ -54,7 +49,7 @@ class AutoScrollManager(
         binding.decScrollSpeedButton.setOnClickListener { decreaseSpeed() }
         binding.incScrollSpeedButton.setOnLongClickListener { startRepeatingSpeedChange(isIncreasing = true) }
         binding.decScrollSpeedButton.setOnLongClickListener { startRepeatingSpeedChange(isIncreasing = false) }
-        binding.reverseScrollDirectionButton.setOnClickListener { scrollBy = -scrollBy }
+        binding.reverseScrollDirectionButton.setOnClickListener { state.reverse() }
         binding.toggleAutoScrollButton.setOnClickListener { toggleAutoScroll() }
     }
 
@@ -65,8 +60,7 @@ class AutoScrollManager(
     fun stop() {
         binding.toggleAutoScrollButton.setIconResource(R.drawable.ic_play_arrow)
         cancelFrame()
-        interactionPointerCount = 0
-        pausedByInteraction = false
+        state.stop()
         val wasScrolling = vm.isAutoScrolling
         vm.isAutoScrolling = false
         if (wasScrolling) {
@@ -110,12 +104,12 @@ class AutoScrollManager(
     }
 
     private fun increaseSpeed() {
-        setScrollBy(changeScrollingSpeed(scrollBy, Preferences.AUTO_SCROLL_UNIT, isIncreasing = true))
+        setScrollBy(state.changedSpeed(isIncreasing = true))
     }
 
     private fun decreaseSpeed() {
-        if (scrollBy.absoluteValue > Preferences.AUTO_SCROLL_UNIT) {
-            setScrollBy(changeScrollingSpeed(scrollBy, Preferences.AUTO_SCROLL_UNIT, isIncreasing = false))
+        if (state.scrollBy.absoluteValue > Preferences.AUTO_SCROLL_UNIT) {
+            setScrollBy(state.changedSpeed(isIncreasing = false))
         }
     }
 
@@ -125,7 +119,7 @@ class AutoScrollManager(
                 return@Runnable
             }
 
-            setScrollBy(changeScrollingSpeed(scrollBy, Preferences.AUTO_SCROLL_UNIT, isIncreasing))
+            setScrollBy(state.changedSpeed(isIncreasing))
             speedUpdateRunnable?.let { speedUpdateHandler.postDelayed(it, SPEED_UPDATE_DELAY) }
         }
         speedUpdateRunnable?.let { speedUpdateHandler.postDelayed(it, SPEED_UPDATE_DELAY) }
@@ -146,7 +140,7 @@ class AutoScrollManager(
 
     private fun start() {
         cancelFrame()
-        lastFrameTimeNanos = 0L
+        state.resetFrame()
         lastPagesLoadMs = 0L
         scheduleFrame()
     }
@@ -162,24 +156,19 @@ class AutoScrollManager(
     private fun cancelFrame() {
         binding.pdfView.removeCallbacks(frameRunnable)
         frameScheduled = false
-        lastFrameTimeNanos = 0L
+        state.resetFrame()
     }
 
     private fun onFrame() {
-        if (!vm.isAutoScrolling || pausedByInteraction) {
+        if (!vm.isAutoScrolling || state.pausedByInteraction) {
             return
         }
-        if (!shouldContinueAutoScrolling(scrollBy)) {
+        if (!state.shouldContinue(binding.pdfView.positionOffset)) {
             stop()
             return
         }
 
-        val frameTimeNanos = System.nanoTime()
-        if (lastFrameTimeNanos != 0L) {
-            val deltaSeconds = ((frameTimeNanos - lastFrameTimeNanos) / 1_000_000_000.0)
-                .coerceAtMost(MAX_FRAME_DELTA_SECONDS)
-            val distance = (scrollBy * SPEED_FACTOR * deltaSeconds).toFloat()
-
+        state.frameDistance { distance ->
             if (resolveReadingLayout(preferences).swipeHorizontal) {
                 binding.pdfView.moveRelativeTo(distance, 0F)
             }
@@ -188,9 +177,8 @@ class AutoScrollManager(
             }
             loadPagesThrottled()
         }
-        lastFrameTimeNanos = frameTimeNanos
 
-        if (vm.isAutoScrolling && shouldContinueAutoScrolling(scrollBy)) {
+        if (vm.isAutoScrolling && state.shouldContinue(binding.pdfView.positionOffset)) {
             scheduleFrame()
         }
         else if (vm.isAutoScrolling) {
@@ -208,63 +196,97 @@ class AutoScrollManager(
     }
 
     private fun pauseForInteraction(motionEvent: MotionEvent) {
-        interactionPointerCount = motionEvent.pointerCount
-        if (!vm.isAutoScrolling) {
-            return
+        if (state.pointerDown(motionEvent.pointerCount, vm.isAutoScrolling)) {
+            cancelFrame()
         }
-
-        cancelFrame()
-        pausedByInteraction = true
     }
 
     private fun resumeAfterInteraction(motionEvent: MotionEvent) {
-        interactionPointerCount = when (motionEvent.actionMasked) {
+        val remaining = when (motionEvent.actionMasked) {
             MotionEvent.ACTION_POINTER_UP -> (motionEvent.pointerCount - 1).coerceAtLeast(0)
             else -> 0
         }
-        if (interactionPointerCount > 0 || !pausedByInteraction || !vm.isAutoScrolling) {
-            return
-        }
-
-        pausedByInteraction = false
-        start()
-    }
-
-    private fun shouldContinueAutoScrolling(scrollBy: Double): Boolean {
-        return if (scrollBy < 0) {
-            binding.pdfView.positionOffset < 1F
-        }
-        else {
-            binding.pdfView.positionOffset > 0F
+        if (state.pointerUp(remaining, vm.isAutoScrolling)) {
+            start()
         }
     }
 
     private fun setScrollBy(newScrollBy: Double, notify: Boolean = true) {
-        val direction = if (newScrollBy > 0) 1.0 else -1.0
-        scrollBy = direction * newScrollBy.absoluteValue.coerceAtLeast(Preferences.AUTO_SCROLL_UNIT)
-        val speed = simplifySpeed(scrollBy)
+        state.setScrollBy(newScrollBy)
+        val speed = state.speed
         binding.autoScrollSpeedText.text = speed.toString()
         if (notify) {
             vm.doc.autoScrollSpeed = speed
             onSpeedChanged(speed)
         }
     }
+}
 
-    private fun simplifySpeed(scrollBy: Double): Int {
-        return (scrollBy.absoluteValue * (1 / Preferences.AUTO_SCROLL_UNIT)).roundToInt().coerceAtLeast(1)
+internal class AutoScrollState(private val clock: () -> Long) {
+    var scrollBy = 0.0
+        private set
+    private var interactionPointerCount = 0
+    var pausedByInteraction = false
+        private set
+    private var lastFrameTimeNanos = 0L
+
+    val speed: Int
+        get() = (scrollBy.absoluteValue * (1 / Preferences.AUTO_SCROLL_UNIT)).roundToInt().coerceAtLeast(1)
+
+    fun setScrollBy(newScrollBy: Double) {
+        val direction = if (newScrollBy > 0) 1.0 else -1.0
+        scrollBy = direction * newScrollBy.absoluteValue.coerceAtLeast(Preferences.AUTO_SCROLL_UNIT)
     }
 
-    private fun changeScrollingSpeed(scrollBy: Double, interval: Double, isIncreasing: Boolean): Double {
-        val newSpeed = if (isIncreasing) {
+    fun reverse() {
+        scrollBy = -scrollBy
+    }
+
+    fun changedSpeed(isIncreasing: Boolean): Double {
+        val interval = Preferences.AUTO_SCROLL_UNIT
+        return if (isIncreasing) {
             (scrollBy.absoluteValue + interval) * scrollBy.sign
-        }
-        else if (scrollBy.absoluteValue > interval) {
+        } else if (scrollBy.absoluteValue > interval) {
             (scrollBy.absoluteValue - interval) * scrollBy.sign
-        }
-        else {
+        } else {
             scrollBy
         }
+    }
 
-        return newSpeed
+    fun shouldContinue(positionOffset: Float): Boolean =
+        if (scrollBy < 0) positionOffset < 1F else positionOffset > 0F
+
+    fun pointerDown(pointerCount: Int, scrolling: Boolean): Boolean {
+        interactionPointerCount = pointerCount
+        if (!scrolling) return false
+        pausedByInteraction = true
+        return true
+    }
+
+    fun pointerUp(remaining: Int, scrolling: Boolean): Boolean {
+        interactionPointerCount = remaining
+        if (interactionPointerCount > 0 || !pausedByInteraction || !scrolling) return false
+        pausedByInteraction = false
+        return true
+    }
+
+    fun stop() {
+        interactionPointerCount = 0
+        pausedByInteraction = false
+    }
+
+    fun resetFrame() {
+        lastFrameTimeNanos = 0L
+    }
+
+    fun frameDistance(onDistance: (Float) -> Unit = {}): Float? {
+        val now = clock()
+        val distance = if (lastFrameTimeNanos != 0L) {
+            val seconds = ((now - lastFrameTimeNanos) / 1_000_000_000.0).coerceAtMost(0.1)
+            (scrollBy * 50 * seconds).toFloat()
+        } else null
+        if (distance != null) onDistance(distance)
+        lastFrameTimeNanos = now
+        return distance
     }
 }

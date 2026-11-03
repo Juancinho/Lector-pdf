@@ -11,13 +11,13 @@ object BackupNotices {
             preferences.getAutoBackupLastRun() > preferences.getAutoBackupErrorAcknowledgedRun()
     }
 
-    fun shouldShowStaleNotice(preferences: Preferences): Boolean {
+    fun shouldShowStaleNotice(preferences: Preferences, now: () -> Long = System::currentTimeMillis): Boolean {
         if (!preferences.getAutoBackupEnabled()) {
             return false
         }
         val enabledAt = preferences.ensureAutoBackupEnabledAt()
         val freshest = maxOf(preferences.getAutoBackupLastRun(), enabledAt)
-        return freshest < System.currentTimeMillis() - staleAfterMillis
+        return freshest < now() - staleAfterMillis
     }
 
     fun acknowledge(preferences: Preferences) {

@@ -19,11 +19,13 @@ object TranslationLanguages {
         return name.replaceFirstChar { if (it.isLowerCase()) it.titlecase(Locale.getDefault()) else it.toString() }
     }
 
-    fun deviceLanguage(): String {
-        val language = Locale.getDefault().language
+    fun deviceLanguage(): String = normalizeDeviceLanguage(Locale.getDefault().language)
+
+    private fun normalizeDeviceLanguage(language: String): String {
         val normalized = legacyCodes[language] ?: language
         return if (normalized in codes) normalized else "en"
     }
 
-    fun resolve(storedValue: String): String = storedValue.ifBlank { deviceLanguage() }
+    fun resolve(storedValue: String, deviceLanguage: String = Locale.getDefault().language): String =
+        storedValue.ifBlank { normalizeDeviceLanguage(deviceLanguage) }
 }

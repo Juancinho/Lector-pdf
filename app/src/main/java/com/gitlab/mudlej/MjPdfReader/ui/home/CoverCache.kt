@@ -170,7 +170,7 @@ class CoverCache private constructor(private val context: Context) {
                 if (pageWidth <= 0 || pageHeight <= 0) {
                     return null
                 }
-                val height = (bucket.toFloat() * pageHeight / pageWidth).toInt().coerceAtLeast(1)
+                val height = coverHeight(bucket, pageWidth, pageHeight)
                 val bitmap = Bitmap.createBitmap(bucket, height, Bitmap.Config.RGB_565)
                 pdfium.renderPageBitmap(document, bitmap, 0, 0, 0, bucket, height)
                 bitmap
@@ -183,22 +183,11 @@ class CoverCache private constructor(private val context: Context) {
     }
 
     private fun trimDisk() {
-        val files = coverDir.listFiles()?.sortedBy { it.lastModified() } ?: return
-        var total = files.sumOf { it.length() }
-        for (file in files) {
-            if (total <= MAX_DISK_BYTES) {
-                break
-            }
-            total -= file.length()
-            file.delete()
-        }
+        val files = coverDir.listFiles()?.toList() ?: return
+        trimPlan(files.map { it.length() to it.lastModified() }).forEach { files[it].delete() }
     }
 
     private fun coverFile(hash: String, bucket: Int) = File(coverDir, "${key(hash, bucket)}.jpg")
-
-    private fun key(hash: String, bucket: Int) = "$hash-w$bucket"
-
-    private fun bucketFor(widthPx: Int) = BUCKETS.firstOrNull { it >= widthPx } ?: BUCKETS.last()
 
     companion object {
         @Volatile
@@ -209,6 +198,24 @@ class CoverCache private constructor(private val context: Context) {
         private const val MAX_DISK_BYTES = 64L * 1024 * 1024
         private const val CROSS_FADE_MILLIS = 150L
         private val BUCKETS = listOf(160, 320, 640)
+
+        internal fun key(hash: String, bucket: Int) = "$hash-w$bucket"
+
+        internal fun bucketFor(widthPx: Int) = BUCKETS.firstOrNull { it >= widthPx } ?: BUCKETS.last()
+
+        internal fun coverHeight(bucket: Int, pageWidth: Int, pageHeight: Int) =
+            (bucket.toFloat() * pageHeight / pageWidth).toInt().coerceAtLeast(1)
+
+        internal fun trimPlan(files: List<Pair<Long, Long>>): List<Int> {
+            var total = files.sumOf { it.first }
+            val deleted = mutableListOf<Int>()
+            for (index in files.indices.sortedBy { files[it].second }) {
+                if (total <= MAX_DISK_BYTES) break
+                total -= files[index].first
+                deleted.add(index)
+            }
+            return deleted
+        }
 
         fun debugCacheStatsIfInitialized(): LruCacheStats? {
             if (!BuildConfig.DEBUG) {

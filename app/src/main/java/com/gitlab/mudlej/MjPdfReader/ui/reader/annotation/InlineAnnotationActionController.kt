@@ -460,17 +460,6 @@ class InlineAnnotationActionController(
         return launchTranslator(text, settings)
     }
 
-    private fun dictionaryCandidate(text: String): String? {
-        val word = text.trim { !it.isLetterOrDigit() }
-        if (word.isBlank() || word.length > 48) {
-            return null
-        }
-        if (word.any { it.isWhitespace() } || word.none { it.isLetter() }) {
-            return null
-        }
-        return word
-    }
-
     private fun launchTranslator(text: String, settings: TranslationSettings): Boolean {
         if (settings.mode == Preferences.translationModeApps) {
             return launchProcessTextTranslator(text)
@@ -547,4 +536,15 @@ class InlineAnnotationActionController(
             updateSaveUiPosition()
         }
     }
+}
+
+internal fun dictionaryCandidate(text: String): String? {
+    val word = text.trim { !it.isLetterOrDigit() }
+    if (word.isBlank() || word.length > 48) {
+        return null
+    }
+    if (word.any { it.isWhitespace() } || word.none { it.isLetter() }) {
+        return null
+    }
+    return word
 }

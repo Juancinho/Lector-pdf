@@ -3,12 +3,81 @@
 package com.gitlab.mudlej.MjPdfReader.ui.home
 
 import com.gitlab.mudlej.MjPdfReader.R
+import com.gitlab.mudlej.MjPdfReader.data.AppDatabase_Impl
+import com.gitlab.mudlej.MjPdfReader.data.HistoryPolicy
+import com.gitlab.mudlej.MjPdfReader.data.PdfRepository
+import com.gitlab.mudlej.MjPdfReader.data.Preferences
+import com.gitlab.mudlej.MjPdfReader.support.InMemorySharedPreferences
 import com.gitlab.mudlej.MjPdfReader.ui.home.scan.LibraryIndex
 import com.gitlab.mudlej.MjPdfReader.ui.home.scan.ScanPhase
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertFalse
+import org.junit.Assert.assertTrue
 import org.junit.Test
 
 class LibraryPresentationTest {
+    @Test fun storedRecentAndFavoriteFiltersBecomeAllWhileOtherFiltersPassThrough() {
+        for (filter in ListFilter.entries) {
+            val preferences = Preferences(InMemorySharedPreferences(mapOf(Preferences.listFilterKey to filter.name)))
+            val expected = when (filter) {
+                ListFilter.RECENT, ListFilter.FAVORITE -> ListFilter.ALL
+                else -> filter
+            }
+
+            assertEquals(filter.name, expected, presentation(preferences).currentFilter())
+        }
+    }
+
+    @Test fun endingViewportInteractionReleasesTheBlockedRender() {
+        val presentation = presentation()
+
+        assertFalse(presentation.onViewportInteractionChanged(true))
+        assertTrue(presentation.onViewportInteractionChanged(false))
+        assertFalse(presentation.onViewportInteractionChanged(false))
+    }
+
+    @Test fun selectionKeepsRenderingBlockedUntilTheLastBlockerClears() {
+        val presentation = presentation()
+
+        assertFalse(presentation.onSelectionChanged(true))
+        assertFalse(presentation.onViewportInteractionChanged(true))
+        assertFalse(presentation.onViewportInteractionChanged(false))
+        assertTrue(presentation.onSelectionChanged(false))
+        assertFalse(presentation.onSelectionChanged(false))
+    }
+
+    @Test fun clearingInactiveBlockersDoesNotReleaseARender() {
+        val presentation = presentation()
+
+        assertFalse(presentation.onViewportInteractionChanged(false))
+        assertFalse(presentation.onSelectionChanged(false))
+    }
+
+    @Test fun commitReportsOnlyChangesFromTheLastCommittedPlan() {
+        val presentation = presentation()
+        val plan = LibraryPresentation.Plan(
+            filter = ListFilter.ALL,
+            items = emptyList(),
+            sections = listOf(HomeSection.Chips),
+            canonical = true,
+            generation = 3L,
+            revision = 5L,
+        )
+
+        assertTrue(presentation.commit(plan))
+        assertFalse(presentation.commit(plan.copy()))
+        assertTrue(presentation.commit(plan.copy(revision = 6L)))
+        assertFalse(presentation.commit(plan.copy(revision = 6L)))
+        assertTrue(presentation.commit(plan))
+    }
+
+    private fun presentation(preferences: Preferences = Preferences(InMemorySharedPreferences())) = LibraryPresentation(
+        preferences,
+        HomeLibraryController(PdfRepository(AppDatabase_Impl()), preferences, HistoryPolicy(preferences)),
+        hasFullAccess = { true },
+        showScanSetup = { false },
+    )
+
     private val emptyAll = HomeSection.EmptyState(
         R.string.home_empty_all_title, R.string.home_empty_all_message,
     )

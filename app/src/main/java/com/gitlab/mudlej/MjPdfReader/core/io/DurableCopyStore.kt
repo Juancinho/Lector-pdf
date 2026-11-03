@@ -122,7 +122,7 @@ object DurableCopyStore {
         }
     }
 
-    private fun resolveTarget(directory: File, fileName: String, expectedHash: String?): File? {
+    internal fun resolveTarget(directory: File, fileName: String, expectedHash: String?): File? {
         val baseName = fileName.dropLast(PDF_SUFFIX.length)
         var candidate = File(directory, fileName)
         var index = 2

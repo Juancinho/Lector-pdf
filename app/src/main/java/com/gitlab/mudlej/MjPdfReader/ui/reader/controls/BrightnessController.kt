@@ -52,26 +52,6 @@ class BrightnessController(
         return max.coerceAtLeast(1)
     }
 
-    private fun linearToPercent(linear: Float): Int {
-        val normalized = linear.coerceIn(0f, 1f) * 12f
-        val gamma = if (normalized <= 1f) {
-            sqrt(normalized) * GAMMA_R
-        } else {
-            GAMMA_A * ln(normalized - GAMMA_B) + GAMMA_C
-        }
-        return (gamma * 100).roundToInt().coerceIn(0, 100)
-    }
-
-    private fun percentToLinear(percent: Int): Float {
-        val gamma = percent.coerceIn(0, 100) / 100f
-        val normalized = if (gamma <= GAMMA_R) {
-            (gamma / GAMMA_R).pow(2)
-        } else {
-            exp((gamma - GAMMA_C) / GAMMA_A) + GAMMA_B
-        }
-        return normalized.coerceIn(0f, 12f) / 12f
-    }
-
     private fun syncSliderWithCurrentBrightness() {
         val override = activity.window.attributes.screenBrightness
         val linear = if (override >= 0f) {
@@ -107,10 +87,30 @@ class BrightnessController(
         activity.window.attributes = activity.window.attributes // apply it
     }
 
-    private companion object {
-        const val GAMMA_R = 0.5f
-        const val GAMMA_A = 0.17883277f
-        const val GAMMA_B = 0.28466892f
-        const val GAMMA_C = 0.55991073f
+    companion object {
+        internal fun linearToPercent(linear: Float): Int {
+            val normalized = linear.coerceIn(0f, 1f) * 12f
+            val gamma = if (normalized <= 1f) {
+                sqrt(normalized) * GAMMA_R
+            } else {
+                GAMMA_A * ln(normalized - GAMMA_B) + GAMMA_C
+            }
+            return (gamma * 100).roundToInt().coerceIn(0, 100)
+        }
+
+        internal fun percentToLinear(percent: Int): Float {
+            val gamma = percent.coerceIn(0, 100) / 100f
+            val normalized = if (gamma <= GAMMA_R) {
+                (gamma / GAMMA_R).pow(2)
+            } else {
+                exp((gamma - GAMMA_C) / GAMMA_A) + GAMMA_B
+            }
+            return normalized.coerceIn(0f, 12f) / 12f
+        }
+
+        private const val GAMMA_R = 0.5f
+        private const val GAMMA_A = 0.17883277f
+        private const val GAMMA_B = 0.28466892f
+        private const val GAMMA_C = 0.55991073f
     }
 }

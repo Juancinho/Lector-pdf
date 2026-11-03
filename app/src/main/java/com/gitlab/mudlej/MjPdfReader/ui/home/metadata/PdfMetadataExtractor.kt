@@ -57,17 +57,19 @@ internal class PdfMetadataExtractor(private val pdfium: PdfiumCore) {
         }
     }
 
-    private fun pageFailure(error: Throwable): ScannedPdfMetadataFailure = when (error) {
-        is PdfPasswordException -> ScannedPdfMetadataFailure.PASSWORD_REQUIRED
-        is FileNotFoundException -> ScannedPdfMetadataFailure.SOURCE_MISSING
-        is SecurityException -> ScannedPdfMetadataFailure.ACCESS_DENIED
-        is IOException, is IllegalArgumentException -> ScannedPdfMetadataFailure.INVALID_PDF
-        else -> ScannedPdfMetadataFailure.INTERNAL_ERROR
-    }
+    companion object {
+        internal fun pageFailure(error: Throwable): ScannedPdfMetadataFailure = when (error) {
+            is PdfPasswordException -> ScannedPdfMetadataFailure.PASSWORD_REQUIRED
+            is FileNotFoundException -> ScannedPdfMetadataFailure.SOURCE_MISSING
+            is SecurityException -> ScannedPdfMetadataFailure.ACCESS_DENIED
+            is IOException, is IllegalArgumentException -> ScannedPdfMetadataFailure.INVALID_PDF
+            else -> ScannedPdfMetadataFailure.INTERNAL_ERROR
+        }
 
-    private fun matches(file: File, fingerprint: SourceFingerprint): Boolean =
-        file.length() == fingerprint.size &&
-            file.lastModified() / 1_000L * 1_000L == fingerprint.lastModified
+        internal fun matches(file: File, fingerprint: SourceFingerprint): Boolean =
+            file.length() == fingerprint.size &&
+                file.lastModified() / 1_000L * 1_000L == fingerprint.lastModified
+    }
 
     private fun sourceChanged() = Result(null, 0, MetadataProtocol.FAILURE_SOURCE_CHANGED)
 

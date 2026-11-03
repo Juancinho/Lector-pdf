@@ -9,6 +9,33 @@ import org.junit.Test
 class CropDetectionStatusStateTest {
 
     @Test
+    fun progressBeyondTotalIsClampedToTotal() {
+        val state = CropDetectionStatusState()
+        state.process(CropDetectionStatusEvent.Started(runId = 1))
+
+        assertEquals(
+            CropDetectionStatusView.Progress(done = 4, total = 4),
+            state.process(CropDetectionStatusEvent.Progress(runId = 1, done = 5, total = 4)),
+        )
+        assertEquals(CropDetectionStatusView.Progress(done = 4, total = 4), state.view)
+    }
+
+    @Test
+    fun nonPositiveTotalsAreIgnoredWithoutChangingVisibleProgress() {
+        val state = CropDetectionStatusState()
+        state.process(CropDetectionStatusEvent.Started(runId = 1))
+        state.process(CropDetectionStatusEvent.Progress(runId = 1, done = 2, total = 4))
+
+        for (total in listOf(0, -1, Int.MIN_VALUE)) {
+            assertNull(
+                "total=$total",
+                state.process(CropDetectionStatusEvent.Progress(runId = 1, done = 3, total = total)),
+            )
+            assertEquals("total=$total", CropDetectionStatusView.Progress(done = 2, total = 4), state.view)
+        }
+    }
+
+    @Test
     fun finishedBeforeQueuedFinalProgressKeepsCardHidden() {
         val state = CropDetectionStatusState()
         state.process(CropDetectionStatusEvent.Started(runId = 1))

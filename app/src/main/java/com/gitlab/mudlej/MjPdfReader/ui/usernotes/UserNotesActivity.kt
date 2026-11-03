@@ -16,7 +16,6 @@ import androidx.recyclerview.widget.LinearLayoutManager
 import com.gitlab.mudlej.MjPdfReader.R
 import com.gitlab.mudlej.MjPdfReader.core.debug.DebugRootDescription
 import com.gitlab.mudlej.MjPdfReader.core.io.appDateTimeFormatter
-import com.gitlab.mudlej.MjPdfReader.core.io.appendExportSection
 import com.gitlab.mudlej.MjPdfReader.core.io.convertDateString
 import com.gitlab.mudlej.MjPdfReader.core.ui.AppSnackbar
 import com.gitlab.mudlej.MjPdfReader.core.ui.attachFilterSearchView
@@ -145,18 +144,9 @@ class UserNotesActivity : AppCompatActivity() {
     }
 
     private fun refreshDisplayedNotes(): Int {
-        var displayed = if (query.isBlank()) {
-            notes
-        } else {
-            notes.filter {
-                it.note.contains(query, true) || it.quotedText.contains(query, true)
-            }
-        }
+        var displayed = filterAnnotations(notes, query, null)
         if (sortByDate) {
-            displayed = displayed.sortedWith(
-                compareBy<SweptHighlight> { it.creationDate == null }
-                    .thenByDescending { it.creationDate ?: "" }
-            )
+            displayed = displayed.sortedWith(annotationComparator)
         }
         noteAdapter.submitList(displayed)
         return displayed.size
@@ -231,36 +221,22 @@ class UserNotesActivity : AppCompatActivity() {
     }
 
     private fun buildExportText(): String {
-        val builder = StringBuilder()
-        builder.appendLine(documentTitle())
-        documentMeta?.author?.takeIf { it.isNotBlank() }?.let {
-            builder.appendLine(getString(R.string.export_by_author, it))
-        }
-        builder.appendLine(
-            getString(R.string.export_notes_line, notes.size, LocalDateTime.now().format(appDateTimeFormatter))
+        return buildAnnotationExport(
+            documentTitle(),
+            documentMeta?.author,
+            notes,
+            noteAdapter.tableOfContentsPathResolver::resolve,
+            AnnotationExportLabels(
+                author = { getString(R.string.export_by_author, it) },
+                summary = { getString(R.string.export_notes_line, it, LocalDateTime.now().format(appDateTimeFormatter)) },
+                page = { getString(R.string.bookmark_page_label, it) },
+                date = ::convertDateString,
+                quote = getString(R.string.export_quote_label),
+                note = getString(R.string.note),
+            ),
+            sortByDate = sortByDate,
+            includeBlankNotes = true,
         )
-
-        val exported = if (sortByDate) {
-            notes.sortedWith(
-                compareBy<SweptHighlight> { it.creationDate == null }
-                    .thenByDescending { it.creationDate ?: "" }
-            )
-        } else {
-            notes
-        }
-        for (item in exported) {
-            builder.appendLine()
-            builder.appendLine(EXPORT_SEPARATOR)
-            val infoParts = mutableListOf(getString(R.string.bookmark_page_label, item.pageIndex + 1))
-            noteAdapter.tableOfContentsPathResolver.resolve(item.pageIndex)?.let(infoParts::add)
-            convertDateString(item.creationDate)?.let(infoParts::add)
-            builder.appendLine(infoParts.joinToString(" | "))
-            if (item.quotedText.isNotBlank()) {
-                builder.appendExportSection(getString(R.string.export_quote_label), item.quotedText.trim())
-            }
-            builder.appendExportSection(getString(R.string.note), item.note)
-        }
-        return builder.toString()
     }
 
     private fun exportNotes(destinationUri: Uri) {
@@ -282,6 +258,5 @@ class UserNotesActivity : AppCompatActivity() {
 
     companion object {
         private const val SCAN_BATCH_PAGES = 50
-        private const val EXPORT_SEPARATOR = "----------------------------------------"
     }
 }

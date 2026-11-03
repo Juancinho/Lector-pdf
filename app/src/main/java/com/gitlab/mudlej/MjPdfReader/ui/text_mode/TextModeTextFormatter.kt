@@ -19,7 +19,7 @@ object TextModeTextFormatter {
     private val LIST_STARTS = listOf(
         Regex("^[•◦▪●·⁃–—*-]\\s+"),
         Regex("^\\(?[0-9٠-٩۰-۹]{1,3}[.)]\\s+"),
-        Regex("^\\(?\\d{1,3}\\)\\s*"),
+        Regex("^\\(?\\p{Nd}{1,3}\\)\\s*"),
         Regex("^\\(?[a-zA-Z][.)]\\s+"),
         Regex("^\\(?[ivxlcIVXLC]{1,5}[.)]\\s+"),
     )

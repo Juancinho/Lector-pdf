@@ -50,7 +50,7 @@ class TableOfContentsPathResolver private constructor(
             }
         }
 
-        private fun fromBookmarks(entries: List<TableOfContentsEntry>): TableOfContentsPathResolver {
+        internal fun fromBookmarks(entries: List<TableOfContentsEntry>): TableOfContentsPathResolver {
             val paths = mutableListOf<Pair<Int, List<String>>>()
             entries.forEach { entry -> addBookmark(paths, entry, emptyList()) }
             return TableOfContentsPathResolver(

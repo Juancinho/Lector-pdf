@@ -17,7 +17,6 @@ import androidx.recyclerview.widget.LinearLayoutManager
 import com.gitlab.mudlej.MjPdfReader.R
 import com.gitlab.mudlej.MjPdfReader.core.debug.DebugRootDescription
 import com.gitlab.mudlej.MjPdfReader.core.io.appDateTimeFormatter
-import com.gitlab.mudlej.MjPdfReader.core.io.appendExportSection
 import com.gitlab.mudlej.MjPdfReader.core.io.convertDateString
 import com.gitlab.mudlej.MjPdfReader.core.ui.AppSnackbar
 import com.gitlab.mudlej.MjPdfReader.core.ui.attachFilterSearchView
@@ -32,9 +31,13 @@ import com.gitlab.mudlej.MjPdfReader.pdf.PDF
 import com.gitlab.mudlej.MjPdfReader.pdf.PdfExtractor
 import com.gitlab.mudlej.MjPdfReader.pdf.SweptHighlight
 import com.gitlab.mudlej.MjPdfReader.pdf.sweepPageHighlights
-import com.gitlab.mudlej.MjPdfReader.ui.reader.annotation.HighlightPalette
 import com.gitlab.mudlej.MjPdfReader.ui.tableofcontents.TableOfContentsPathResolver
 import com.gitlab.mudlej.MjPdfReader.ui.usernotes.UserNoteAdapter
+import com.gitlab.mudlej.MjPdfReader.ui.usernotes.annotationComparator
+import com.gitlab.mudlej.MjPdfReader.ui.usernotes.filterAnnotations
+import com.gitlab.mudlej.MjPdfReader.ui.usernotes.buildAnnotationExport
+import com.gitlab.mudlej.MjPdfReader.ui.usernotes.AnnotationExportLabels
+import com.gitlab.mudlej.MjPdfReader.ui.usernotes.annotationColorLabel
 import com.google.android.material.chip.Chip
 import com.google.android.material.snackbar.Snackbar
 import com.shockwave.pdfium.PdfDocument
@@ -43,7 +46,6 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import kotlinx.coroutines.yield
 import java.time.LocalDateTime
-import java.util.Locale
 
 class UserHighlightsActivity : AppCompatActivity() {
 
@@ -195,29 +197,13 @@ class UserHighlightsActivity : AppCompatActivity() {
     }
 
     private fun colorLabel(color: Int): String {
-        val palette = HighlightPalette.fromColor(color)
-        return if (palette != null) {
-            getString(palette.nameRes)
-        } else {
-            String.format(Locale.US, "#%06X", color and 0xFFFFFF)
-        }
+        return annotationColorLabel(color) { getString(it.nameRes) }
     }
 
     private fun refreshDisplayedHighlights(): Int {
-        var displayed = highlights
-        selectedColor?.let { color ->
-            displayed = displayed.filter { it.color == color }
-        }
-        if (query.isNotBlank()) {
-            displayed = displayed.filter {
-                it.quotedText.contains(query, true) || it.note.contains(query, true)
-            }
-        }
+        var displayed = filterAnnotations(highlights, query, selectedColor)
         if (sortByDate) {
-            displayed = displayed.sortedWith(
-                compareBy<SweptHighlight> { it.creationDate == null }
-                    .thenByDescending { it.creationDate ?: "" }
-            )
+            displayed = displayed.sortedWith(annotationComparator)
         }
         highlightAdapter.submitList(displayed)
         return displayed.size
@@ -292,43 +278,23 @@ class UserHighlightsActivity : AppCompatActivity() {
     }
 
     private fun buildExportText(): String {
-        val builder = StringBuilder()
-        builder.appendLine(documentTitle())
-        documentMeta?.author?.takeIf { it.isNotBlank() }?.let {
-            builder.appendLine(getString(R.string.export_by_author, it))
-        }
-        builder.appendLine(
-            getString(
-                R.string.export_highlights_line,
-                highlights.size,
-                LocalDateTime.now().format(appDateTimeFormatter),
-            )
+        return buildAnnotationExport(
+            documentTitle(),
+            documentMeta?.author,
+            highlights,
+            highlightAdapter.tableOfContentsPathResolver::resolve,
+            AnnotationExportLabels(
+                author = { getString(R.string.export_by_author, it) },
+                summary = { getString(R.string.export_highlights_line, it, LocalDateTime.now().format(appDateTimeFormatter)) },
+                page = { getString(R.string.bookmark_page_label, it) },
+                date = ::convertDateString,
+                quote = getString(R.string.export_quote_label),
+                note = getString(R.string.note),
+                color = ::colorLabel,
+            ),
+            sortByDate = sortByDate,
+            includeBlankNotes = false,
         )
-
-        val exported = if (sortByDate) {
-            highlights.sortedWith(
-                compareBy<SweptHighlight> { it.creationDate == null }
-                    .thenByDescending { it.creationDate ?: "" }
-            )
-        } else {
-            highlights
-        }
-        for (item in exported) {
-            builder.appendLine()
-            builder.appendLine(EXPORT_SEPARATOR)
-            val infoParts = mutableListOf(getString(R.string.bookmark_page_label, item.pageIndex + 1))
-            highlightAdapter.tableOfContentsPathResolver.resolve(item.pageIndex)?.let(infoParts::add)
-            convertDateString(item.creationDate)?.let(infoParts::add)
-            infoParts.add(colorLabel(item.color))
-            builder.appendLine(infoParts.joinToString(" | "))
-            if (item.quotedText.isNotBlank()) {
-                builder.appendExportSection(getString(R.string.export_quote_label), item.quotedText.trim())
-            }
-            if (item.note.isNotBlank()) {
-                builder.appendExportSection(getString(R.string.note), item.note)
-            }
-        }
-        return builder.toString()
     }
 
     private fun exportHighlights(destinationUri: Uri) {
@@ -350,6 +316,5 @@ class UserHighlightsActivity : AppCompatActivity() {
 
     companion object {
         private const val SCAN_BATCH_PAGES = 50
-        private const val EXPORT_SEPARATOR = "----------------------------------------"
     }
 }

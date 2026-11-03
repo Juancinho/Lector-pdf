@@ -13,7 +13,6 @@ import com.shockwave.pdfium.util.SizeF;
 
 final class StampPlacementManager {
 
-    private static final float MIN_WIDTH_PAGE_FRACTION = 0.05f;
     private static final int ACCENT_COLOR = 0xFF3F51B5;
     private static final float HANDLE_RADIUS_DP = 6f;
     private static final float HANDLE_TOUCH_RADIUS_DP = 22f;
@@ -26,9 +25,8 @@ final class StampPlacementManager {
     private static final float BORDER_GAP_LENGTH_DP = 4f;
     private static final int STROKE_HEADER_FLOATS = 2;
     private static final int FLOATS_PER_SEGMENT = 6;
-    private static final int COLOR_CHANNEL_MAX = 255;
 
-    private enum DragMode { NONE, MOVE, RESIZE_TL, RESIZE_BL, RESIZE_BR }
+    enum DragMode { NONE, MOVE, RESIZE_TL, RESIZE_BL, RESIZE_BR }
 
     private final PDFView pdfView;
     private final Paint strokePaint = new Paint(Paint.ANTI_ALIAS_FLAG);
@@ -46,6 +44,7 @@ final class StampPlacementManager {
     private boolean active;
     private int pageIndex = -1;
     private final RectF frameRect = new RectF();
+    private final StampFrame frame = new StampFrame();
     private float[][] strokes;
     private int color = Color.BLACK;
     private float normalizedStrokeWidth;
@@ -93,7 +92,11 @@ final class StampPlacementManager {
             return;
         }
         this.pageIndex = pageIndex;
-        this.frameRect.set(frame);
+        this.frame.left = frame.left;
+        this.frame.top = frame.top;
+        this.frame.right = frame.right;
+        this.frame.bottom = frame.bottom;
+        copyFrameRect();
         this.strokes = strokes;
         this.color = color;
         this.normalizedStrokeWidth = normalizedStrokeWidth;
@@ -180,7 +183,7 @@ final class StampPlacementManager {
         matrix.postTranslate(docRect.left, docRect.top);
         path.transform(matrix, scratchPath);
         strokePaint.setStrokeWidth(strokeWidth * docRect.width());
-        strokePaint.setColor(pdfView.isNightModeEnabled() ? invertColor(stampColor) : stampColor);
+        strokePaint.setColor(pdfView.isNightModeEnabled() ? StampFrame.invertColor(stampColor) : stampColor);
         canvas.drawPath(scratchPath, strokePaint);
     }
 
@@ -274,47 +277,21 @@ final class StampPlacementManager {
         float dyFrame = (docY - lastDocY) * scaleY;
 
         if (dragMode == DragMode.MOVE) {
-            float clampedDx = clamp(dxFrame, -frameRect.left, frameWidth - frameRect.right);
-            float clampedDy = clamp(dyFrame, -frameRect.top, frameHeight - frameRect.bottom);
-            frameRect.offset(clampedDx, clampedDy);
+            frame.move(dxFrame, dyFrame, frameWidth, frameHeight);
         } else {
-            resize(dxFrame, frameWidth, frameHeight);
+            frame.resize(dragMode, dxFrame, frameWidth, frameHeight, aspect);
         }
+        copyFrameRect();
         lastDocX = docX;
         lastDocY = docY;
         pdfView.invalidate();
     }
 
-    private void resize(float dxFrame, float frameWidth, float frameHeight) {
-        float minWidth = MIN_WIDTH_PAGE_FRACTION * frameWidth;
-        float width = frameRect.width();
-        float newWidth;
-        float maxWidth;
-        switch (dragMode) {
-            case RESIZE_TL:
-                newWidth = width - dxFrame;
-                maxWidth = Math.min(frameRect.right, frameRect.bottom / aspect);
-                newWidth = clamp(newWidth, minWidth, maxWidth);
-                frameRect.left = frameRect.right - newWidth;
-                frameRect.top = frameRect.bottom - newWidth * aspect;
-                break;
-            case RESIZE_BL:
-                newWidth = width - dxFrame;
-                maxWidth = Math.min(frameRect.right, (frameHeight - frameRect.top) / aspect);
-                newWidth = clamp(newWidth, minWidth, maxWidth);
-                frameRect.left = frameRect.right - newWidth;
-                frameRect.bottom = frameRect.top + newWidth * aspect;
-                break;
-            case RESIZE_BR:
-                newWidth = width + dxFrame;
-                maxWidth = Math.min(frameWidth - frameRect.left, (frameHeight - frameRect.top) / aspect);
-                newWidth = clamp(newWidth, minWidth, maxWidth);
-                frameRect.right = frameRect.left + newWidth;
-                frameRect.bottom = frameRect.top + newWidth * aspect;
-                break;
-            default:
-                break;
-        }
+    private void copyFrameRect() {
+        frameRect.left = frame.left;
+        frameRect.top = frame.top;
+        frameRect.right = frame.right;
+        frameRect.bottom = frame.bottom;
     }
 
     private RectF docRectFor(int page, RectF rect) {
@@ -326,20 +303,7 @@ final class StampPlacementManager {
                 rect.left, rect.top, rect.right, rect.bottom, false);
     }
 
-    private static int invertColor(int color) {
-        return Color.rgb(COLOR_CHANNEL_MAX - Color.red(color),
-                COLOR_CHANNEL_MAX - Color.green(color),
-                COLOR_CHANNEL_MAX - Color.blue(color));
-    }
-
-    private static float clamp(float value, float min, float max) {
-        if (max < min) {
-            return min;
-        }
-        return Math.max(min, Math.min(max, value));
-    }
-
-    private static Path buildPath(float[][] strokes) {
+    static Path buildPath(float[][] strokes) {
         Path path = new Path();
         for (float[] stroke : strokes) {
             if (stroke == null || stroke.length < STROKE_HEADER_FLOATS

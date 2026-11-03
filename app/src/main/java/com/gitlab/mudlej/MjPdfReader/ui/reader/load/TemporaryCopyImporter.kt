@@ -36,11 +36,7 @@ class TemporaryCopyImporter(
             return
         }
         val (uri, name) = currentDocument()
-        if (uri == null || uri.scheme != "content") {
-            return
-        }
-        val authority = uri.authority ?: return
-        if (authority in EXCLUDED_AUTHORITIES || authority.startsWith(BuildConfig.APPLICATION_ID)) {
+        if (uri == null || !isTemporaryCopyEligible(uri.scheme, uri.authority, BuildConfig.APPLICATION_ID)) {
             return
         }
         synchronized(inFlightHashes) {
@@ -80,23 +76,12 @@ class TemporaryCopyImporter(
         }
         val sizeBytes = DocumentSize.of(context, uri)
         val freeBytes = DocumentSize.availableBytes(context)
-        if (pref.getSharedCopyMode() == SharedCopyMode.ASK || needsConsent(sizeBytes, freeBytes)) {
-            val fits = sizeBytes == null || freeBytes == null ||
-                freeBytes - sizeBytes >= FREE_SPACE_FLOOR_BYTES
+        if (pref.getSharedCopyMode() == SharedCopyMode.ASK || temporaryCopyNeedsConsent(sizeBytes, freeBytes)) {
+            val fits = temporaryCopyFits(sizeBytes, freeBytes)
             onCopyNeedsConsent(CopyConsentRequest(fileHash, uri, name, sizeBytes, fits))
             return
         }
         performCopy(fileHash, uri, name)
-    }
-
-    private fun needsConsent(sizeBytes: Long?, freeBytes: Long?): Boolean {
-        if (sizeBytes == null) {
-            return false
-        }
-        if (sizeBytes > LARGE_FILE_BYTES) {
-            return true
-        }
-        return freeBytes != null && freeBytes - sizeBytes < FREE_SPACE_FLOOR_BYTES
     }
 
     suspend fun performCopy(fileHash: String, uri: Uri, name: String) {
@@ -119,14 +104,33 @@ class TemporaryCopyImporter(
 
     private companion object {
         const val TAG = "TemporaryCopyImporter"
-        const val LARGE_FILE_BYTES = 250L * 1024 * 1024
-        const val FREE_SPACE_FLOOR_BYTES = 500L * 1024 * 1024
         val inFlightHashes: MutableSet<String> = mutableSetOf()
-        val EXCLUDED_AUTHORITIES = setOf(
-            "media",
-            "com.android.externalstorage.documents",
-            "com.android.providers.downloads.documents",
-            "com.android.providers.media.documents",
-        )
+
     }
 }
+
+internal fun temporaryCopyNeedsConsent(sizeBytes: Long?, freeBytes: Long?): Boolean {
+    if (sizeBytes == null) {
+        return false
+    }
+    if (sizeBytes > LARGE_FILE_BYTES) {
+        return true
+    }
+    return freeBytes != null && freeBytes - sizeBytes < FREE_SPACE_FLOOR_BYTES
+}
+
+internal fun temporaryCopyFits(sizeBytes: Long?, freeBytes: Long?): Boolean =
+    sizeBytes == null || freeBytes == null || freeBytes - sizeBytes >= FREE_SPACE_FLOOR_BYTES
+
+internal fun isTemporaryCopyEligible(scheme: String?, authority: String?, applicationId: String): Boolean =
+    scheme == "content" && authority != null && authority !in EXCLUDED_AUTHORITIES &&
+        !authority.startsWith(applicationId)
+
+private const val LARGE_FILE_BYTES = 250L * 1024 * 1024
+private const val FREE_SPACE_FLOOR_BYTES = 500L * 1024 * 1024
+private val EXCLUDED_AUTHORITIES = setOf(
+    "media",
+    "com.android.externalstorage.documents",
+    "com.android.providers.downloads.documents",
+    "com.android.providers.media.documents",
+)

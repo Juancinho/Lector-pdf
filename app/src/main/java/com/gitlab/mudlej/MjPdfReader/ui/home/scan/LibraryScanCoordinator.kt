@@ -169,13 +169,13 @@ class LibraryScanCoordinator(
         }
         if (index.value.active) {
             if (reason == ScanRefreshReason.MANUAL) ScanDebugSignals.noteManualRefreshQueued()
-            if (pendingRefresh != ScanRefreshReason.FULL_RESCAN) pendingRefresh = reason
+            pendingRefresh = ScanGenerationPlanner.mergePending(pendingRefresh, reason)
             return
         }
         val current = currentScopeRoots()
-        val retained = if (reason != ScanRefreshReason.FULL_RESCAN &&
-            discoveryJob?.isCancelled == true && !work.filesystemComplete
-        ) walks.map { it.within(current) } else emptyList()
+        val retained = ScanGenerationPlanner.retainedWalks(
+            reason, discoveryJob?.isCancelled == true, work.filesystemComplete, walks, current,
+        )
         startGeneration(
             reason,
             if (reason == ScanRefreshReason.FULL_RESCAN) current else emptyList(),
@@ -216,14 +216,18 @@ class LibraryScanCoordinator(
             return
         }
         val configured = preferences.getScanMode() != ScanMode.NOT_CONFIGURED
-        walks = if (configured) {
-            val requested = requestedWalkRoots?.toList() ?: StorageManager().volumeRoots(context).map { it.path }
-            (retainedWalks + ScanWalk(requested, excluded.toList())).filter { it.roots.isNotEmpty() }
-        } else emptyList()
-        val sources = if (walks.isEmpty()) setOf(DiscoverySource.MEDIA_STORE) else DiscoverySource.entries.toSet()
-        work.resetScope(roots, sources)
-        val visible = configured && (reason == ScanRefreshReason.FULL_RESCAN || walks.isNotEmpty() ||
-            (!work.hasEntries && preferences.getScanBaselineScope() != baselineScopeKey(roots)))
+        val walkPlan = if (configured) {
+            val volumeRoots = if (requestedWalkRoots == null) StorageManager().volumeRoots(context).map { it.path } else emptyList()
+            ScanGenerationPlanner.buildWalks(requestedWalkRoots, volumeRoots, retainedWalks, excluded)
+        } else ScanGenerationPlanner.buildWalks(emptyList(), emptyList())
+        walks = walkPlan.walks
+        work.resetScope(roots, walkPlan.sources)
+        val baseline = if (configured && reason != ScanRefreshReason.FULL_RESCAN && walks.isEmpty() && !work.hasEntries) {
+            preferences.getScanBaselineScope()
+        } else ""
+        val visible = ScanGenerationPlanner.findingProgressVisible(
+            configured, reason, walks.isNotEmpty(), work.hasEntries, baseline, roots,
+        )
         publication.publish(ScanPhase.FINDING, showProgress = visible)
         if (!cancelSource()) {
             sessionIncomplete = true
@@ -338,10 +342,8 @@ class LibraryScanCoordinator(
             startGeneration(pending, if (pending == ScanRefreshReason.FULL_RESCAN) currentScopeRoots() else emptyList())
             return
         }
-        publication.publish(
-            if (sessionIncomplete) ScanPhase.INCOMPLETE else ScanPhase.IDLE,
-            showProgress = sessionIncomplete && index.value.showProgress,
-        )
+        val terminal = ScanGenerationPlanner.terminalPublish(sessionIncomplete, index.value.showProgress)
+        publication.publish(terminal.phase, showProgress = terminal.showProgress)
     }
 
     private suspend fun storageAccessChanged(hasAccess: Boolean) {

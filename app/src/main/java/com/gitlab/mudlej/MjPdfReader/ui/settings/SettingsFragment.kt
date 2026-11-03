@@ -216,24 +216,26 @@ class SettingsFragment : PreferenceFragmentCompat() {
         var target: PreferenceGroup = screen
         var currentSection: Int? = null
         var emittedAny = false
-        preferenceFactory.entriesFor(page).forEach { entry ->
-            val preference = entry.createPreference(preferenceFactory, breadcrumb = null)
-            if (!preference.isVisible) {
-                return@forEach
+        groupBySection(preferenceFactory.entriesFor(page)).forEach { (section, entries) ->
+            entries.forEach entryLoop@ { entry ->
+                val preference = entry.createPreference(preferenceFactory, breadcrumb = null)
+                if (!preference.isVisible) {
+                    return@entryLoop
+                }
+                if (!emittedAny || section != currentSection) {
+                    emittedAny = true
+                    currentSection = section
+                    target = section?.let { sectionRes ->
+                        PreferenceCategory(requireContext()).apply {
+                            setTitle(sectionRes)
+                            isIconSpaceReserved = false
+                            screen.addPreference(this)
+                        }
+                    } ?: screen
+                }
+                applyReadingLayoutOverride(preference, layout)
+                target.addPreference(preference)
             }
-            if (!emittedAny || entry.sectionRes != currentSection) {
-                emittedAny = true
-                currentSection = entry.sectionRes
-                target = entry.sectionRes?.let { sectionRes ->
-                    PreferenceCategory(requireContext()).apply {
-                        setTitle(sectionRes)
-                        isIconSpaceReserved = false
-                        screen.addPreference(this)
-                    }
-                } ?: screen
-            }
-            applyReadingLayoutOverride(preference, layout)
-            target.addPreference(preference)
         }
     }
 
@@ -242,7 +244,7 @@ class SettingsFragment : PreferenceFragmentCompat() {
             preference.isEnabled = false
             val reason = getString(R.string.overridden_by, getString(reasonRes))
             val summary = preference.summary
-            preference.summary = if (summary.isNullOrBlank()) reason else "$summary\n$reason"
+            preference.summary = mergeOverrideSummary(summary, reason)
         }
     }
 

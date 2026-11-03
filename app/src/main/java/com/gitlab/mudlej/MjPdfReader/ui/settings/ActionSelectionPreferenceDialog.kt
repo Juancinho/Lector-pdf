@@ -81,6 +81,17 @@ private fun MutableList<ActionSelectionRow>.resetTo(defaultRows: List<ActionSele
     addAll(defaultRows.map { it.copy() })
 }
 
+internal fun MutableList<ActionSelectionRow>.move(from: Int, to: Int): Boolean {
+    if (from !in indices || to !in indices) {
+        return false
+    }
+    if (this[from].locked || this[to].locked) {
+        return false
+    }
+    add(to, removeAt(from))
+    return true
+}
+
 private class ActionSelectionAdapter(
     private val rows: MutableList<ActionSelectionRow>,
 ) : RecyclerView.Adapter<ActionSelectionViewHolder>() {
@@ -98,13 +109,7 @@ private class ActionSelectionAdapter(
     override fun getItemCount() = rows.size
 
     fun move(from: Int, to: Int): Boolean {
-        if (from !in rows.indices || to !in rows.indices) {
-            return false
-        }
-        if (rows[from].locked || rows[to].locked) {
-            return false
-        }
-        rows.add(to, rows.removeAt(from))
+        if (!rows.move(from, to)) return false
         notifyItemMoved(from, to)
         return true
     }

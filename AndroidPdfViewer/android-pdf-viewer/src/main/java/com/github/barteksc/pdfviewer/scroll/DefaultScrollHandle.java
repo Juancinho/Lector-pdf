@@ -177,11 +177,11 @@ public class DefaultScrollHandle extends RelativeLayout implements ScrollHandle 
         }
         float pdfViewSize = pdfView.isSwipeVertical() ? pdfView.getHeight() : pdfView.getWidth();
         float minPos = pdfView.isSwipeVertical() ? topReachLimit : 0;
-        float maxPos = pdfViewSize - Util.getDP(context, HANDLE_SHORT);
-        if (maxPos <= minPos) {
+        float target = scrollPosition(position, pdfViewSize, minPos, Util.getDP(context, HANDLE_SHORT));
+        if (Float.isNaN(target)) {
             return;
         }
-        setPositionAbsolute(minPos + position * (maxPos - minPos));
+        setPositionAbsolute(target);
     }
 
     private void setPosition(float pos) {
@@ -243,18 +243,34 @@ public class DefaultScrollHandle extends RelativeLayout implements ScrollHandle 
     }
 
     private String getPageNumText(int pageNum) {
-        String pageText = String.valueOf(pageNum);
+        int rowFirstPage = pageNum;
+        int rowLastPage = pageNum;
         if (pdfView != null) {
-            int rowFirstPage = pdfView.getRowFirstPage(pageNum - 1) + 1;
-            int rowLastPage = pdfView.getRowLastPage(pageNum - 1) + 1;
-            if (rowLastPage > rowFirstPage) {
-                pageText = rowFirstPage + "-" + rowLastPage;
-            }
+            rowFirstPage = pdfView.getRowFirstPage(pageNum - 1) + 1;
+            rowLastPage = pdfView.getRowLastPage(pageNum - 1) + 1;
         }
-        if (showPageCount && pdfView != null && pdfView.getPageCount() > 0) {
-            return pageText + "/" + pdfView.getPageCount();
+        int count = showPageCount && pdfView != null ? pdfView.getPageCount() : 0;
+        return getPageNumText(pageNum, rowFirstPage, rowLastPage, count, showPageCount);
+    }
+
+    static String getPageNumText(int pageNum, int rowFirstPage, int rowLastPage,
+                                 int pageCount, boolean showPageCount) {
+        String pageText = String.valueOf(pageNum);
+        if (rowLastPage > rowFirstPage) {
+            pageText = rowFirstPage + "-" + rowLastPage;
+        }
+        if (showPageCount && pageCount > 0) {
+            return pageText + "/" + pageCount;
         }
         return pageText;
+    }
+
+    static float scrollPosition(float position, float viewSize, float minPos, float handleSize) {
+        float maxPos = viewSize - handleSize;
+        if (maxPos <= minPos) {
+            return Float.NaN;
+        }
+        return minPos + position * (maxPos - minPos);
     }
 
     @Override
@@ -353,7 +369,11 @@ public class DefaultScrollHandle extends RelativeLayout implements ScrollHandle 
             pos = getX();
         }
         float minPos = pdfView.isSwipeVertical() ? topReachLimit : 0;
-        float maxPos = pdfViewSize - Util.getDP(context, HANDLE_SHORT);
+        return computePositionOffset(pos, pdfViewSize, minPos, Util.getDP(context, HANDLE_SHORT));
+    }
+
+    static float computePositionOffset(float pos, float viewSize, float minPos, float handleSize) {
+        float maxPos = viewSize - handleSize;
         if (maxPos <= minPos) {
             return 0;
         }

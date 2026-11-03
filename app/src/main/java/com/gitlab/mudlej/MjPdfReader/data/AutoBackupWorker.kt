@@ -50,13 +50,12 @@ object AutoBackupScheduler {
 
     private fun periodicRequest(hour: Int, minute: Int): PeriodicWorkRequest {
         return PeriodicWorkRequestBuilder<AutoBackupWorker>(24, TimeUnit.HOURS)
-            .setInitialDelay(millisUntilNext(hour, minute), TimeUnit.MILLISECONDS)
+            .setInitialDelay(millisUntilNext(hour, minute, LocalDateTime.now()), TimeUnit.MILLISECONDS)
             .setBackoffCriteria(BackoffPolicy.LINEAR, WorkRequest.MIN_BACKOFF_MILLIS, TimeUnit.MILLISECONDS)
             .build()
     }
 
-    private fun millisUntilNext(hour: Int, minute: Int): Long {
-        val now = LocalDateTime.now()
+    internal fun millisUntilNext(hour: Int, minute: Int, now: LocalDateTime): Long {
         var next = now.toLocalDate().atTime(hour, minute)
         if (!next.isAfter(now)) {
             next = next.plusDays(1)

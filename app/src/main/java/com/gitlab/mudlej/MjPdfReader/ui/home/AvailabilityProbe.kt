@@ -30,11 +30,7 @@ class AvailabilityProbe(
         return when (uri.scheme) {
             "file" -> {
                 val readable = uri.path?.let { File(it).canRead() } == true
-                when {
-                    readable -> Availability.AVAILABLE
-                    !hasFullAccess -> Availability.ACCESS_UNKNOWN
-                    else -> Availability.MISSING
-                }
+                fileAvailability(readable, hasFullAccess)
             }
             "content" -> contentAvailability(uri)
             else -> Availability.AVAILABLE
@@ -50,14 +46,28 @@ class AvailabilityProbe(
         }
 
         val hasPersistedReadGrant = uri.toString() in persistedReadGrants
-        return when {
-            hasPersistedReadGrant -> Availability.MISSING
-            uri.authority == MEDIA_AUTHORITY && !hasFullAccess -> Availability.ACCESS_UNKNOWN
-            else -> Availability.MISSING
-        }
+        return contentAvailability(opens, hasPersistedReadGrant, uri.authority == MEDIA_AUTHORITY, hasFullAccess)
     }
 
     private companion object {
         const val MEDIA_AUTHORITY = "media"
     }
+}
+
+internal fun fileAvailability(readable: Boolean, hasFullAccess: Boolean): Availability = when {
+    readable -> Availability.AVAILABLE
+    !hasFullAccess -> Availability.ACCESS_UNKNOWN
+    else -> Availability.MISSING
+}
+
+internal fun contentAvailability(
+    opens: Boolean,
+    hasPersistedGrant: Boolean,
+    isMediaAuthority: Boolean,
+    hasFullAccess: Boolean,
+): Availability = when {
+    opens -> Availability.AVAILABLE
+    hasPersistedGrant -> Availability.MISSING
+    isMediaAuthority && !hasFullAccess -> Availability.ACCESS_UNKNOWN
+    else -> Availability.MISSING
 }

@@ -104,7 +104,7 @@ object DocumentIdentity {
         return DocumentIdentities(finish(digester, length), legacy)
     }
 
-    private fun fromForwardRead(stream: InputStream): DocumentIdentities? {
+    internal fun fromForwardRead(stream: InputStream): DocumentIdentities? {
         val head = ByteArray(WINDOW)
         val headCount = readUpTo(stream, head, WINDOW)
         if (headCount <= 0) {

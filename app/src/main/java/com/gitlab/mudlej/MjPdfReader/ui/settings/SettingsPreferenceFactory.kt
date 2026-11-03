@@ -31,7 +31,6 @@ import com.gitlab.mudlej.MjPdfReader.data.translation.DictionaryInstaller
 import com.gitlab.mudlej.MjPdfReader.data.translation.DictionaryStore
 import com.gitlab.mudlej.MjPdfReader.data.translation.TranslationEngine
 import com.gitlab.mudlej.MjPdfReader.data.translation.TranslationLanguages
-import com.gitlab.mudlej.MjPdfReader.data.translation.TranslationUrlBuilder
 import com.gitlab.mudlej.MjPdfReader.ui.history.ReadingHistoryActivity
 import com.gitlab.mudlej.MjPdfReader.ui.home.HomeProgressStyle
 import com.gitlab.mudlej.MjPdfReader.ui.home.HomeTitleEllipsize
@@ -198,13 +197,13 @@ internal class SettingsPreferenceFactory(
         return Preference(context).apply {
             title = getString(R.string.hide_delay_title)
             this.key = Preferences.hideDelayKey
-            summary = formatSummary(breadcrumb, labels.getOrNull(hideDelayOptions.indexOf(currentValue)))
+            summary = formatSummary(breadcrumb, optionLabel(hideDelayOptions, labels, currentValue).second)
             isIconSpaceReserved = false
             setOnPreferenceClickListener {
                 showSingleChoiceDialog(
                     title = getString(R.string.hide_delay_title),
                     items = labels,
-                    checkedIndex = hideDelayOptions.indexOf(currentValue),
+                    checkedIndex = optionLabel(hideDelayOptions, labels, currentValue).first,
                     onReset = {
                         appPreferences.setHideDelay(Preferences.hideDelayDefault)
                         host?.refreshPreferences()
@@ -233,13 +232,13 @@ internal class SettingsPreferenceFactory(
         return Preference(context).apply {
             title = getString(titleRes)
             this.key = key
-            summary = formatSummary(breadcrumb, labels.getOrNull(titleLineOptions.indexOf(currentValue)))
+            summary = formatSummary(breadcrumb, optionLabel(titleLineOptions, labels, currentValue).second)
             isIconSpaceReserved = false
             setOnPreferenceClickListener {
                 showSingleChoiceDialog(
                     title = getString(titleRes),
                     items = labels,
-                    checkedIndex = titleLineOptions.indexOf(currentValue),
+                    checkedIndex = optionLabel(titleLineOptions, labels, currentValue).first,
                     onReset = {
                         onSelected(defaultValue)
                         host?.refreshPreferences()
@@ -381,10 +380,8 @@ internal class SettingsPreferenceFactory(
         breadcrumb: String?,
         onActionSelected: (String) -> Unit,
     ): Preference {
-        val resetActionId = defaultValue.takeIf { value -> actions.any { it.id == value } }
-            ?: actions.first().id
-        var selectedActionId = currentValue.takeIf { value -> actions.any { it.id == value } }
-            ?: resetActionId
+        val (resetActionId, initialActionId) = resolveActionIds(defaultValue, currentValue, actions.map { it.id })
+        var selectedActionId = initialActionId
 
         return Preference(context).apply {
             title = getString(titleRes)
@@ -788,7 +785,7 @@ internal class SettingsPreferenceFactory(
                 showSingleChoiceDialog(
                     title = getString(R.string.translation_target_language_title),
                     items = listOf(deviceLabel) + codes.map { TranslationLanguages.displayName(it) },
-                    checkedIndex = if (current.isBlank()) 0 else codes.indexOf(current) + 1,
+                    checkedIndex = targetLanguageCheckedIndex(current, codes),
                     onReset = {
                         appPreferences.setTranslationTargetLanguage(Preferences.translationTargetLanguageDefault)
                         host?.refreshPreferences()
@@ -890,9 +887,7 @@ internal class SettingsPreferenceFactory(
         dialog.setOnShowListener {
             dialog.getButton(DialogInterface.BUTTON_POSITIVE).setOnClickListener {
                 val value = inputLayout.editText?.text?.toString()?.trim().orEmpty()
-                val hasScheme = value.startsWith("http://", ignoreCase = true) ||
-                    value.startsWith("https://", ignoreCase = true)
-                if (!hasScheme || !value.contains(TranslationUrlBuilder.textPlaceholder)) {
+                if (!isValidCustomTranslationUrl(value)) {
                     inputLayout.error = getString(R.string.translation_custom_url_invalid)
                     return@setOnClickListener
                 }
@@ -981,13 +976,13 @@ internal class SettingsPreferenceFactory(
         onValueSelected: (Float) -> Unit,
     ) {
         val min = minValue.roundToInt()
-        val max = maxValue.roundToInt()
+        val (seekMax, position) = sliderRange(minValue, maxValue, currentValue)
         val valueText = TextView(context).apply {
             textAlignment = TextView.TEXT_ALIGNMENT_CENTER
         }
         val seekBar = SeekBar(context).apply {
-            this.max = max - min
-            progress = currentValue.roundToInt().coerceIn(min, max) - min
+            this.max = seekMax
+            progress = position
         }
 
         fun selectedValue() = min + seekBar.progress
@@ -1073,14 +1068,6 @@ internal class SettingsPreferenceFactory(
         )
         val detail = "${getString(summaryRes)}\n$currentValue"
         summary = formatSummary(breadcrumb = breadcrumb, detail = detail)
-    }
-
-    private fun formatSummary(breadcrumb: String?, detail: String?): String? {
-        return when {
-            breadcrumb.isNullOrBlank() -> detail
-            detail.isNullOrBlank() -> breadcrumb
-            else -> "$breadcrumb: $detail"
-        }
     }
 
     private fun dp(value: Int): Int {

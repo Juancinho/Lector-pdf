@@ -114,7 +114,7 @@ fun ensurePdfFileName(name: String): String {
     return base.takeUtf8Bytes(MAX_PDF_BASE_NAME_BYTES) + suffix
 }
 
-private fun String.takeUtf8Bytes(maxBytes: Int): String = buildString {
+internal fun String.takeUtf8Bytes(maxBytes: Int): String = buildString {
     var byteCount = 0
     var index = 0
     while (index < this@takeUtf8Bytes.length) {

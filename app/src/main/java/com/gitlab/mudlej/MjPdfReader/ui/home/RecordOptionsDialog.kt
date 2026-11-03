@@ -158,15 +158,11 @@ class RecordOptionsDialog(
     }
 
     private fun buildInfoLine(item: HomeItem, length: Int): String {
-        val size = fileSizeBytes(item.uri)
-        val sizeText = size?.let { String.format(Locale.US, "%.2f MB", it / (1024.0 * 1024.0)) }
-        return when {
-            length > 0 && sizeText != null ->
-                activity.getString(R.string.home_pages_size_template, length, sizeText)
-            length > 0 ->
-                activity.resources.getQuantityString(R.plurals.home_pages, length, length)
-            else -> sizeText.orEmpty()
-        }
+        return infoLine(
+            length, fileSizeBytes(item.uri),
+            pages = { activity.resources.getQuantityString(R.plurals.home_pages, it, it) },
+            size = { activity.getString(R.string.home_pages_size_template, length, it) },
+        )
     }
 
     private fun bindStatus(binding: DialogRecordOptionsBinding, item: HomeItem, record: PdfRecord?) {
@@ -321,11 +317,13 @@ class RecordOptionsDialog(
         scope.launch {
             val path = item.uri.path ?: return@launch
             val oldFile = File(path)
-            val target = File(oldFile.parentFile, "$newName.pdf")
-
-            if (target.exists()) {
-                toast(activity, R.string.home_rename_exists, Toast.LENGTH_SHORT)
-                return@launch
+            val target = when (val decision = renameTarget(path, newName, File::exists)) {
+                RenameDecision.Invalid -> return@launch
+                RenameDecision.Exists -> {
+                    toast(activity, R.string.home_rename_exists, Toast.LENGTH_SHORT)
+                    return@launch
+                }
+                is RenameDecision.Target -> decision.file
             }
             val renamed = withContext(Dispatchers.IO) { oldFile.renameTo(target) }
             if (!renamed) {
@@ -374,5 +372,34 @@ class RecordOptionsDialog(
 
     companion object {
         private const val COVER_WIDTH_PX = 256
+    }
+}
+
+internal sealed class RenameDecision {
+    data object Invalid : RenameDecision()
+    data object Exists : RenameDecision()
+    data class Target(val file: File) : RenameDecision()
+}
+
+internal fun renameTarget(oldPath: String, input: String, exists: (File) -> Boolean): RenameDecision {
+    val name = input.trim()
+    if (name.isEmpty() || name.contains(File.separatorChar)) return RenameDecision.Invalid
+    val target = File(File(oldPath).parentFile, "$name.pdf")
+    return if (exists(target)) RenameDecision.Exists else RenameDecision.Target(target)
+}
+
+internal fun infoLine(
+    length: Int,
+    sizeBytes: Long?,
+    pages: (Int) -> String,
+    size: (String) -> String,
+): String {
+    val sizeText = sizeBytes?.let {
+        String.format(Locale.US, "%.2f MB", it / (1024.0 * 1024.0))
+    }
+    return when {
+        length > 0 && sizeText != null -> size(sizeText)
+        length > 0 -> pages(length)
+        else -> sizeText.orEmpty()
     }
 }
