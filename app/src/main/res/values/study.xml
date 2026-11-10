@@ -1,5 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
-<resources>
+<!-- The first Study release supports English and Spanish. Other existing
+     upstream locales intentionally use Android's English fallback. -->
+<resources xmlns:tools="http://schemas.android.com/tools" tools:ignore="MissingTranslation">
     <string name="study_highlight_title">Highlight style</string>
     <string name="study_highlight_subtitle">A color for every idea.</string>
     <string name="study_custom_color">Custom highlight color</string>

@@ -2541,6 +2541,8 @@ public class PDFView extends RelativeLayout {
         );
     }
 
+    // Native/cache diagnostics deliberately run on the test worker, not the View thread.
+    @androidx.annotation.WorkerThread
     public List<PdfDocument.HighlightAnnotation> debugPageHighlights(int pageIndex) {
         if (!debugStateEnabled || pdfFile == null || pageIndex < 0 || pageIndex >= pdfFile.getPagesCount()) {
             return Collections.emptyList();
@@ -2558,6 +2560,7 @@ public class PDFView extends RelativeLayout {
         }
     }
 
+    @androidx.annotation.WorkerThread
     public PdfDocument.FormField debugFormField(int pageIndex, int annotationIndex) {
         if (!debugStateEnabled || pdfFile == null || pageIndex < 0 || pageIndex >= pdfFile.getPagesCount()) {
             return null;
