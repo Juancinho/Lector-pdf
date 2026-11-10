@@ -27,6 +27,10 @@ jobs:
           test "$(git rev-parse study/custom-highlights)" = '1942e2c7c7af93bf5e830d2b66a95c8d7caaa125'
           git config user.name 'github-actions[bot]'
           git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          before_tree=$(git rev-parse 'study/custom-highlights^{tree}')
+          python -m pip install git-filter-repo==2.47.0
+          git filter-repo --force --strip-blobs-bigger-than 95M --refs refs/heads/study/custom-highlights
+          test "$before_tree" = "$(git rev-parse 'study/custom-highlights^{tree}')"
           imported=$(git rev-parse study/custom-highlights)
           tree=$(git rev-parse "$imported^{tree}")
           merge=$(printf 'Import MJ Study with upstream history and verified development commits\n' | git commit-tree "$tree" -p "$GITHUB_SHA" -p "$imported")
