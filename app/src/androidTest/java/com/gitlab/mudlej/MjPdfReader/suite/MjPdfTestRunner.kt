@@ -66,7 +66,7 @@ class MjPdfTestRunner : AndroidJUnitRunner() {
     }
 
     private companion object {
-        const val TARGET_PACKAGE = "com.gitlab.mudlej.MjPdfReader"
+        const val TARGET_PACKAGE = "io.github.juancinho.mjstudy"
         const val SCENARIO_ARGUMENT = "mjpdfScenario"
         const val STORAGE_ACCESS_ARGUMENT = "storageAccess"
         const val STORAGE_ACCESS_DENIED = "denied"

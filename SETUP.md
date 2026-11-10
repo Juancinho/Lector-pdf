@@ -49,9 +49,8 @@ Create `local.properties` in the project root if it does not already exist:
 sdk.dir=/home/user/Android/Sdk
 ```
 
-The crash-reporting values (`AI`, `AK`, `AU`) are committed in `gradle.properties`, so no
-extra setup is needed. To send crash reports to a different backend for local testing,
-override them in `~/.gradle/gradle.properties` or pass `-PAI=... -PAK=... -PAU=...`.
+MJ Study does not initialize a remote crash reporter. Leave `AI`, `AK` and `AU`
+empty; no backend account or key is needed to build or use the app.
 
 ## 4. Build Native Dependencies
 

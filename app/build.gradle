@@ -48,12 +48,12 @@ android {
     def fdroidAbi = project.findProperty("fdroidAbi")
 
     defaultConfig {
-        applicationId "com.gitlab.mudlej.MjPdfReader"
+        applicationId "io.github.juancinho.mjstudy"
         minSdkVersion 23
         compileSdkVersion 36
         targetSdkVersion 36
-        versionCode 58
-        versionName "3.1.0"
+        versionCode 1
+        versionName "0.1.0-study"
         multiDexEnabled = true
         vectorDrawables.useSupportLibrary = true
 
@@ -248,3 +248,23 @@ dependencies {
 
     androidTestUtil 'androidx.test:orchestrator:1.6.1'
 }
+
+// Gradle does not invoke upstream's separate Python/NDK build. Fail early rather
+// than distributing a reader APK that crashes as soon as PDFium is loaded.
+tasks.register('verifyStudyNativeLibraries') {
+    doLast {
+        def nativeRoot = rootProject.file('PdfiumAndroid/src/main/libs')
+        def abiDirs = nativeRoot.listFiles()?.findAll { it.isDirectory() } ?: []
+        if (abiDirs.isEmpty()) {
+            throw new GradleException('Build PDFium/JNI first: python3 build_dependencies.py --pdfium prebuilt --abi arm64-v8a (see README)')
+        }
+        abiDirs.each { abiDir ->
+            ['libjniPdfium.so', 'libmodpdfium.so', 'libmodft2.so', 'libmodpng.so', 'libc++_shared.so'].each { name ->
+                if (!new File(abiDir, name).isFile()) {
+                    throw new GradleException("Incomplete native runtime: ${abiDir.name}/${name}")
+                }
+            }
+        }
+    }
+}
+tasks.named('preBuild').configure { dependsOn('verifyStudyNativeLibraries') }
