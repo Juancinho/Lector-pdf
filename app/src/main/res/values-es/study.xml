@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="study_highlight_title">Estilo de resaltado</string>
+    <string name="study_highlight_subtitle">Un color para cada idea.</string>
+    <string name="study_custom_color">Color de resaltado personalizado</string>
+    <string name="study_hex">HEX</string>
+    <string name="study_red">Rojo</string>
+    <string name="study_green">Verde</string>
+    <string name="study_blue">Azul</string>
+    <string name="study_opacity">Opacidad · %1$d%%</string>
+    <string name="study_meaning">Significado (opcional)</string>
+    <string name="study_meaning_hint">Ej.: definición, idea clave, duda</string>
+    <string name="study_favorite">Guardar en favoritos</string>
+    <string name="study_favorites">Favoritos</string>
+    <string name="study_recent">Usados recientemente</string>
+    <string name="study_invalid_hex">Introduce #RGB o #RRGGBB</string>
+    <string name="study_invalid_rgb">Cada canal debe estar entre 0 y 255</string>
+    <string name="study_preview">Las ideas que merece la pena guardar.</string>
+    <string name="study_use_highlight">Usar resaltado</string>
+    <string name="study_swatch_description">Resaltar %1$s · %2$d%%</string>
+</resources>

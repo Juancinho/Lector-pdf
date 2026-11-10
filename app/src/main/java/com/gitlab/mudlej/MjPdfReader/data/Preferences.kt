@@ -339,6 +339,9 @@ class Preferences(private val prefMan: SharedPreferences) {
             listOf(
                 interfaceThemeKey, pdfPagesThemeKey, primaryButtonActionKey,
                 secondaryButtonActionKey, fullScreenOverlayActionOrderKey, shortcutBarActionOrderKey,
+                com.gitlab.mudlej.MjPdfReader.study.annotation.HighlightStyleStore.CURRENT,
+                com.gitlab.mudlej.MjPdfReader.study.annotation.HighlightStyleStore.RECENT,
+                com.gitlab.mudlej.MjPdfReader.study.annotation.HighlightStyleStore.FAVORITES,
                 highlightColorsKey, listFilterKey, homeTabKey, homeViewModeKey, homeProgressStyleKey,
                 homeGridSizeKey, homeTitleEllipsizeKey, homeSortKey, scanModeKey, pageFitPolicyKey,
                 tapToTurnKey, backupFolderTreeUriKey, autoBackupLastErrorKey, translationModeKey,

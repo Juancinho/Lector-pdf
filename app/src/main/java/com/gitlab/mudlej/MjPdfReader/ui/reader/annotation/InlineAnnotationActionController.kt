@@ -18,6 +18,12 @@ import android.view.View
 import android.view.ViewGroup
 import android.widget.EditText
 import android.widget.FrameLayout
+import android.widget.TextView
+import androidx.fragment.app.FragmentActivity
+import androidx.preference.PreferenceManager
+import com.gitlab.mudlej.MjPdfReader.study.annotation.HighlightStyle
+import com.gitlab.mudlej.MjPdfReader.study.annotation.HighlightStyleStore
+import com.gitlab.mudlej.MjPdfReader.study.ui.HighlightStyleDialog
 import androidx.constraintlayout.widget.ConstraintLayout
 import com.github.barteksc.pdfviewer.PDFView
 import com.gitlab.mudlej.MjPdfReader.R
@@ -59,7 +65,15 @@ class InlineAnnotationActionController(
     private var activeHighlightAnnotation: PDFView.HighlightAnnotation? = null
     private val whitespaceRegex = Regex("\\s+")
 
+    private val styleStore by lazy { HighlightStyleStore(PreferenceManager.getDefaultSharedPreferences(activity)) }
+
     fun configure(onSaveClicked: () -> Unit) {
+        (activity as? FragmentActivity)?.let { host ->
+            host.supportFragmentManager.setFragmentResultListener(HighlightStyleDialog.RESULT, host) { _, result ->
+                applyHighlightColor(result.getInt("argb"))
+                rebuildHighlightSwatches()
+            }
+        }
         binding.textSelectionCopyButton.setOnClickListener {
             if (copySelectedText()) {
                 dismissCard()
@@ -92,23 +106,28 @@ class InlineAnnotationActionController(
         val density = container.resources.displayMetrics.density
         swatchIds.forEach { id -> container.findViewById<View>(id)?.let(container::removeView) }
         swatchIds.clear()
-        getHighlightColors().forEach { color ->
+        val current = styleStore.current
+        val colors = (listOf(current.argb) + getHighlightColors().map {
+            HighlightStyle(it and 0xFFFFFF, current.opacityPercent).argb
+        }).distinct().take(Preferences.highlightColorsCount)
+        colors.forEach { color ->
             val swatchButton = FrameLayout(container.context).apply {
                 id = View.generateViewId()
-                layoutParams = ConstraintLayout.LayoutParams((40 * density).toInt(), (40 * density).toInt())
+                layoutParams = ConstraintLayout.LayoutParams((48 * density).toInt(), (48 * density).toInt())
                 val backgroundValue = TypedValue()
                 context.theme.resolveAttribute(android.R.attr.selectableItemBackgroundBorderless, backgroundValue, true)
                 setBackgroundResource(backgroundValue.resourceId)
                 isClickable = true
                 isFocusable = true
-                HighlightPalette.fromColor(color)?.let { contentDescription = context.getString(it.labelRes) }
+                contentDescription = context.getString(R.string.study_swatch_description,
+                    HighlightStyle.fromArgb(color).hex, HighlightStyle.fromArgb(color).opacityPercent)
                 setOnClickListener { applyHighlightColor(color) }
             }
             val swatchCard = MaterialCardView(container.context).apply {
                 layoutParams = FrameLayout.LayoutParams((36 * density).toInt(), (36 * density).toInt(), Gravity.CENTER)
                 radius = 18 * density
                 cardElevation = 0f
-                setCardBackgroundColor(color)
+                setCardBackgroundColor(color or 0xFF000000.toInt())
                 strokeColor = MaterialColors.getColor(this, com.google.android.material.R.attr.colorOutline)
                 strokeWidth = density.toInt().coerceAtLeast(1)
             }
@@ -116,6 +135,28 @@ class InlineAnnotationActionController(
             container.addView(swatchButton)
             swatchIds.add(swatchButton.id)
         }
+        val custom = TextView(container.context).apply {
+            id = View.generateViewId()
+            text = "+"
+            textSize = 26f
+            gravity = Gravity.CENTER
+            setTextColor(context.getColor(R.color.study_ink))
+            contentDescription = context.getString(R.string.study_custom_color)
+            layoutParams = ConstraintLayout.LayoutParams((48 * density).toInt(), (48 * density).toInt())
+            val selectable = TypedValue()
+            context.theme.resolveAttribute(android.R.attr.selectableItemBackgroundBorderless, selectable, true)
+            setBackgroundResource(selectable.resourceId)
+            isFocusable = true
+            setOnClickListener {
+                if (canEditDocument()) (activity as? FragmentActivity)?.let { host ->
+                    if (host.supportFragmentManager.findFragmentByTag(HighlightStyleDialog.RESULT) == null) {
+                        HighlightStyleDialog.newInstance().show(host.supportFragmentManager, HighlightStyleDialog.RESULT)
+                    }
+                }
+            }
+        }
+        container.addView(custom)
+        swatchIds.add(custom.id)
         binding.textSelectionSwatchFlow.referencedIds = swatchIds.toIntArray()
     }
 
@@ -243,6 +284,9 @@ class InlineAnnotationActionController(
     }
 
     private fun applyHighlightColor(color: Int) {
+        if (!canEditDocument()) return
+        val previous = styleStore.current
+        styleStore.use(HighlightStyle.fromArgb(color, previous.meaning.takeIf { previous.argb == color }.orEmpty()))
         val annotation = activeHighlightAnnotation
         if (annotation != null) {
             updateActiveHighlightAnnotationColor(annotation, color)

@@ -177,7 +177,7 @@ public class PdfiumCore {
                                                      boolean checked);
 
     private native boolean nativeSetHighlightAnnotationColor(long pagePtr, int annotationIndex,
-                                                             String groupKey, int r, int g, int b);
+                                                             String groupKey, int r, int g, int b, int a);
 
     private native boolean nativeSetHighlightAnnotationNote(long pagePtr, int annotationIndex,
                                                             String groupKey, String note,
@@ -1023,7 +1023,7 @@ public class PdfiumCore {
                 return false;
             }
             return nativeSetHighlightAnnotationColor(nativePagePtr, annotationIndex, groupKey,
-                    Color.red(color), Color.green(color), Color.blue(color));
+                    Color.red(color), Color.green(color), Color.blue(color), Color.alpha(color));
         }
     }
 

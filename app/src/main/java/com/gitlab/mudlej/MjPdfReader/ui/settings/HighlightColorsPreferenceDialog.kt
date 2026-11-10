@@ -2,6 +2,9 @@
 
 package com.gitlab.mudlej.MjPdfReader.ui.settings
 
+import androidx.fragment.app.FragmentActivity
+import com.gitlab.mudlej.MjPdfReader.study.ui.HighlightStyleDialog
+import com.google.android.material.button.MaterialButton
 import android.content.Context
 import android.content.DialogInterface
 import android.graphics.drawable.GradientDrawable
@@ -33,9 +36,16 @@ fun showHighlightColorsPreferenceDialog(
         overScrollMode = View.OVER_SCROLL_IF_CONTENT_SCROLLS
     }
 
+    val content = LinearLayout(context).apply { orientation = LinearLayout.VERTICAL }
+    val custom = MaterialButton(context).apply {
+        text = context.getString(R.string.study_custom_color)
+        minHeight = context.dp(48)
+    }
+    content.addView(custom)
+    content.addView(recyclerView)
     val dialog = MaterialAlertDialogBuilder(context)
         .setTitle(R.string.highlight_colors)
-        .setView(recyclerView)
+        .setView(content)
         .setPositiveButton(R.string.apply) { _, _ ->
             preferences.setHighlightColors(selection.appliedColors)
             onSaved()
@@ -44,6 +54,12 @@ fun showHighlightColorsPreferenceDialog(
         .setNeutralButton(R.string.reset, null)
         .create()
 
+    custom.setOnClickListener {
+        (context as? FragmentActivity)?.let { host ->
+            dialog.dismiss()
+            HighlightStyleDialog.newInstance().show(host.supportFragmentManager, HighlightStyleDialog.RESULT)
+        }
+    }
     dialog.setOnShowListener {
         val applyButton = dialog.getButton(DialogInterface.BUTTON_POSITIVE)
         fun refreshApplyEnabled() {

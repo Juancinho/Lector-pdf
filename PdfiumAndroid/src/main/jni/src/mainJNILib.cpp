@@ -326,7 +326,11 @@ static bool getHighlightAnnotationColor(FPDF_ANNOTATION annot,
                                         unsigned int* blue,
                                         unsigned int* alpha) {
     if (getAnnotStoredColor(annot, red, green, blue)) {
-        *alpha = 255;
+        // /CA is standard constant annotation opacity and remains readable even
+        // when another reader has generated an appearance stream.
+        float opacity = 1.0f;
+        FPDFAnnot_GetNumberValue(annot, "CA", &opacity);
+        *alpha = static_cast<unsigned int>(fmin(1.0f, fmax(0.0f, opacity)) * 255.0f + 0.5f);
         return true;
     }
     if (getAnnotAppearanceColor(annot, red, green, blue, alpha)) {
@@ -466,7 +470,8 @@ static bool isAppHighlightAnnotation(FPDF_ANNOTATION annot) {
     if (!group.empty()) {
         return true;
     }
-    return wideEqualsAscii(getAnnotWideString(annot, "T"), "MJ PDF");
+    return wideEqualsAscii(getAnnotWideString(annot, "T"), "MJ PDF")
+            || wideEqualsAscii(getAnnotWideString(annot, "T"), "MJ Study");
 }
 
 static bool setAppHighlightsHidden(FPDF_PAGE page, bool hidden) {
@@ -1614,7 +1619,6 @@ JNI_FUNC(jboolean, PdfiumCore, nativeCreateHighlightAnnotation)(JNI_ARGS,
 ) {
     DocumentFile *doc = reinterpret_cast<DocumentFile*>(docPtr);
     FPDF_PAGE page = reinterpret_cast<FPDF_PAGE>(pagePtr);
-    (void) alpha;
     if (doc == NULL || page == NULL || rects == NULL) {
         return false;
     }
@@ -1682,11 +1686,11 @@ JNI_FUNC(jboolean, PdfiumCore, nativeCreateHighlightAnnotation)(JNI_ARGS,
         std::string name = makeAnnotName();
         std::string colorValue = colorToHex(red, green, blue);
         bool annotSuccess = FPDFAnnot_SetRect(annot, &rect)
-                && FPDFAnnot_SetColor(annot, FPDFANNOT_COLORTYPE_Color, red, green, blue, 255)
+                && FPDFAnnot_SetColor(annot, FPDFANNOT_COLORTYPE_Color, red, green, blue, alpha)
                 && FPDFAnnot_AppendAttachmentPoints(annot, &quadpoints)
                 && FPDFAnnot_SetFlags(annot, FPDF_ANNOT_FLAG_PRINT | FPDF_ANNOT_FLAG_HIDDEN)
                 && setAnnotWideString(env, annot, "MJQuote", contents)
-                && setAnnotAsciiString(annot, "T", "MJ PDF")
+                && setAnnotAsciiString(annot, "T", "MJ Study")
                 && setAnnotAsciiString(annot, "NM", name.c_str())
                 && setAnnotAsciiString(annot, "MJGroup", groupName.c_str())
                 && setAnnotAsciiString(annot, "MJColor", colorValue.c_str())
@@ -1865,7 +1869,7 @@ JNI_FUNC(jobjectArray, PdfiumCore, nativeGetHighlightAnnotations)(JNI_ARGS,
         unsigned int blue = 0;
         unsigned int alpha = 255;
         getHighlightAnnotationColor(annot, &red, &green, &blue, &alpha);
-        int color = 0xFF000000
+        int color = ((alpha & 0xFF) << 24)
                 | ((red & 0xFF) << 16)
                 | ((green & 0xFF) << 8)
                 | (blue & 0xFF);
@@ -1914,7 +1918,8 @@ JNI_FUNC(jboolean, PdfiumCore, nativeSetHighlightAnnotationColor)(JNI_ARGS,
     jstring groupKey,
     jint red,
     jint green,
-    jint blue
+    jint blue,
+    jint alpha
 ) {
     FPDF_PAGE page = reinterpret_cast<FPDF_PAGE>(pagePtr);
     if (page == NULL) {
@@ -1941,7 +1946,7 @@ JNI_FUNC(jboolean, PdfiumCore, nativeSetHighlightAnnotationColor)(JNI_ARGS,
         if (matches) {
             updatedAny = true;
             FPDFAnnot_SetAP(annot, FPDF_ANNOT_APPEARANCEMODE_NORMAL, NULL);
-            if (!FPDFAnnot_SetColor(annot, FPDFANNOT_COLORTYPE_Color, red, green, blue, 255)
+            if (!FPDFAnnot_SetColor(annot, FPDFANNOT_COLORTYPE_Color, red, green, blue, alpha)
                     || !setAnnotAsciiString(annot, "MJColor", colorValue.c_str())) {
                 success = false;
             }

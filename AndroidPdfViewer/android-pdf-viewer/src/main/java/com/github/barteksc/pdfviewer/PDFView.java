@@ -1546,13 +1546,13 @@ public class PDFView extends RelativeLayout {
 
     private Paint highlightOverlayPaint(PdfDocument.HighlightAnnotation annotation) {
         if (nightMode) {
-            highlightAnnotationOverlayPaint.setColor((0x66 << 24) | (annotation.getColor() & 0x00FFFFFF));
+            highlightAnnotationOverlayPaint.setColor(annotation.getColor());
             return highlightAnnotationOverlayPaint;
         }
         if (!annotation.isAppOwned()) {
             return null;
         }
-        highlightAnnotationMultiplyPaint.setColor(0xFF000000 | (annotation.getColor() & 0x00FFFFFF));
+        highlightAnnotationMultiplyPaint.setColor(annotation.getColor());
         return highlightAnnotationMultiplyPaint;
     }
 

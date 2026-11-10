@@ -1,0 +1,8 @@
+<resources>
+    <color name="study_surface">#202321</color>
+    <color name="study_ink">#F2F4EF</color>
+    <color name="study_muted">#B6BDB4</color>
+    <color name="study_outline">#565E54</color>
+    <color name="study_subtle">#2C312D</color>
+    <color name="study_accent">#ADCEB6</color>
+</resources>
