@@ -42,6 +42,7 @@ class InkController(
     private val preferences=PreferenceManager.getDefaultSharedPreferences(activity)
     private val overlay=InkOverlay(activity,pdf)
     private val pageInk=linkedMapOf<Int,List<InkStroke>>()
+    private val diagnostics=PenDiagnostics()
     private val loading=mutableSetOf<Int>()
     private val revisions=mutableMapOf<Int,Int>()
     private val history get()=vm.studyInkHistory
@@ -247,6 +248,7 @@ class InkController(
         val p=pdf.studyViewToPdf(activePage,x,y)?:return null
         val range=event.device?.getMotionRange(MotionEvent.AXIS_PRESSURE,event.source)
         val raw=if(history<0)event.getPressure(index)else event.getHistoricalPressure(index,history)
+        diagnostics.record(event,index,raw)
         return InkPoint(p.x,p.y,InkStroke.pressure(raw,range?.min?:0f,range?.max?:1f))
     }
     private fun sample(raw:InkPoint) {
@@ -306,6 +308,22 @@ class InkController(
         val p=strokes.flatMap { it.points }
         return RectF(p.minOf { it.x },p.maxOf { it.y },p.maxOf { it.x },p.minOf { it.y })
     }
+    private fun showDiagnostics() {
+        val report=diagnostics.report()+"\n\n"+activity.getString(
+            if(diagnostics.observed)R.string.study_pen_information_note else R.string.study_pen_information_empty)
+        val text=TextView(activity).apply {
+            this.text=report;textSize=14f;setTextIsSelectable(true)
+            setPadding(dp(24),dp(12),dp(24),dp(12))
+        }
+        MaterialAlertDialogBuilder(activity,R.style.StudyColorDialog)
+            .setTitle(R.string.study_pen_information)
+            .setView(ScrollView(activity).apply { addView(text) })
+            .setPositiveButton(android.R.string.ok,null)
+            .setNeutralButton(R.string.study_copy_report){_,_->
+                val clipboard=activity.getSystemService(android.content.ClipboardManager::class.java)
+                clipboard.setPrimaryClip(android.content.ClipData.newPlainText(activity.getString(R.string.study_pen_information),report))
+            }.show()
+    }
     private fun showOptions() {
         val body=LinearLayout(activity).apply { orientation=LinearLayout.VERTICAL;setPadding(dp(24),dp(8),dp(24),0) }
         val field=TextInputLayout(activity).apply { hint=activity.getString(R.string.study_hex);boxBackgroundMode=TextInputLayout.BOX_BACKGROUND_OUTLINE }
@@ -315,6 +333,10 @@ class InkController(
         val width=Slider(activity).apply { valueFrom=.5f;valueTo=12f;stepSize=.5f;value=(nib*2).roundToInt().coerceIn(1,24)/2f;contentDescription=activity.getString(R.string.study_ink_options) }
         width.addOnChangeListener { _,value,_->label.text=activity.getString(R.string.study_nib_width,value) };body.addView(width)
         val pressure=MaterialCheckBox(activity).apply { text=activity.getString(R.string.study_pressure);isChecked=usePressure };body.addView(pressure)
+        body.addView(MaterialButton(activity).apply {
+            text=activity.getString(R.string.study_pen_information);isAllCaps=false;minHeight=dp(48)
+            setOnClickListener { showDiagnostics() }
+        })
         val palette=LinearLayout(activity)
         listOf(0x263E4D,0x4968B2,0xD76659,0x3C846A,0xC7A12E).forEach { rgb ->
             palette.addView(MaterialButton(activity).apply {

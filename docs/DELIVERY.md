@@ -12,8 +12,10 @@ Custom text highlights from 0.1 remain available. Original PDFium renderer, GPL 
 
 - Native JNI built for arm64-v8a and x86_64; exported ink JNI symbols checked.
 - 1,104 JVM tests passed, 57 skipped, zero failures/errors (785 app, 290 viewer, 29 native bridge).
-- Full debug APK, instrumentation APK and lint check: final verification in progress; do not infer runtime success from source availability.
-- New native round-trip/visible-appearance and synthetic pen/finger input tests are included in the targeted Android integration job. Their execution status must be checked on the PR/Actions run before acceptance.
+- Debug APK and instrumentation APK assembled. Lint passed: zero errors, 307 warnings (including inherited warnings). APK signature verified; all five native libraries per ABI match the newly built binaries byte-for-byte.
+- Diagnostics/stability APK SHA-256: `d236f9a2aff64212b3977843fa3707d7a63f4ac7463c7a3d99b8e338616e2221`. Local debug signing differs from CI signing.
+- GitHub has also compiled the ink APK and passed JVM/lint on the PR. The initial run then failed while hashing generated native files for its post-build cache; cache inputs have been narrowed to source files. APK artifact was uploaded successfully.
+- Android integration has not passed: the first emulator boot failed and its diagnostic adb command waited for a device. The workflow now bounds both waits, emits emulator logs and uses the current SwiftShader backend. A fresh run must pass before acceptance.
 - No physical tablet/pen, real pressure range, palm rejection, latency, cross-reader interoperability or large-PDF stress test has been verified here.
 - PDFium prebuilt profile is pinned to 7920 and omits upstream Arabic patches. Source mode remains available.
 

@@ -23,4 +23,8 @@
     <string name="study_ink_selected">%1$d trazos seleccionados · arrastra para mover o usa la esquina para escalar</string>
     <string name="study_ink_limit">Selecciona menos trazos para mantener la edición fluida.</string>
     <string name="study_save_ink">Guardar PDF</string>
+    <string name="study_pen_information">Información del lápiz</string>
+    <string name="study_pen_information_empty">Escribe un trazo para ver el dispositivo, el rango de presión y los botones que Android expone. No se han supuesto capacidades del hardware.</string>
+    <string name="study_pen_information_note">Observaciones locales de esta sesión. Estos valores no certifican latencia ni rechazo de palma. Usa el botón mientras trazas para comprobar si Android expone sus eventos.</string>
+    <string name="study_copy_report">Copiar informe</string>
 </resources>

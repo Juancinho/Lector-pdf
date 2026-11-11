@@ -367,6 +367,8 @@ class MainActivity : AppCompatActivity(), ReaderUi {
     }
 
     private fun clearUnsavedAnnotationState() {
+        vm.studyInkHistory.clear()
+        reader.refreshInkAfterRestore()
         signatureController.cancelPlacement()
         annotationSaveController.clearPendingRequests()
         annotationController.clearJournal()

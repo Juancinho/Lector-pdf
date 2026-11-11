@@ -23,4 +23,8 @@
     <string name="study_ink_selected">%1$d strokes selected · drag to move, corner to resize</string>
     <string name="study_ink_limit">Select fewer strokes to keep editing responsive.</string>
     <string name="study_save_ink">Save PDF</string>
+    <string name="study_pen_information">Pen information</string>
+    <string name="study_pen_information_empty">Write a stroke first to see the input device, pressure range and button events exposed by Android. No hardware capability has been inferred.</string>
+    <string name="study_pen_information_note">Local observations from this session. These values do not certify latency or palm rejection. Use the pen button while drawing to check whether Android exposes its events.</string>
+    <string name="study_copy_report">Copy report</string>
 </resources>

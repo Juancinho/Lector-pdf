@@ -13,7 +13,7 @@ on:
 permissions:
   contents: read
 concurrency:
-  group: android-${{ github.ref }}
+  group: android-${{ github.head_ref && format('refs/heads/{0}', github.head_ref) || github.ref }}
   cancel-in-progress: true
 jobs:
   debug:
@@ -49,7 +49,7 @@ jobs:
           path: |
             PdfiumAndroid/src/main/jni/lib
             PdfiumAndroid/src/main/libs
-          key: native-arm64-ndk29-${{ inputs.pdfium || 'prebuilt' }}-${{ hashFiles('build_dependencies/**', 'build_dependencies.py', 'PdfiumAndroid/src/main/jni/**') }}
+          key: native-arm64-ndk29-${{ inputs.pdfium || 'prebuilt' }}-${{ hashFiles('build_dependencies/**', 'build_dependencies.py', 'PdfiumAndroid/src/main/jni/src/**', 'PdfiumAndroid/src/main/jni/include/**', 'PdfiumAndroid/src/main/jni/Android.mk', 'PdfiumAndroid/src/main/jni/Application.mk') }}
       - name: Build native dependencies and JNI
         env:
           PDFIUM_MODE: ${{ inputs.pdfium || 'prebuilt' }}
@@ -105,16 +105,17 @@ jobs:
           path: |
             PdfiumAndroid/src/main/jni/lib
             PdfiumAndroid/src/main/libs
-          key: native-x86_64-ndk29-${{ hashFiles('build_dependencies/**', 'build_dependencies.py', 'PdfiumAndroid/src/main/jni/**') }}
+          key: native-x86_64-ndk29-${{ hashFiles('build_dependencies/**', 'build_dependencies.py', 'PdfiumAndroid/src/main/jni/src/**', 'PdfiumAndroid/src/main/jni/include/**', 'PdfiumAndroid/src/main/jni/Android.mk', 'PdfiumAndroid/src/main/jni/Application.mk') }}
       - name: Build native x86_64 runtime
         run: ANDROID_NDK="$ANDROID_HOME/ndk/29.0.14206865" python build_dependencies.py --pdfium prebuilt --abi x86_64
       - name: Boot accelerated Android emulator
         run: |
           sudo chmod 666 /dev/kvm
           echo no | avdmanager create avd -n study-ci -k 'system-images;android-30;default;x86_64' --force
-          "$ANDROID_HOME/emulator/emulator" -avd study-ci -no-window -no-audio -no-boot-anim -no-snapshot -gpu swiftshader_indirect -accel on > emulator.log 2>&1 &
-          timeout 300 adb wait-for-device
-          timeout 300 bash -c 'until [ "$(adb shell getprop sys.boot_completed 2>/dev/null | tr -d "\r")" = 1 ]; do sleep 2; done'
+          "$ANDROID_HOME/emulator/emulator" -avd study-ci -no-window -no-audio -no-boot-anim -no-snapshot -gpu swiftshader -feature -Vulkan -accel on > emulator.log 2>&1 &
+          trap 'cat emulator.log' EXIT
+          timeout 180 adb wait-for-device
+          timeout 180 bash -c 'until [ "$(adb shell getprop sys.boot_completed 2>/dev/null | tr -d "\r")" = 1 ]; do sleep 2; done'
           adb shell settings put global window_animation_scale 0
           adb shell settings put global transition_animation_scale 0
           adb shell settings put global animator_duration_scale 0
@@ -123,7 +124,7 @@ jobs:
         run: ./gradlew :app:connectedDebugAndroidTest -Pandroid.testInstrumentationRunnerArguments.package=com.gitlab.mudlej.MjPdfReader.study --max-workers=2 --console=plain
       - name: Collect emulator diagnostics
         if: always()
-        run: adb logcat -d > logcat.txt || true
+        run: timeout 20 adb logcat -d > logcat.txt || true
       - name: Upload integration reports
         if: always()
         uses: actions/upload-artifact@v4

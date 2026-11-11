@@ -523,8 +523,8 @@
     <string name="actions">Actions</string>
     <string name="restore">Restore</string>
     <string name="discard">Discard</string>
-    <string name="restore_unsaved_highlights_title">Restore unsaved highlights?</string>
-    <string name="restore_unsaved_highlights_message">MJ PDF found an unsaved highlight recovery copy for this document. Restore it, or discard it and open the original file?</string>
+    <string name="restore_unsaved_highlights_title">Restore unsaved annotations?</string>
+    <string name="restore_unsaved_highlights_message">MJ Study found an unsaved annotation recovery copy for this document. Restore it, or discard it and open the original file?</string>
     <string name="no_pdf_in_app">There is no PDF open in the app</string>
     <string name="advanced">Advanced</string>
     <string name="part_size">Rendering Tile Size</string>

@@ -425,8 +425,8 @@
     <string name="actions">Acciones</string>
     <string name="restore">Restaurar</string>
     <string name="discard">Descartar</string>
-    <string name="restore_unsaved_highlights_title">¿Restaurar resaltados no guardados?</string>
-    <string name="restore_unsaved_highlights_message">MJ PDF encontró una copia de recuperación de resaltados no guardados para este documento. ¿Restaurarla o descartarla y abrir el archivo original?</string>
+    <string name="restore_unsaved_highlights_title">¿Restaurar anotaciones no guardadas?</string>
+    <string name="restore_unsaved_highlights_message">MJ Study encontró una copia de recuperación de anotaciones no guardadas para este documento. ¿Restaurarla o descartarla y abrir el archivo original?</string>
     <string name="no_pdf_in_app">No hay ningún PDF abierto en la aplicación</string>
     <string name="advanced">Avanzado</string>
     <string name="part_size">Tamaño de mosaico de renderizado</string>
