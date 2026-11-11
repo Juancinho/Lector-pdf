@@ -2,7 +2,6 @@
 package com.gitlab.mudlej.MjPdfReader.study
 
 import android.content.Intent
-import android.graphics.Bitmap
 import android.net.Uri
 import android.os.SystemClock
 import android.view.View
@@ -50,14 +49,14 @@ class ReaderGlassTest {
                     assertTrue(toolbar.isShown)
                     assertNotNull(toolbar.background)
                 }
-                device.takeScreenshot(File(context.filesDir, "study-glass-reader.png"))
+                device.executeShellCommand("screencap -p /data/local/tmp/study-glass-reader.png")
 
                 val more = device.wait(Until.findObject(By.res(context.packageName, "readerActionsOption")), 5_000)
                 assertNotNull("The visible toolbar must expose its menu action", more)
                 more!!.click()
                 assertTrue(device.wait(Until.hasObject(By.text(context.getString(R.string.study_reader_menu))), 5_000))
                 assertTrue(device.hasObject(By.text(context.getString(R.string.study_reader_reading))))
-                device.takeScreenshot(File(context.filesDir, "study-glass-menu.png"))
+                device.executeShellCommand("screencap -p /data/local/tmp/study-glass-menu.png")
 
                 val fullscreen = device.wait(Until.findObject(By.text(context.getString(R.string.full_screen))), 5_000)
                 assertNotNull("The reading group must include fullscreen", fullscreen)

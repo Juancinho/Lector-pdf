@@ -13,4 +13,3 @@ internal fun View.useReaderGlass(elevationDp: Int = 6) {
     setBackgroundResource(R.drawable.reader_glass)
     elevation = context.glassDp(elevationDp).toFloat()
 }
-

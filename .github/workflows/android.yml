@@ -141,8 +141,13 @@ jobs:
         if: ${{ !cancelled() }}
         run: |
           timeout 20 adb logcat -d > logcat.txt || true
-          for file in study-editor.png study-ink-toolbar.png study-ink-roundtrip.pdf study-glass-reader.png study-glass-menu.png; do
-            timeout 15 adb exec-out run-as io.github.juancinho.mjstudy cat "files/$file" > "$file" || rm -f "$file"
+          if timeout 10 adb shell pm path io.github.juancinho.mjstudy | grep -q '^package:'; then
+            for file in study-editor.png study-ink-toolbar.png study-ink-roundtrip.pdf; do
+              timeout 15 adb exec-out run-as io.github.juancinho.mjstudy cat "files/$file" > "$file" || rm -f "$file"
+            done
+          fi
+          for file in study-glass-reader.png study-glass-menu.png; do
+            timeout 15 adb pull "/data/local/tmp/$file" "$file" || true
           done
       - name: Upload integration reports
         if: ${{ !cancelled() }}
