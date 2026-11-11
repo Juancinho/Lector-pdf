@@ -24,7 +24,7 @@ Transforms are remove/add patches with best-effort rollback on a failed native s
 
 Limits: 4,096 samples per stroke; excess samples in an uninterrupted long stroke are ignored. Lasso transform limited to 50,000 points. Editing cache loads at most 200,000 points per page and evicts older pages above eight pages/200,000 points overall. Native metadata query caps 2,000 records/4 million UTF-16 characters and rejects individual metadata above 600,000 characters. The underlying standard PDF annotations still render even when editing metadata exceeds these limits. These are protective development bounds, not a claim of unlimited handwriting scalability.
 
-Color, width and pressure preference are local and included in the existing settings-backup whitelist. No server or account is required. Tool favorites, tilt, hover/proximity behavior and optimized Android low-latency/front-buffer rendering remain future work.
+Color, width, freehand marker opacity (1–100%) and pressure preference are local and included in the existing settings-backup whitelist. No server or account is required. Tool favorites, tilt, hover/proximity behavior and optimized Android low-latency/front-buffer rendering remain future work.
 
 Pen information in the ink options displays actual observed InputDevice name/source, tool IDs, declared pressure axis, observed raw pressure and button bit flags. It is in-memory only, can be copied locally, and explicitly distinguishes unobserved data from supported hardware.
 

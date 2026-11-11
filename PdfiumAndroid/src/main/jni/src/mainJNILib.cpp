@@ -2960,13 +2960,13 @@ JNI_FUNC(jboolean, PdfiumCore, nativeAddStudyInk)(JNI_ARGS,
         for (size_t i = 1; ok && i < a.size(); ++i) ok = FPDFPath_LineTo(path, a[i].x, a[i].y);
         for (size_t i = b.size(); ok && i > 0; --i) ok = FPDFPath_LineTo(path, b[i-1].x, b[i-1].y);
         ok = ok && FPDFPath_Close(path) && FPDFPath_SetDrawMode(path, FPDF_FILLMODE_WINDING, false)
-                && FPDFPageObj_SetFillColor(path, red, green, blue, 255);
+                && FPDFPageObj_SetFillColor(path, red, green, blue, alpha);
     } else if (ok) {
         path = FPDFPageObj_CreateNewPath(points[0].x, points[0].y);
         ok = path != nullptr;
         for (size_t i = 1; ok && i < points.size(); ++i) ok = FPDFPath_LineTo(path, points[i].x, points[i].y);
         ok = ok && FPDFPath_SetDrawMode(path, 0, true)
-                && FPDFPageObj_SetStrokeColor(path, red, green, blue, 255)
+                && FPDFPageObj_SetStrokeColor(path, red, green, blue, alpha)
                 && FPDFPageObj_SetStrokeWidth(path, width)
                 && FPDFPageObj_SetLineCap(path, FPDF_LINECAP_ROUND)
                 && FPDFPageObj_SetLineJoin(path, FPDF_LINEJOIN_ROUND);

@@ -48,6 +48,7 @@ class InkController(
     private val history get()=vm.studyInkHistory
     private var color=preferences.getInt("study.ink.color",0xFF263E4D.toInt())
     private var nib=preferences.getFloat("study.ink.width",2f).takeIf { it.isFinite() && it in .1f..24f } ?: 2f
+    private var markerOpacity=preferences.getInt("study.ink.markerOpacity",40).coerceIn(1,100)
     private var usePressure=preferences.getBoolean("study.ink.pressure",true)
     private var pointer=-1
     private var activePage=-1
@@ -275,7 +276,7 @@ class InkController(
         overlay.invalidate()
     }
     private fun toolWidth()=if(activeTool==InkTool.HIGHLIGHTER)nib*5 else nib
-    private fun toolColor()=when(activeTool){InkTool.HIGHLIGHTER->(color and 0xFFFFFF)or(90 shl 24);InkTool.PENCIL->(color and 0xFFFFFF)or(205 shl 24);else->color or 0xFF000000.toInt()}
+    private fun toolColor()=when(activeTool){InkTool.HIGHLIGHTER->(color and 0xFFFFFF)or((((markerOpacity*255+50)/100)) shl 24);InkTool.PENCIL->(color and 0xFFFFFF)or(205 shl 24);else->color or 0xFF000000.toInt()}
     private fun toolPressure()=usePressure&&activeTool in listOf(InkTool.PEN,InkTool.PENCIL)
     private fun finish() {
         if(samples.isEmpty())return
@@ -332,6 +333,14 @@ class InkController(
         val label=TextView(activity).apply { text=activity.getString(R.string.study_nib_width,nib);setPadding(0,dp(16),0,0) };body.addView(label)
         val width=Slider(activity).apply { valueFrom=.5f;valueTo=12f;stepSize=.5f;value=(nib*2).roundToInt().coerceIn(1,24)/2f;contentDescription=activity.getString(R.string.study_ink_options) }
         width.addOnChangeListener { _,value,_->label.text=activity.getString(R.string.study_nib_width,value) };body.addView(width)
+        val opacityLabel=TextView(activity).apply {
+            text=activity.getString(R.string.study_marker_opacity,markerOpacity)
+        };body.addView(opacityLabel)
+        val opacity=Slider(activity).apply {
+            valueFrom=1f;valueTo=100f;stepSize=1f;value=markerOpacity.toFloat()
+            contentDescription=activity.getString(R.string.study_marker_opacity,markerOpacity)
+            addOnChangeListener { _,value,_->opacityLabel.text=activity.getString(R.string.study_marker_opacity,value.roundToInt()) }
+        };body.addView(opacity)
         val pressure=MaterialCheckBox(activity).apply { text=activity.getString(R.string.study_pressure);isChecked=usePressure };body.addView(pressure)
         body.addView(MaterialButton(activity).apply {
             text=activity.getString(R.string.study_pen_information);isAllCaps=false;minHeight=dp(48)
@@ -350,8 +359,8 @@ class InkController(
         dialog.getButton(android.content.DialogInterface.BUTTON_POSITIVE).setOnClickListener {
             val rgb=HighlightStyle.parseHex(hex.text.toString())
             if(rgb==null){field.error=activity.getString(R.string.study_invalid_hex);return@setOnClickListener}
-            color=rgb or 0xFF000000.toInt();nib=width.value;usePressure=pressure.isChecked
-            preferences.edit().putInt("study.ink.color",color).putFloat("study.ink.width",nib).putBoolean("study.ink.pressure",usePressure).apply()
+            color=rgb or 0xFF000000.toInt();nib=width.value;usePressure=pressure.isChecked;markerOpacity=opacity.value.roundToInt()
+            preferences.edit().putInt("study.ink.color",color).putInt("study.ink.markerOpacity",markerOpacity).putFloat("study.ink.width",nib).putBoolean("study.ink.pressure",usePressure).apply()
             dialog.dismiss()
         }
     }

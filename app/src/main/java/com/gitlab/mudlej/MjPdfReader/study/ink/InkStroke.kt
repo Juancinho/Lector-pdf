@@ -67,9 +67,16 @@ object InkGeometry {
         val t = (((point.x - a.x) * dx + (point.y - a.y) * dy) / length).coerceIn(0f, 1f)
         return hypot(point.x - a.x - dx * t, point.y - a.y - dy * t)
     }
-    fun hits(stroke: InkStroke, point: InkPoint, radius: Float): Boolean =
-        if (stroke.points.size == 1) distance(point, stroke.points[0], stroke.points[0]) <= radius + stroke.width / 2
-        else stroke.points.zipWithNext().any { (a, b) -> distance(point, a, b) <= radius + stroke.width / 2 }
+    fun hits(stroke: InkStroke, point: InkPoint, radius: Float): Boolean {
+        val reach = radius + stroke.width / 2
+        val points = stroke.points
+        if (points.size == 1) return distance(point, points[0], points[0]) <= reach
+        // Erasing runs for every pen sample: avoid allocating a Pair/list per segment.
+        for (index in 1 until points.size) {
+            if (distance(point, points[index - 1], points[index]) <= reach) return true
+        }
+        return false
+    }
 
     fun inside(point: InkPoint, polygon: List<InkPoint>): Boolean {
         if (polygon.size < 3) return false

@@ -27,4 +27,5 @@
     <string name="study_pen_information_empty">Escribe un trazo para ver el dispositivo, el rango de presión y los botones que Android expone. No se han supuesto capacidades del hardware.</string>
     <string name="study_pen_information_note">Observaciones locales de esta sesión. Estos valores no certifican latencia ni rechazo de palma. Usa el botón mientras trazas para comprobar si Android expone sus eventos.</string>
     <string name="study_copy_report">Copiar informe</string>
+    <string name="study_marker_opacity">Opacidad del rotulador · %1$d%%</string>
 </resources>

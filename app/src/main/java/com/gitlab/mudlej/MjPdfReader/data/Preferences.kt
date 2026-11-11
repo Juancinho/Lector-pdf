@@ -326,7 +326,7 @@ class Preferences(private val prefMan: SharedPreferences) {
                 textModeReadableLineLengthKey,
             ).forEach { put(it, kindBoolean) }
             listOf(
-                "study.ink.color", hideDelayKey, goToPageGridColumnsKey, scrollSpeedKey, homeListTitleLinesKey,
+                "study.ink.markerOpacity", "study.ink.color", hideDelayKey, goToPageGridColumnsKey, scrollSpeedKey, homeListTitleLinesKey,
                 homeGridTitleLinesKey, autoBackupHourKey, autoBackupMinuteKey, lastSeenVersionCodeKey,
                 textModeHorizontalMarginKey,
             ).forEach { put(it, kindInt) }

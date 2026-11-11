@@ -13,11 +13,13 @@ Custom text highlights from 0.1 remain available. Original PDFium renderer, GPL 
 - Native JNI built for arm64-v8a and x86_64; exported ink JNI symbols checked.
 - 1,104 JVM tests passed, 57 skipped, zero failures/errors (785 app, 290 viewer, 29 native bridge).
 - Debug APK and instrumentation APK assembled. Lint passed: zero errors, 307 warnings (including inherited warnings). APK signature verified; all five native libraries per ABI match the newly built binaries byte-for-byte.
-- Diagnostics/stability APK SHA-256: `d236f9a2aff64212b3977843fa3707d7a63f4ac7463c7a3d99b8e338616e2221`. Local debug signing differs from CI signing.
+- Transparency-corrected APK SHA-256: `579e49b899d4209a0c6b3d005cf6c3ec395dac35248dfb444707864e71725f72`. Local debug signing differs from CI signing.
 - GitHub has also compiled the ink APK and passed JVM/lint on the PR. The initial run then failed while hashing generated native files for its post-build cache; cache inputs have been narrowed to source files. APK artifact was uploaded successfully.
-- Android integration has not passed: the first emulator boot failed and its diagnostic adb command waited for a device. The workflow now bounds both waits, emits emulator logs and uses the current SwiftShader backend. A fresh run must pass before acceptance.
+- Android integration has not passed: the first emulator boot failed and its diagnostic adb command waited for a device. The logs identified mismatched AVD discovery paths. The workflow now sets explicit Android user/AVD directories, selects a tablet profile, bounds both waits and emits emulator logs. A fresh run must pass before acceptance.
 - No physical tablet/pen, real pressure range, palm rejection, latency, cross-reader interoperability or large-PDF stress test has been verified here.
 - PDFium prebuilt profile is pinned to 7920 and omits upstream Arabic patches. Source mode remains available.
+
+The ink appearance alpha initially differed from annotation `/CA`: a host PDFium 8076/MuPDF probe showed opaque strokes despite `/CA 0.8`. Both engines render the expected blended pixel after carrying alpha into the appearance path itself (PDFium RGB 71/97/151, MuPDF 70/97/151 over white for RGB 25/58/126 at 80%). JNI now applies the same correction to filled pressure outlines and constant-width paths. This host API probe is not an execution of Android JNI/PDFium 7920; Android integration and physical checks remain required.
 
 ## Tablet smoke test
 
