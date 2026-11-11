@@ -13,7 +13,7 @@ on:
 permissions:
   contents: read
 concurrency:
-  group: android-${{ github.head_ref && format('refs/heads/{0}', github.head_ref) || github.ref }}
+  group: android-v2-${{ github.head_ref && format('refs/heads/{0}', github.head_ref) || github.ref }}
   cancel-in-progress: true
 jobs:
   debug:
@@ -81,7 +81,7 @@ jobs:
   integration:
     name: Native PDF and pen input (API 30)
     runs-on: ubuntu-24.04
-    timeout-minutes: 60
+    timeout-minutes: 30
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-java@v4
@@ -121,12 +121,16 @@ jobs:
           adb shell settings put global animator_duration_scale 0
           adb shell input keyevent 82
       - name: Test highlight and ink create-save-reopen, UI and input
-        run: ./gradlew :app:connectedDebugAndroidTest -Pandroid.testInstrumentationRunnerArguments.package=com.gitlab.mudlej.MjPdfReader.study --max-workers=2 --console=plain
+        run: ./gradlew :app:connectedDebugAndroidTest -Pandroid.testInstrumentationRunnerArguments.package=com.gitlab.mudlej.MjPdfReader.study -Pandroid.testInstrumentationRunnerArguments.clearPackageData=false --max-workers=2 --console=plain
       - name: Collect emulator diagnostics
-        if: always()
-        run: timeout 20 adb logcat -d > logcat.txt || true
+        if: ${{ !cancelled() }}
+        run: |
+          timeout 20 adb logcat -d > logcat.txt || true
+          for file in study-editor.png study-ink-toolbar.png study-ink-roundtrip.pdf; do
+            timeout 15 adb exec-out run-as io.github.juancinho.mjstudy cat "files/$file" > "$file" || rm -f "$file"
+          done
       - name: Upload integration reports
-        if: always()
+        if: ${{ !cancelled() }}
         uses: actions/upload-artifact@v4
         with:
           name: mj-study-android-integration
@@ -135,3 +139,5 @@ jobs:
             app/build/outputs/androidTest-results/
             emulator.log
             logcat.txt
+            study-*.png
+            study-*.pdf

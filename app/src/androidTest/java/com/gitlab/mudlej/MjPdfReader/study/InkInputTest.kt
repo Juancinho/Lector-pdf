@@ -36,6 +36,8 @@ class InkInputTest {
                 pdf=PDFView(activity,null)
                 parent.addView(pdf,CoordinatorLayout.LayoutParams(-1,-1))
                 activity.setContentView(parent)
+                vm.studyToolbarExpanded=true
+                vm.studyInkEnabled=true
                 controller=InkController(activity,pdf,vm,activity.lifecycleScope,{true},{edits.add(it)},{})
                 controller.attach()
                 pdf.fromBytes(input).onLoad { loaded.countDown() }.load()
@@ -46,11 +48,12 @@ class InkInputTest {
                 vm.studyInkEnabled=true
                 pdf.zoomTo(1.75f)
                 pdf.moveTo(-20f,-35f)
-                val start=pdf.studyPdfToView(0,60f,80f)!!
-                val end=pdf.studyPdfToView(0,90f,90f)!!
+                val expected=pdf.studyViewToPdf(0,pdf.width*.45f,pdf.height*.5f)!!
+                val start=pdf.studyPdfToView(0,expected.x,expected.y)!!
+                val end=android.graphics.PointF(start.x+30f,start.y+20f)
                 assertEquals(0,pdf.studyPageAt(start.x,start.y))
                 val roundTrip=pdf.studyViewToPdf(0,start.x,start.y)!!
-                assertEquals(60f,roundTrip.x,.1f);assertEquals(80f,roundTrip.y,.1f)
+                assertEquals(expected.x,roundTrip.x,.1f);assertEquals(expected.y,roundTrip.y,.1f)
                 val now=SystemClock.uptimeMillis()
                 // Finger input must retain the reader's original listener and produce no ink.
                 event(now,MotionEvent.ACTION_DOWN,start.x,start.y,MotionEvent.TOOL_TYPE_FINGER).useEvent(pdf)
@@ -61,12 +64,20 @@ class InkInputTest {
                 event(now+30,MotionEvent.ACTION_UP,end.x,end.y,MotionEvent.TOOL_TYPE_STYLUS,.8f).useEvent(pdf)
                 val patch=edits.single() as AnnotationEdit.InkPatch
                 val stroke=InkCodec.decode(patch.after.single())!!
-                assertEquals(0,stroke.page);assertEquals(60f,stroke.points.first().x,.1f)
-                assertEquals(80f,stroke.points.first().y,.1f)
+                assertEquals(0,stroke.page);assertEquals(expected.x,stroke.points.first().x,.1f)
+                assertEquals(expected.y,stroke.points.first().y,.1f)
                 assertTrue(stroke.points.last().pressure>stroke.points.first().pressure)
                 assertTrue(vm.studyInkHistory.canUndo)
-                controller.destroy();pdf.recycle()
             }
+            InstrumentationRegistry.getInstrumentation().waitForIdleSync()
+            InstrumentationRegistry.getInstrumentation().uiAutomation.takeScreenshot()?.let { bitmap ->
+                val context=InstrumentationRegistry.getInstrumentation().targetContext
+                java.io.File(context.filesDir,"study-ink-toolbar.png").outputStream().use {
+                    bitmap.compress(android.graphics.Bitmap.CompressFormat.PNG,100,it)
+                }
+                bitmap.recycle()
+            }
+            scenario.onActivity { controller.destroy();pdf.recycle() }
         }
     }
     private fun event(time:Long,action:Int,x:Float,y:Float,tool:Int,pressure:Float=1f):MotionEvent {

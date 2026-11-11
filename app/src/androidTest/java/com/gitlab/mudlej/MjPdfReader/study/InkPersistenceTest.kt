@@ -30,6 +30,7 @@ class InkPersistenceTest {
                 assertEquals(listOf(stroke),core.getStudyInk(doc,0).map { InkCodec.decode(it) })
                 ParcelFileDescriptor.open(output,ParcelFileDescriptor.MODE_READ_WRITE or ParcelFileDescriptor.MODE_TRUNCATE).use { assertTrue(core.saveAsCopy(doc,it)) }
             } finally { core.closeDocument(doc) }
+            output.copyTo(File(context.filesDir,"study-ink-roundtrip.pdf"),overwrite=true)
             val reopened=core.newDocument(output.readBytes())
             try {
                 core.openPage(reopened,0)
@@ -45,6 +46,13 @@ class InkPersistenceTest {
                     assertTrue(core.getStudyInk(reopened,0).isEmpty())
                     core.renderPageBitmap(reopened,withoutInk,0,0,0,w,h,true)
                     assertFalse("Ink annotation must have a visible PDF appearance",withInk.sameAs(withoutInk))
+                    val foreground=withInk.getPixel(60,h-50)
+                    val background=withoutInk.getPixel(60,h-50)
+                    val alpha=Color.alpha(stroke.color)/255f
+                    listOf(Color::red,Color::green,Color::blue).forEach { channel ->
+                        val expected=channel(stroke.color)*alpha+channel(background)*(1-alpha)
+                        assertEquals("Stored appearance must preserve opacity",expected,channel(foreground).toFloat(),18f)
+                    }
                 } finally { withInk.recycle();withoutInk.recycle() }
                 ParcelFileDescriptor.open(output,ParcelFileDescriptor.MODE_READ_WRITE or ParcelFileDescriptor.MODE_TRUNCATE).use { assertTrue(core.saveAsCopy(reopened,it)) }
             } finally { core.closeDocument(reopened) }
