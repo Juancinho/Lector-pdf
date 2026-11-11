@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <style name="StudyReaderMenuWindow" parent="Theme.AppCompat.DayNight.Dialog">
+        <item name="android:windowIsTranslucent">true</item>
+        <item name="android:windowBackground">@android:color/transparent</item>
+    </style>
+    <string name="study_reader_menu">PDF tools</string>
+    <string name="study_reader_reading">Reading</string>
+    <string name="study_reader_study">Study</string>
+    <string name="study_reader_document">Document</string>
+    <string name="study_ink_shapes">Shapes</string>
+    <color name="reader_glass_top">#F5FFFFFF</color>
+    <color name="reader_glass_bottom">#E3E9F0FD</color>
+    <color name="reader_glass_rim">#EDFFFFFF</color>
+    <color name="reader_glass_solid">#F2F5FC</color>
+    <color name="reader_glass_ink">#172339</color>
+    <color name="reader_glass_muted">#4F5F78</color>
+    <color name="reader_glass_tint">#DDE8FF</color>
+    <color name="reader_glass_accent">#204EB0</color>
+    <color name="reader_glass_desk">#DFE6F2</color>
+</resources>

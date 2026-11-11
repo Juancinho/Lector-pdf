@@ -27,7 +27,7 @@
         android:id="@+id/readerActionsOption"
         android:orderInCategory="3"
         android:title="@string/actions"
-        android:icon="@drawable/ic_burger_menu"
+        android:icon="@drawable/ic_more_horizontal"
         app:showAsAction="always" />
 
 </menu>

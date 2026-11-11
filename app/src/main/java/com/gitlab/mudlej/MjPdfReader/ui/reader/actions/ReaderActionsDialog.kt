@@ -1,14 +1,15 @@
-// Written by Mudlej. License is GPLv3.
-
+// SPDX-License-Identifier: GPL-3.0-or-later
 package com.gitlab.mudlej.MjPdfReader.ui.reader.actions
 
 import android.content.res.ColorStateList
-import android.text.TextUtils
-import android.util.TypedValue
+import android.graphics.Typeface
+import android.graphics.drawable.GradientDrawable
+import android.os.Build
 import android.view.Gravity
 import android.view.View
 import android.view.Window
-import android.widget.ImageView
+import android.view.WindowManager
+import android.widget.Button
 import android.widget.LinearLayout
 import android.widget.ScrollView
 import android.widget.Space
@@ -16,24 +17,11 @@ import android.widget.TextView
 import androidx.annotation.StringRes
 import androidx.appcompat.app.AppCompatDialog
 import androidx.appcompat.content.res.AppCompatResources
+import androidx.core.widget.TextViewCompat
 import com.gitlab.mudlej.MjPdfReader.R
+import com.gitlab.mudlej.MjPdfReader.study.ui.glassDp
 import com.gitlab.mudlej.MjPdfReader.ui.reader.MainActivity
-import com.google.android.material.color.MaterialColors
-import com.google.android.material.divider.MaterialDivider
-
-private const val COLOR_FALLBACK = 0
-private const val GRID_COLUMNS = 4
-private const val TILE_ICON_SIZE_DP = 26
-private const val TILE_VERTICAL_PADDING_DP = 14
-private const val TILE_LABEL_TOP_PADDING_DP = 6
-private const val TILE_LABEL_HORIZONTAL_PADDING_DP = 2
-private const val TILE_LABEL_TEXT_SP = 12f
-private const val GRID_HORIZONTAL_PADDING_DP = 10
-private const val CONTENT_TOP_PADDING_DP = 12
-private const val CONTENT_BOTTOM_PADDING_DP = 18
-private const val DIVIDER_HORIZONTAL_MARGIN_DP = 24
-private const val DIVIDER_VERTICAL_MARGIN_DP = 10
-private const val DISABLED_TILE_ALPHA = 0.38f
+import java.util.function.Consumer
 
 data class ReaderAction(
     @StringRes val titleRes: Int,
@@ -43,146 +31,100 @@ data class ReaderAction(
     val onClick: () -> Unit,
 )
 
-data class ReaderMenuSection(
-    val actions: List<ReaderAction>,
-)
+data class ReaderMenuSection(@StringRes val titleRes: Int, val actions: List<ReaderAction>)
 
-data class ReaderMenuContent(
-    val sections: List<ReaderMenuSection>,
-)
-
-private class TileStyle(
-    val textColor: Int,
-    val iconTint: ColorStateList,
-    val rippleRes: Int,
-    val density: Float,
-)
+data class ReaderMenuContent(val sections: List<ReaderMenuSection>)
 
 fun showReaderActionsDialog(activity: MainActivity, content: ReaderMenuContent): AppCompatDialog {
-    val density = activity.resources.displayMetrics.density
-    val textColor = MaterialColors.getColor(activity, R.attr.colorOnSurface, COLOR_FALLBACK)
-    val rippleValue = TypedValue().also {
-        activity.theme.resolveAttribute(android.R.attr.selectableItemBackground, it, true)
-    }
-    val style = TileStyle(textColor, ColorStateList.valueOf(textColor), rippleValue.resourceId, density)
+    val dialog = AppCompatDialog(activity, R.style.StudyReaderMenuWindow)
+    dialog.supportRequestWindowFeature(Window.FEATURE_NO_TITLE)
 
-    var dismiss: () -> Unit = {}
-
-    val column = LinearLayout(activity).apply {
+    val panel = LinearLayout(activity).apply {
         orientation = LinearLayout.VERTICAL
-        setPadding(0, dpToPx(CONTENT_TOP_PADDING_DP, density), 0, dpToPx(CONTENT_BOTTOM_PADDING_DP, density))
+        setPadding(activity.glassDp(16), activity.glassDp(12), activity.glassDp(16), activity.glassDp(12))
     }
-
+    panel.addView(TextView(activity).apply {
+        setText(R.string.study_reader_menu)
+        setTextColor(activity.getColor(R.color.reader_glass_ink))
+        textSize = 24f
+        typeface = Typeface.create("sans-serif-medium", Typeface.NORMAL)
+        setPadding(activity.glassDp(8), activity.glassDp(4), activity.glassDp(8), activity.glassDp(12))
+        if (Build.VERSION.SDK_INT >= 28) isAccessibilityHeading = true
+    })
+    val column = LinearLayout(activity).apply { orientation = LinearLayout.VERTICAL }
     content.sections.forEach { section ->
         val actions = section.actions.filter { it.visible }
-        if (actions.isEmpty()) {
-            return@forEach
-        }
-        if (column.childCount > 0) {
-            column.addView(createSectionDivider(activity, density))
-        }
-        column.addView(buildTileGrid(activity, actions, GRID_COLUMNS, style) { dismiss() })
-    }
-
-    val scroll = ScrollView(activity).apply { addView(column) }
-    val dialog = AppCompatDialog(activity, R.style.ChromeMaterialAlertDialog).apply {
-        supportRequestWindowFeature(Window.FEATURE_NO_TITLE)
-        setContentView(scroll)
-    }
-    dismiss = { dialog.dismiss() }
-    dialog.show()
-    return dialog
-}
-
-private fun createSectionDivider(activity: MainActivity, density: Float): View {
-    return MaterialDivider(activity).apply {
-        layoutParams = LinearLayout.LayoutParams(
-            LinearLayout.LayoutParams.MATCH_PARENT,
-            LinearLayout.LayoutParams.WRAP_CONTENT,
-        ).apply {
-            marginStart = dpToPx(DIVIDER_HORIZONTAL_MARGIN_DP, density)
-            marginEnd = dpToPx(DIVIDER_HORIZONTAL_MARGIN_DP, density)
-            topMargin = dpToPx(DIVIDER_VERTICAL_MARGIN_DP, density)
-            bottomMargin = dpToPx(DIVIDER_VERTICAL_MARGIN_DP, density)
-        }
-    }
-}
-
-private fun buildTileGrid(
-    activity: MainActivity,
-    actions: List<ReaderAction>,
-    columns: Int,
-    style: TileStyle,
-    dismiss: () -> Unit,
-): LinearLayout {
-    val grid = LinearLayout(activity).apply {
-        orientation = LinearLayout.VERTICAL
-        val padding = dpToPx(GRID_HORIZONTAL_PADDING_DP, style.density)
-        setPadding(padding, 0, padding, 0)
-    }
-    actions.chunked(columns).forEach { rowActions ->
-        val row = LinearLayout(activity).apply { orientation = LinearLayout.HORIZONTAL }
-        rowActions.forEach { action ->
-            row.addView(buildActionTile(activity, action, style, dismiss))
-        }
-        repeat(columns - rowActions.size) {
-            row.addView(Space(activity), LinearLayout.LayoutParams(0, 0, 1f))
-        }
-        grid.addView(row)
-    }
-    return grid
-}
-
-private fun buildActionTile(
-    activity: MainActivity,
-    action: ReaderAction,
-    style: TileStyle,
-    dismiss: () -> Unit,
-): View {
-    val iconView = ImageView(activity).apply {
-        layoutParams = LinearLayout.LayoutParams(
-            dpToPx(TILE_ICON_SIZE_DP, style.density),
-            dpToPx(TILE_ICON_SIZE_DP, style.density),
-        )
-        setImageDrawable(AppCompatResources.getDrawable(activity, action.iconRes))
-        imageTintList = style.iconTint
-    }
-    val label = activity.getString(action.titleRes)
-    val labelView = TextView(activity).apply {
-        text = label
-        gravity = Gravity.CENTER
-        maxLines = 2
-        ellipsize = TextUtils.TruncateAt.END
-        setTextColor(style.textColor)
-        setTextSize(TypedValue.COMPLEX_UNIT_SP, TILE_LABEL_TEXT_SP)
-        val horizontalPadding = dpToPx(TILE_LABEL_HORIZONTAL_PADDING_DP, style.density)
-        setPadding(horizontalPadding, dpToPx(TILE_LABEL_TOP_PADDING_DP, style.density), horizontalPadding, 0)
-    }
-    return LinearLayout(activity).apply {
-        orientation = LinearLayout.VERTICAL
-        gravity = Gravity.CENTER
-        layoutParams = LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1f)
-        val verticalPadding = dpToPx(TILE_VERTICAL_PADDING_DP, style.density)
-        setPadding(0, verticalPadding, 0, verticalPadding)
-        contentDescription = label
-        addView(iconView)
-        addView(labelView)
-        if (action.enabled) {
-            setBackgroundResource(style.rippleRes)
-            isClickable = true
-            isFocusable = true
-            setOnClickListener {
-                dismiss()
-                action.onClick()
+        if (actions.isEmpty()) return@forEach
+        column.addView(TextView(activity).apply {
+            setText(section.titleRes)
+            setTextColor(activity.getColor(R.color.reader_glass_muted))
+            textSize = 13f
+            typeface = Typeface.create("sans-serif-medium", Typeface.NORMAL)
+            setPadding(activity.glassDp(8), activity.glassDp(12), activity.glassDp(8), activity.glassDp(4))
+            if (Build.VERSION.SDK_INT >= 28) isAccessibilityHeading = true
+        })
+        val columns = if (activity.resources.configuration.screenWidthDp >= 400 &&
+            activity.resources.configuration.fontScale <= 1.3f) 2 else 1
+        actions.chunked(columns).forEach { rowActions ->
+            val row = LinearLayout(activity).apply { gravity = Gravity.CENTER_VERTICAL }
+            rowActions.forEach { action ->
+                val params = LinearLayout.LayoutParams(0, -2, 1f)
+                row.addView(Button(activity).apply {
+                    isAllCaps = false
+                    text = activity.getString(action.titleRes)
+                    textSize = 14f
+                    setTextColor(activity.getColor(R.color.reader_glass_ink))
+                    gravity = Gravity.START or Gravity.CENTER_VERTICAL
+                    minimumHeight = activity.glassDp(48)
+                    minHeight = minimumHeight
+                    setPadding(activity.glassDp(8), activity.glassDp(6), activity.glassDp(8), activity.glassDp(6))
+                    compoundDrawablePadding = activity.glassDp(10)
+                    val icon = AppCompatResources.getDrawable(activity, action.iconRes)?.mutate()
+                    icon?.setBounds(0, 0, activity.glassDp(21), activity.glassDp(21))
+                    setCompoundDrawablesRelative(icon, null, null, null)
+                    TextViewCompat.setCompoundDrawableTintList(this, ColorStateList.valueOf(currentTextColor))
+                    setBackgroundResource(R.drawable.reader_glass_button)
+                    isEnabled = action.enabled
+                    alpha = if (action.enabled) 1f else .45f
+                    setOnClickListener { dialog.dismiss(); action.onClick() }
+                }, params)
             }
-        } else {
-            alpha = DISABLED_TILE_ALPHA
-            isClickable = false
-            isFocusable = false
+            if (rowActions.size < columns) row.addView(Space(activity), LinearLayout.LayoutParams(0, 0, 1f))
+            column.addView(row)
         }
     }
-}
-
-private fun dpToPx(dp: Int, density: Float): Int {
-    return (dp * density + 0.5f).toInt()
+    panel.addView(ScrollView(activity).apply {
+        isFillViewport = false
+        addView(column)
+    }, LinearLayout.LayoutParams(-1, 0, 1f))
+    dialog.setContentView(panel)
+    dialog.setCanceledOnTouchOutside(true)
+    dialog.show()
+    val window = requireNotNull(dialog.window)
+    val configuration = activity.resources.configuration
+    val width = minOf(540, configuration.screenWidthDp - 24).coerceAtLeast(1)
+    val height = minOf(660, configuration.screenHeightDp - 84).coerceAtLeast(1)
+    window.setLayout(activity.glassDp(width), activity.glassDp(height))
+    window.setGravity(Gravity.TOP or Gravity.CENTER_HORIZONTAL)
+    window.attributes = window.attributes.apply { y = activity.glassDp(60) }
+    window.addFlags(WindowManager.LayoutParams.FLAG_DIM_BEHIND)
+    window.setDimAmount(.22f)
+    val fallback = GradientDrawable().apply {
+        setColor(activity.getColor(R.color.reader_glass_solid))
+        cornerRadius = activity.glassDp(28).toFloat()
+        setStroke(activity.glassDp(1), activity.getColor(R.color.reader_glass_rim))
+    }
+    window.setBackgroundDrawable(fallback)
+    if (Build.VERSION.SDK_INT >= 31) {
+        val manager = activity.windowManager
+        val glass = AppCompatResources.getDrawable(activity, R.drawable.reader_glass)
+        val listener = Consumer<Boolean> { enabled ->
+            window.setBackgroundDrawable(if (enabled) glass else fallback)
+            window.setBackgroundBlurRadius(if (enabled) activity.glassDp(28) else 0)
+            window.setDimAmount(if (enabled) .16f else .26f)
+        }
+        manager.addCrossWindowBlurEnabledListener(activity.mainExecutor, listener)
+        dialog.setOnDismissListener { manager.removeCrossWindowBlurEnabledListener(listener) }
+    }
+    return dialog
 }

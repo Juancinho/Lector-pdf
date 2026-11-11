@@ -36,7 +36,7 @@ class FullscreenChromeTest : ViewTestCase() {
 
         enterFullscreen()
 
-        ViewUi.assertVisibility("entering fullscreen", R.id.appBarBottomShadow, View.GONE)
+        ViewUi.assertVisibility("entering fullscreen", R.id.readerToolbar, View.GONE)
         ViewUi.assertVisibility("entering fullscreen", R.id.secondBarScrollView, View.GONE)
         ViewUi.assertVisibility(
             "the overlay panel is hidden on entry, because toggleFullscreen calls hideAll",
@@ -57,7 +57,7 @@ class FullscreenChromeTest : ViewTestCase() {
         tapOverlayButton(R.id.exitFullScreenButton)
 
         ViewUi.awaitActionBar(showing = true)
-        ViewUi.awaitVisibility(R.id.appBarBottomShadow, View.VISIBLE)
+        ViewUi.awaitVisibility(R.id.readerToolbar, View.VISIBLE)
         Await.until("the status bars report visible again") { ViewUi.statusBarsVisible() }
         ViewUi.awaitVisibility(R.id.fullScreenButtonsLayout, View.GONE, OVERLAY_TIMEOUT_MS)
     }
@@ -134,7 +134,7 @@ class FullscreenChromeTest : ViewTestCase() {
         )
         assertFalse("the action bar must report not showing after the rotation", ViewUi.actionBarShowing())
         ViewUi.awaitSystemBarsHidden()
-        ViewUi.assertVisibility("after the rotation", R.id.appBarBottomShadow, View.GONE)
+        ViewUi.assertVisibility("after the rotation", R.id.readerToolbar, View.GONE)
     }
 
     @Test

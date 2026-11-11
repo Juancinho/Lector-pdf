@@ -7,18 +7,44 @@
     android:id="@+id/mainLayout"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:background="?attr/colorSurfaceContainerHigh"
+    android:background="@color/reader_glass_desk"
     android:clipChildren="false"
+    android:clipToPadding="false"
     tools:context="com.gitlab.mudlej.MjPdfReader.ui.reader.MainActivity">
+
+    <androidx.appcompat.widget.Toolbar
+        android:id="@+id/readerToolbar"
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:minHeight="56dp"
+        android:layout_marginHorizontal="12dp"
+        android:layout_marginTop="6dp"
+        android:layout_marginBottom="8dp"
+        android:background="@drawable/reader_glass"
+        android:elevation="4dp"
+        android:paddingEnd="4dp"
+        app:contentInsetStart="8dp"
+        app:contentInsetStartWithNavigation="4dp"
+        app:contentInsetEnd="4dp"
+        app:layout_constraintWidth_max="900dp"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintTop_toTopOf="parent" />
 
     <!-- Second Bar Layout -->
     <HorizontalScrollView
         android:id="@+id/secondBarScrollView"
-        android:layout_width="match_parent"
+        android:layout_width="wrap_content"
         android:layout_height="wrap_content"
+        android:layout_marginHorizontal="12dp"
+        android:layout_marginBottom="8dp"
+        android:background="@drawable/reader_glass"
         android:fillViewport="true"
         android:scrollbars="none"
-        app:layout_constraintTop_toTopOf="parent">
+        app:layout_constrainedWidth="true"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintTop_toBottomOf="@id/readerToolbar">
 
         <androidx.appcompat.widget.LinearLayoutCompat
             android:id="@+id/secondBarLayout"
@@ -106,15 +132,15 @@
         </LinearLayout>
     </com.google.android.material.card.MaterialCardView>
 
-    <com.google.android.material.card.MaterialCardView
+    <FrameLayout
         android:id="@+id/textSelectionActionCard"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
+        app:layout_constrainedWidth="true"
         android:layout_margin="16dp"
         android:visibility="gone"
-        app:cardBackgroundColor="?attr/colorSurfaceContainerHigh"
-        app:cardCornerRadius="16dp"
-        app:cardElevation="6dp"
+        android:background="@drawable/reader_glass"
+        android:elevation="8dp"
         app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
@@ -129,116 +155,128 @@
 
             <com.google.android.material.button.MaterialButton
                 android:id="@+id/textSelectionCopyButton"
-                android:layout_width="40dp"
-                android:layout_height="40dp"
-                android:backgroundTint="?attr/colorSurfaceContainerHigh"
+                android:layout_width="48dp"
+                android:layout_height="48dp"
+                android:backgroundTint="@android:color/transparent"
+                app:cornerRadius="16dp"
+                app:rippleColor="@color/reader_glass_tint"
                 android:contentDescription="@string/copy"
                 android:insetLeft="0dp"
                 android:insetTop="0dp"
                 android:insetRight="0dp"
                 android:insetBottom="0dp"
-                android:minWidth="40dp"
-                android:minHeight="40dp"
+                android:minWidth="48dp"
+                android:minHeight="48dp"
                 android:padding="8dp"
                 android:text=""
                 app:icon="@drawable/ic_copy"
                 app:iconGravity="textStart"
                 app:iconPadding="0dp"
                 app:iconSize="22dp"
-                app:iconTint="?attr/colorOnSurface" />
+                app:iconTint="@color/reader_glass_ink" />
 
             <com.google.android.material.button.MaterialButton
                 android:id="@+id/textSelectionShareButton"
-                android:layout_width="40dp"
-                android:layout_height="40dp"
-                android:backgroundTint="?attr/colorSurfaceContainerHigh"
+                android:layout_width="48dp"
+                android:layout_height="48dp"
+                android:backgroundTint="@android:color/transparent"
+                app:cornerRadius="16dp"
+                app:rippleColor="@color/reader_glass_tint"
                 android:contentDescription="@string/share"
                 android:insetLeft="0dp"
                 android:insetTop="0dp"
                 android:insetRight="0dp"
                 android:insetBottom="0dp"
-                android:minWidth="40dp"
-                android:minHeight="40dp"
+                android:minWidth="48dp"
+                android:minHeight="48dp"
                 android:padding="8dp"
                 android:text=""
                 app:icon="@drawable/ic_share"
                 app:iconGravity="textStart"
                 app:iconPadding="0dp"
                 app:iconSize="22dp"
-                app:iconTint="?attr/colorOnSurface" />
+                app:iconTint="@color/reader_glass_ink" />
 
             <com.google.android.material.button.MaterialButton
                 android:id="@+id/textSelectionSearchWebButton"
-                android:layout_width="40dp"
-                android:layout_height="40dp"
-                android:backgroundTint="?attr/colorSurfaceContainerHigh"
+                android:layout_width="48dp"
+                android:layout_height="48dp"
+                android:backgroundTint="@android:color/transparent"
+                app:cornerRadius="16dp"
+                app:rippleColor="@color/reader_glass_tint"
                 android:contentDescription="@string/search_web"
                 android:insetLeft="0dp"
                 android:insetTop="0dp"
                 android:insetRight="0dp"
                 android:insetBottom="0dp"
-                android:minWidth="40dp"
-                android:minHeight="40dp"
+                android:minWidth="48dp"
+                android:minHeight="48dp"
                 android:padding="8dp"
                 android:text=""
                 app:icon="@drawable/ic_web"
                 app:iconGravity="textStart"
                 app:iconPadding="0dp"
                 app:iconSize="22dp"
-                app:iconTint="?attr/colorOnSurface" />
+                app:iconTint="@color/reader_glass_ink" />
 
             <com.google.android.material.button.MaterialButton
                 android:id="@+id/textSelectionNoteButton"
-                android:layout_width="40dp"
-                android:layout_height="40dp"
-                android:backgroundTint="?attr/colorSurfaceContainerHigh"
+                android:layout_width="48dp"
+                android:layout_height="48dp"
+                android:backgroundTint="@android:color/transparent"
+                app:cornerRadius="16dp"
+                app:rippleColor="@color/reader_glass_tint"
                 android:contentDescription="@string/add_note"
                 android:insetLeft="0dp"
                 android:insetTop="0dp"
                 android:insetRight="0dp"
                 android:insetBottom="0dp"
-                android:minWidth="40dp"
-                android:minHeight="40dp"
+                android:minWidth="48dp"
+                android:minHeight="48dp"
                 android:padding="8dp"
                 android:text=""
                 app:icon="@drawable/ic_comment_add"
                 app:iconGravity="textStart"
                 app:iconPadding="0dp"
                 app:iconSize="22dp"
-                app:iconTint="?attr/colorOnSurface" />
+                app:iconTint="@color/reader_glass_ink" />
 
             <com.google.android.material.button.MaterialButton
                 android:id="@+id/textSelectionTranslateButton"
-                android:layout_width="40dp"
-                android:layout_height="40dp"
-                android:backgroundTint="?attr/colorSurfaceContainerHigh"
+                android:layout_width="48dp"
+                android:layout_height="48dp"
+                android:backgroundTint="@android:color/transparent"
+                app:cornerRadius="16dp"
+                app:rippleColor="@color/reader_glass_tint"
                 android:contentDescription="@string/translate"
                 android:insetLeft="0dp"
                 android:insetTop="0dp"
                 android:insetRight="0dp"
                 android:insetBottom="0dp"
-                android:minWidth="40dp"
-                android:minHeight="40dp"
+                android:minWidth="48dp"
+                android:minHeight="48dp"
                 android:padding="8dp"
                 android:text=""
                 app:icon="@drawable/ic_translate"
                 app:iconGravity="textStart"
                 app:iconPadding="0dp"
                 app:iconSize="22dp"
-                app:iconTint="?attr/colorOnSurface" />
+                app:iconTint="@color/reader_glass_ink" />
 
             <com.google.android.material.button.MaterialButton
                 android:id="@+id/textSelectionDeleteHighlightButton"
-                android:layout_width="40dp"
-                android:layout_height="40dp"
-                android:backgroundTint="?attr/colorSurfaceContainerHigh"
+                android:layout_width="48dp"
+                android:layout_height="48dp"
+                android:backgroundTint="@android:color/transparent"
+                app:cornerRadius="16dp"
+                app:rippleColor="@color/reader_glass_tint"
                 android:contentDescription="@string/delete"
                 android:insetLeft="0dp"
                 android:insetTop="0dp"
                 android:insetRight="0dp"
                 android:insetBottom="0dp"
-                android:minWidth="40dp"
-                android:minHeight="40dp"
+                android:minWidth="48dp"
+                android:minHeight="48dp"
                 android:padding="8dp"
                 android:text=""
                 android:visibility="gone"
@@ -250,16 +288,18 @@
 
             <com.google.android.material.button.MaterialButton
                 android:id="@+id/textSelectionDiscardButton"
-                android:layout_width="40dp"
-                android:layout_height="40dp"
-                android:backgroundTint="?attr/colorSurfaceContainerHigh"
+                android:layout_width="48dp"
+                android:layout_height="48dp"
+                android:backgroundTint="@android:color/transparent"
+                app:cornerRadius="16dp"
+                app:rippleColor="@color/reader_glass_tint"
                 android:contentDescription="@string/discard"
                 android:insetLeft="0dp"
                 android:insetTop="0dp"
                 android:insetRight="0dp"
                 android:insetBottom="0dp"
-                android:minWidth="40dp"
-                android:minHeight="40dp"
+                android:minWidth="48dp"
+                android:minHeight="48dp"
                 android:padding="8dp"
                 android:text=""
                 android:visibility="gone"
@@ -267,16 +307,16 @@
                 app:iconGravity="textStart"
                 app:iconPadding="0dp"
                 app:iconSize="22dp"
-                app:iconTint="?attr/colorOnSurface" />
+                app:iconTint="@color/reader_glass_ink" />
 
             <androidx.constraintlayout.helper.widget.Flow
                 android:id="@+id/textSelectionSwatchFlow"
                 android:layout_width="0dp"
                 android:layout_height="wrap_content"
                 app:flow_horizontalAlign="center"
-                app:flow_horizontalGap="12dp"
+                app:flow_horizontalGap="4dp"
                 app:flow_horizontalStyle="packed"
-                app:flow_verticalGap="12dp"
+                app:flow_verticalGap="4dp"
                 app:flow_wrapMode="chain"
                 app:layout_constraintEnd_toEndOf="parent"
                 app:layout_constraintStart_toStartOf="parent"
@@ -289,16 +329,16 @@
                 android:layout_marginTop="12dp"
                 app:constraint_referenced_ids="textSelectionCopyButton,textSelectionShareButton,textSelectionSearchWebButton,textSelectionNoteButton,textSelectionTranslateButton,textSelectionDeleteHighlightButton,textSelectionDiscardButton"
                 app:flow_horizontalAlign="center"
-                app:flow_horizontalGap="12dp"
+                app:flow_horizontalGap="4dp"
                 app:flow_horizontalStyle="packed"
-                app:flow_verticalGap="12dp"
+                app:flow_verticalGap="4dp"
                 app:flow_wrapMode="chain"
                 app:layout_constraintBottom_toBottomOf="parent"
                 app:layout_constraintEnd_toEndOf="parent"
                 app:layout_constraintStart_toStartOf="parent"
                 app:layout_constraintTop_toBottomOf="@id/textSelectionSwatchFlow" />
         </androidx.constraintlayout.widget.ConstraintLayout>
-    </com.google.android.material.card.MaterialCardView>
+    </FrameLayout>
 
     <com.google.android.material.floatingactionbutton.FloatingActionButton
         android:id="@+id/discardAnnotationsFab"
@@ -326,13 +366,6 @@
         app:layout_constraintEnd_toEndOf="parent"
         app:srcCompat="@drawable/ic_save"
         app:tint="?attr/colorOnPrimaryContainer" />
-
-    <View
-        android:id="@+id/appBarBottomShadow"
-        android:layout_width="match_parent"
-        android:layout_height="2dp"
-        android:background="@drawable/app_bar_bottom_shadow"
-        app:layout_constraintTop_toTopOf="parent" />
 
     <!-- Pick File Button -->
     <com.google.android.material.button.MaterialButton
@@ -368,7 +401,7 @@
             android:layout_marginStart="@dimen/fs_panel_margin"
             android:layout_marginTop="@dimen/fs_panel_margin_top"
             android:layout_marginBottom="@dimen/fs_panel_margin"
-            android:background="@drawable/fullscreen_panel_background"
+            android:background="@drawable/reader_glass"
             android:visibility="gone"
             android:requiresFadingEdge="vertical"
             android:fadingEdgeLength="@dimen/fs_panel_fading_edge"

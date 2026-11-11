@@ -27,12 +27,11 @@
     <dimen name="study_control_min">48dp</dimen>
     <dimen name="study_radius_control">12dp</dimen>
     <dimen name="study_radius_panel">20dp</dimen>
-    <style name="StudyColorDialog" parent="ThemeOverlay.Material3.MaterialAlertDialog">
-        <item name="colorPrimary">@color/study_ink</item>
-        <item name="colorOnPrimary">@color/study_surface</item>
-        <item name="colorSurface">@color/study_surface</item>
-        <item name="colorOnSurface">@color/study_ink</item>
-        <item name="colorOnSurfaceVariant">@color/study_muted</item>
+    <style name="StudyColorDialog" parent="StudyReaderDialog">
+        <item name="colorPrimary">@color/reader_glass_accent</item>
+        <item name="colorOnPrimary">@color/reader_glass_solid</item>
+        <item name="colorOnSurface">@color/reader_glass_ink</item>
+        <item name="colorOnSurfaceVariant">@color/reader_glass_muted</item>
         <item name="colorOutline">@color/study_outline</item>
         <item name="shapeAppearanceMediumComponent">@style/StudyPanelShape</item>
     </style>

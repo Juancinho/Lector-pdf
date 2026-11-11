@@ -21,7 +21,7 @@ class PdfThemeController(
 ) {
 
     fun configureTheme() {
-        ColorUtil.colorize(activity, activity.window, activity.supportActionBar)
+        ColorUtil.colorize(activity, activity.window, null)
         val color = ColorUtil.getBarColor(activity)
         binding.secondBarScrollView.setBackgroundColor(color)
 

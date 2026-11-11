@@ -1,4 +1,15 @@
-# MJ Study design system · v0.1
+# MJ Study design system
+
+## PDF reader · v0.3
+
+The document reader adopts [Liquid Glass navigation patterns](https://github.com/haider-nawaz/liquid-glass-skill). The document is the content layer. Rounded translucent groups hold navigation, shortcuts, text-selection actions and pen tools. Cool blue accents identify the current tool and legible graphite/ice tones support light and dark modes. Reader-specific colors live in `values/reader_glass.xml` and `values-night/reader_glass.xml`.
+
+- The document header is a bounded floating pill with filename, page counter, customizable shortcuts and the ellipsis menu.
+- The menu groups named actions under Reading, Study and Document. It uses two columns when space and text size allow. Android 12+ devices can blur behind the menu if system blur is available. Older or blur-disabled devices use the opaque tinted surface.
+- Pen tools and text-selection actions use the same rounded rim and pressed/selected treatment. Shapes have a dedicated picker, and the pen toolbar adjusts to the measured viewport during rotation and split screen.
+- The in-reader overlays use translucent gradients and elevation without capturing or blurring live PDF tiles. PDF colors, ink appearance streams and input routing are independent of this chrome.
+
+## Foundation · v0.1–0.2
 
 ## Reference and identity
 

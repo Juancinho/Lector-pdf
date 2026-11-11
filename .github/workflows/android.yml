@@ -141,7 +141,7 @@ jobs:
         if: ${{ !cancelled() }}
         run: |
           timeout 20 adb logcat -d > logcat.txt || true
-          for file in study-editor.png study-ink-toolbar.png study-ink-roundtrip.pdf; do
+          for file in study-editor.png study-ink-toolbar.png study-ink-roundtrip.pdf study-glass-reader.png study-glass-menu.png; do
             timeout 15 adb exec-out run-as io.github.juancinho.mjstudy cat "files/$file" > "$file" || rm -f "$file"
           done
       - name: Upload integration reports

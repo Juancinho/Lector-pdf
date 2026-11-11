@@ -151,8 +151,9 @@ class MainActivity : AppCompatActivity(), ReaderUi {
 
         binding = ActivityMainBinding.inflate(layoutInflater)
         setContentView(binding.root)
+        setSupportActionBar(binding.readerToolbar)
         setCustomActionBar()
-        ColorUtil.colorize(this, window, supportActionBar)
+        ColorUtil.colorize(this, window, null)
 
         // To avoid FileUriExposedException, (https://stackoverflow.com/questions/38200282/)
         StrictMode.setVmPolicy(StrictMode.VmPolicy.Builder().build())
@@ -281,14 +282,13 @@ class MainActivity : AppCompatActivity(), ReaderUi {
 
     private fun setCustomActionBar() {
         val actionBar = supportActionBar
-        // Disable the default and enable the custom
         actionBar?.setDisplayShowTitleEnabled(false)
-        actionBar?.setDisplayShowCustomEnabled(true)
+        actionBar?.setDisplayShowCustomEnabled(false)
         actionBar?.elevation = 0F
 
         updateHomeUpIndicator()
 
-        val customView: View = layoutInflater.inflate(R.layout.actionbar_title, null)
+        val customView: View = layoutInflater.inflate(R.layout.actionbar_title, binding.readerToolbar, false)
         appTitlePageNumber = customView.findViewById(R.id.actionbarPageNumber)
         appTitle = customView.findViewById(R.id.actionbarTitle)
         appTitleIncognitoIcon = customView.findViewById(R.id.actionbarIncognitoIcon)
@@ -303,8 +303,7 @@ class MainActivity : AppCompatActivity(), ReaderUi {
         appTitle.setOnClickListener { titleClickListener() }
         appTitlePageNumber.setOnClickListener { titleClickListener() }
 
-        // Apply the custom view
-        actionBar?.customView = customView
+        binding.readerToolbar.addView(customView)
     }
 
     private fun updateHomeUpIndicator() {
@@ -312,7 +311,9 @@ class MainActivity : AppCompatActivity(), ReaderUi {
         val homeEnabled = !pref.getHomeDisabled()
         actionBar?.setDisplayHomeAsUpEnabled(homeEnabled)
         if (homeEnabled) {
-            actionBar?.setHomeAsUpIndicator(R.drawable.ic_home)
+            val icon = ContextCompat.getDrawable(this, R.drawable.ic_home)?.mutate()
+            icon?.setTint(getColor(R.color.reader_glass_ink))
+            actionBar?.setHomeAsUpIndicator(icon)
         }
     }
 
@@ -416,6 +417,9 @@ class MainActivity : AppCompatActivity(), ReaderUi {
         }
 
         reader.toolbarActionController.update(actionBarMenu)
+        for (index in 0 until actionBarMenu.size()) {
+            actionBarMenu.getItem(index).icon?.mutate()?.setTint(getColor(R.color.reader_glass_ink))
+        }
     }
 
     @SuppressLint("SourceLockedOrientationActivity")
