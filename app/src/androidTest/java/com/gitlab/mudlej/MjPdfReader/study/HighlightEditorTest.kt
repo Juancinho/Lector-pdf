@@ -32,12 +32,18 @@ class HighlightEditorTest {
                 HighlightStyleDialog.newInstance().showNow(activity.supportFragmentManager, HighlightStyleDialog.RESULT)
                 val dialog = editor(activity).requireDialog() as AlertDialog
                 dialog.findViewById<EditText>(R.id.study_hex_input)!!.setText("#XX")
+                dialog.findViewById<EditText>(R.id.study_green_input)!!.setText("999")
+                dialog.findViewById<com.google.android.material.slider.Slider>(R.id.study_opacity_slider)!!.value = 17f
+                dialog.findViewById<EditText>(R.id.study_meaning_input)!!.setText("Examen")
                 assertFalse(dialog.getButton(AlertDialog.BUTTON_POSITIVE).isEnabled)
             }
             scenario.recreate()
             scenario.onActivity { activity ->
                 val dialog = editor(activity).requireDialog() as AlertDialog
                 assertEquals("#XX", dialog.findViewById<EditText>(R.id.study_hex_input)!!.text.toString())
+                assertEquals("999", dialog.findViewById<EditText>(R.id.study_green_input)!!.text.toString())
+                assertEquals(17f, dialog.findViewById<com.google.android.material.slider.Slider>(R.id.study_opacity_slider)!!.value)
+                assertEquals("Examen", dialog.findViewById<EditText>(R.id.study_meaning_input)!!.text.toString())
                 assertFalse(dialog.getButton(AlertDialog.BUTTON_POSITIVE).isEnabled)
                 dialog.getButton(AlertDialog.BUTTON_NEGATIVE).performClick()
             }

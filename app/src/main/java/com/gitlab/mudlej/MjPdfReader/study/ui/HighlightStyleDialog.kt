@@ -37,14 +37,17 @@ class HighlightStyleDialog : DialogFragment() {
     private lateinit var meaning: TextInputEditText
     private lateinit var opacity: Slider
     private lateinit var favorite: MaterialCheckBox
+    private var draftStyle: HighlightStyle? = null
 
     override fun onCreateDialog(savedInstanceState: Bundle?): Dialog {
         val builder = MaterialAlertDialogBuilder(requireContext(), R.style.StudyColorDialog)
         val context = builder.context
         val store = HighlightStyleStore(PreferenceManager.getDefaultSharedPreferences(context))
         val draft = savedInstanceState ?: arguments
-        var style = draft?.getInt("argb")?.let { HighlightStyle.fromArgb(it, draft.getString("meaning").orEmpty()) }
+        var style = draft?.takeIf { it.containsKey("argb") }?.getInt("argb")
+            ?.let { HighlightStyle.fromArgb(it, draft.getString("meaning").orEmpty()) }
             ?: store.current
+        draftStyle = style
         var syncing = false
         fun dp(value: Int) = (value * resources.displayMetrics.density).toInt()
         val body = LinearLayout(context).apply {
@@ -92,6 +95,10 @@ class HighlightStyleDialog : DialogFragment() {
                 isSingleLine = true
                 inputType = if (numeric) InputType.TYPE_CLASS_NUMBER else InputType.TYPE_CLASS_TEXT
                 minimumHeight = dp(56)
+                // The fragment saves raw drafts itself, including invalid values. Letting the
+                // framework restore child views afterwards would trigger watchers and normalize
+                // those values before the user can correct them.
+                isSaveEnabled = false
             }
             layout.addView(edit)
             parent.addView(layout, LinearLayout.LayoutParams(if (numeric) 0 else -1, -2,
@@ -110,6 +117,7 @@ class HighlightStyleDialog : DialogFragment() {
             id = R.id.study_opacity_slider
             valueFrom = 1f; valueTo = 100f; stepSize = 1f; value = style.opacityPercent.toFloat()
             contentDescription = getString(R.string.study_opacity, style.opacityPercent)
+            isSaveEnabled = false
         }
         body.addView(opacity)
         meaning = field(body, getString(R.string.study_meaning)).apply {
@@ -122,11 +130,13 @@ class HighlightStyleDialog : DialogFragment() {
             text = getString(R.string.study_favorite)
             isChecked = draft?.getBoolean("favorite") ?: store.favorites.any { it.argb == style.argb }
             minHeight = dp(48)
+            isSaveEnabled = false
         }
         body.addView(favorite)
         fun valid(): Boolean = HighlightStyle.parseHex(hex.text.toString()) == style.rgb &&
             HighlightStyle.parseRgb(channels[0].text.toString(), channels[1].text.toString(), channels[2].text.toString()) == style.rgb
         fun refresh() {
+            draftStyle = style
             preview.invalidate()
             (dialog as? androidx.appcompat.app.AlertDialog)?.getButton(DialogInterface.BUTTON_POSITIVE)?.isEnabled = valid()
         }
@@ -221,8 +231,10 @@ class HighlightStyleDialog : DialogFragment() {
         // Restore raw partially entered fields, including invalid input.
         savedInstanceState?.let { state ->
             syncing = true
-            hex.setText(state.getString("hex"))
-            channels.forEachIndexed { i, edit -> edit.setText(state.getString("channel$i")) }
+            if (state.containsKey("hex")) hex.setText(state.getString("hex"))
+            channels.forEachIndexed { i, edit ->
+                if (state.containsKey("channel$i")) edit.setText(state.getString("channel$i"))
+            }
             favorite.isChecked = state.getBoolean("favorite")
             syncing = false
             if (HighlightStyle.parseHex(hex.text.toString()) == null) hex.error = getString(R.string.study_invalid_hex)
@@ -235,10 +247,10 @@ class HighlightStyleDialog : DialogFragment() {
 
     override fun onSaveInstanceState(outState: Bundle) {
         super.onSaveInstanceState(outState)
+        if (!::hex.isInitialized) return
         outState.putString("hex", hex.text.toString())
         channels.forEachIndexed { index, edit -> outState.putString("channel$index", edit.text.toString()) }
-        val rgb = HighlightStyle.parseHex(hex.text.toString()) ?: HighlightStyle.DEFAULT.rgb
-        outState.putInt("argb", HighlightStyle(rgb, opacity.value.toInt()).argb)
+        outState.putInt("argb", (draftStyle ?: HighlightStyle.DEFAULT).argb)
         outState.putString("meaning", meaning.text.toString())
         outState.putBoolean("favorite", favorite.isChecked)
     }
