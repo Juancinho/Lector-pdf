@@ -27,6 +27,7 @@ class InkInputTest {
         val input=InstrumentationRegistry.getInstrumentation().context.assets.open("normal.pdf").use { it.readBytes() }
         val loaded=CountDownLatch(1)
         val edits=mutableListOf<AnnotationEdit>()
+        val interactions=mutableListOf<Int>()
         lateinit var pdf:PDFView
         lateinit var controller:InkController
         val vm=ReaderViewModel(SavedStateHandle())
@@ -40,7 +41,8 @@ class InkInputTest {
                 vm.studyInkEnabled=true
                 controller=InkController(activity,pdf,vm,activity.lifecycleScope,{true},{edits.add(it)},{})
                 controller.attach()
-                pdf.fromBytes(input).onLoad { loaded.countDown() }.load()
+                pdf.fromBytes(input).onLoad { loaded.countDown() }
+                    .onDocumentInteraction { interactions.add(it.actionMasked) }.load()
             }
             assertTrue("PDF did not load",loaded.await(20,TimeUnit.SECONDS))
             scenario.onActivity {
@@ -48,6 +50,16 @@ class InkInputTest {
                 vm.studyInkEnabled=true
                 pdf.zoomTo(1.75f)
                 pdf.moveTo(-20f,-35f)
+                val fingerDown=SystemClock.uptimeMillis()
+                val initialOffset=pdf.currentYOffset
+                val fingerX=pdf.width*.7f
+                val fingerY=pdf.height*.7f
+                event(fingerDown,fingerDown,MotionEvent.ACTION_DOWN,fingerX,fingerY,MotionEvent.TOOL_TYPE_FINGER).useEvent(pdf)
+                event(fingerDown,fingerDown+16,MotionEvent.ACTION_MOVE,fingerX,fingerY-60f,MotionEvent.TOOL_TYPE_FINGER).useEvent(pdf)
+                event(fingerDown,fingerDown+32,MotionEvent.ACTION_MOVE,fingerX,fingerY-160f,MotionEvent.TOOL_TYPE_FINGER).useEvent(pdf)
+                event(fingerDown,fingerDown+40,MotionEvent.ACTION_UP,fingerX,fingerY-160f,MotionEvent.TOOL_TYPE_FINGER).useEvent(pdf)
+                assertNotEquals("Finger drag must still navigate",initialOffset,pdf.currentYOffset)
+                assertTrue(edits.isEmpty())
                 val expected=pdf.studyViewToPdf(0,pdf.width*.45f,pdf.height*.5f)!!
                 val start=pdf.studyPdfToView(0,expected.x,expected.y)!!
                 val end=android.graphics.PointF(start.x+30f,start.y+20f)
@@ -55,19 +67,18 @@ class InkInputTest {
                 val roundTrip=pdf.studyViewToPdf(0,start.x,start.y)!!
                 assertEquals(expected.x,roundTrip.x,.1f);assertEquals(expected.y,roundTrip.y,.1f)
                 val now=SystemClock.uptimeMillis()
-                // Finger input must retain the reader's original listener and produce no ink.
-                event(now,MotionEvent.ACTION_DOWN,start.x,start.y,MotionEvent.TOOL_TYPE_FINGER).useEvent(pdf)
-                event(now,MotionEvent.ACTION_UP,start.x,start.y,MotionEvent.TOOL_TYPE_FINGER).useEvent(pdf)
-                assertTrue(edits.isEmpty())
-                event(now+10,MotionEvent.ACTION_DOWN,start.x,start.y,MotionEvent.TOOL_TYPE_STYLUS,.2f).useEvent(pdf)
-                event(now+20,MotionEvent.ACTION_MOVE,end.x,end.y,MotionEvent.TOOL_TYPE_STYLUS,.8f).useEvent(pdf)
-                event(now+30,MotionEvent.ACTION_UP,end.x,end.y,MotionEvent.TOOL_TYPE_STYLUS,.8f).useEvent(pdf)
+                event(now,now,MotionEvent.ACTION_DOWN,start.x,start.y,MotionEvent.TOOL_TYPE_STYLUS,.2f).useEvent(pdf)
+                assertFalse("Pen down must stop navigation inertia",pdf.isFlinging)
+                event(now,now+10,MotionEvent.ACTION_MOVE,end.x,end.y,MotionEvent.TOOL_TYPE_STYLUS,.8f).useEvent(pdf)
+                event(now,now+20,MotionEvent.ACTION_UP,end.x,end.y,MotionEvent.TOOL_TYPE_STYLUS,.8f).useEvent(pdf)
                 val patch=edits.single() as AnnotationEdit.InkPatch
                 val stroke=InkCodec.decode(patch.after.single())!!
                 assertEquals(0,stroke.page);assertEquals(expected.x,stroke.points.first().x,.1f)
                 assertEquals(expected.y,stroke.points.first().y,.1f)
                 assertTrue(stroke.points.last().pressure>stroke.points.first().pressure)
                 assertTrue(vm.studyInkHistory.canUndo)
+                assertTrue(interactions.contains(MotionEvent.ACTION_DOWN))
+                assertTrue(interactions.contains(MotionEvent.ACTION_UP))
             }
             InstrumentationRegistry.getInstrumentation().waitForIdleSync()
             InstrumentationRegistry.getInstrumentation().uiAutomation.takeScreenshot()?.let { bitmap ->
@@ -80,10 +91,10 @@ class InkInputTest {
             scenario.onActivity { controller.destroy();pdf.recycle() }
         }
     }
-    private fun event(time:Long,action:Int,x:Float,y:Float,tool:Int,pressure:Float=1f):MotionEvent {
+    private fun event(downTime:Long,time:Long,action:Int,x:Float,y:Float,tool:Int,pressure:Float=1f):MotionEvent {
         val properties=MotionEvent.PointerProperties().apply { id=0;toolType=tool }
         val coordinates=MotionEvent.PointerCoords().apply { this.x=x;this.y=y;this.pressure=pressure;size=.05f }
-        return MotionEvent.obtain(time,time,action,1,arrayOf(properties),arrayOf(coordinates),0,0,1f,1f,0,0,
+        return MotionEvent.obtain(downTime,time,action,1,arrayOf(properties),arrayOf(coordinates),0,0,1f,1f,0,0,
             if(tool==MotionEvent.TOOL_TYPE_STYLUS)InputDevice.SOURCE_STYLUS else InputDevice.SOURCE_TOUCHSCREEN,0)
     }
     private fun MotionEvent.useEvent(pdf:PDFView){try { pdf.dispatchTouchEvent(this) }finally { recycle() }}

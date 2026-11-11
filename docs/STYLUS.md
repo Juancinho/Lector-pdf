@@ -2,7 +2,7 @@
 
 ## Implemented path
 
-The reader now has a dedicated pen interceptor and a draw-only Android View above PDFView. It preserves DragPinchManager's original touch listener. In Write mode, TOOL_TYPE_STYLUS/ERASER owns a stroke; fingers continue through the existing pan/pinch path. A pen joining an existing finger gesture sends CANCEL to navigation. Additional fingers/palms are swallowed while the pen is active and until remaining pointers lift. ACTION_CANCEL discards the unfinished gesture. Read mode leaves normal reader behavior intact.
+The reader now has a dedicated pen interceptor and a draw-only Android View above PDFView. It preserves DragPinchManager's original touch listener. In Write mode, TOOL_TYPE_STYLUS/ERASER owns a stroke; fingers continue through the existing pan/pinch path. A pen joining an existing finger gesture sends CANCEL to navigation. Starting a pen gesture stops page fling/snap animations and forwards its down/up lifecycle to auto-scroll, so the PDF does not continue moving under the stroke. Additional fingers/palms are swallowed while the pen is active and until remaining pointers lift. ACTION_CANCEL discards the unfinished gesture. Read mode leaves normal reader behavior intact.
 
 This is application-level routing, not a guarantee of hardware palm rejection: a palm moving before the pen touches can still move the page. Pen proximity and Xiaomi-specific buttons have not been verified. BUTTON_STYLUS_PRIMARY and TOOL_TYPE_ERASER select temporary stroke erasing when Android exposes them at stroke start.
 
