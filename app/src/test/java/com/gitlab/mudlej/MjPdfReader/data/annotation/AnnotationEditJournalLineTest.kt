@@ -138,6 +138,41 @@ class AnnotationEditJournalLineTest {
         assertEquals(0.5f, decodedSignature.strokes.single()[1], 0f)
     }
 
+    @Test
+    fun addingInkPreservesStrokesPressureColorAndWidth() {
+        val edit = AnnotationEdit.AddInk(
+            4, "ink-a",
+            listOf(floatArrayOf(1f, 2f, 3.5f, 4.25f), floatArrayOf(9f, 9f)),
+            listOf(floatArrayOf(0.1f, 0.9f), floatArrayOf(0.5f)),
+            0x66FFE066, 9.5f, "D:20261111120000Z",
+        )
+        val decoded = roundTrip(edit, "addInk") as AnnotationEdit.AddInk
+
+        assertEquals(4, decoded.page)
+        assertEquals("ink-a", decoded.group)
+        assertEquals(0x66FFE066, decoded.color)
+        assertEquals(9.5f, decoded.width, 0f)
+        assertEquals("D:20261111120000Z", decoded.createdDate)
+        assertEquals(2, decoded.strokes.size)
+        assertArrayEquals(edit.strokes[0], decoded.strokes[0], 0f)
+        assertArrayEquals(edit.pressures[1], decoded.pressures[1], 0f)
+    }
+
+    @Test
+    fun inkWithoutPressureStillDecodes() {
+        val line = """{"op":"addInk","page":1,"group":"g","color":-16777216,"strokeWidth":2.0,"strokes":[[1,2,3,4]]}"""
+        val decoded = AnnotationEdit.fromJsonLine(line) as AnnotationEdit.AddInk
+        assertTrue(decoded.pressures.isEmpty())
+        assertNull(decoded.createdDate)
+    }
+
+    @Test
+    fun deletingInkPreservesThePageAndGroup() {
+        val decoded = roundTrip(AnnotationEdit.DeleteInk(5, "ink-b"), "deleteInk") as AnnotationEdit.DeleteInk
+        assertEquals(5, decoded.page)
+        assertEquals("ink-b", decoded.group)
+    }
+
     private fun roundTrip(edit: AnnotationEdit, operation: String): AnnotationEdit {
         val line = edit.toJsonLine()
         assertEquals(operation, JsonParser.parseString(line).asJsonObject.get("op").asString)

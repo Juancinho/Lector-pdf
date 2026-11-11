@@ -5,4 +5,14 @@
     <color name="study_outline">#CFD3CD</color>
     <color name="study_subtle">#EEF0EC</color>
     <color name="study_accent">#476C58</color>
+    <!-- Liquid-glass chrome: translucent frosted surfaces with a specular edge. -->
+    <color name="study_glass_fill">#C9FBFBF9</color>
+    <color name="study_glass_fill_strong">#EBFBFBF9</color>
+    <color name="study_glass_fill_blurred">#99FBFBF9</color>
+    <color name="study_glass_edge">#CCFFFFFF</color>
+    <color name="study_glass_outline">#1F202321</color>
+    <color name="study_glass_sheen">#73FFFFFF</color>
+    <color name="study_glass_sheen_end">#00FFFFFF</color>
+    <color name="study_glass_selected">#1C202321</color>
+    <color name="study_glass_divider">#26202321</color>
 </resources>

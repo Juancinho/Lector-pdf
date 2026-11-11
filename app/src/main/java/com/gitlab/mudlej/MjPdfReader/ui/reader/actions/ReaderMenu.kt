@@ -63,6 +63,7 @@ class ReaderMenu(
 
     private fun actionsSection(): List<ReaderAction> {
         return listOfNotNull(
+            action(ConfigurableAction.STUDY_PEN),
             action(ConfigurableAction.OPEN_LOCAL),
             action(ConfigurableAction.SWITCH_THEME),
             action(ConfigurableAction.SEARCH),

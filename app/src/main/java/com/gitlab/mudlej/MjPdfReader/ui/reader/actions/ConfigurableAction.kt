@@ -46,6 +46,7 @@ enum class ConfigurableAction(
     USER_HIGHLIGHTS("user_highlights", R.string.user_highlights_title, R.drawable.ic_highlight),
     LINKS_IN_FILE("links_in_file", R.string.links_in_file, R.drawable.ic_links_in_file),
     PRINT("print", R.string.print_file, R.drawable.ic_print),
+    STUDY_PEN("study_pen", R.string.study_pen_open, R.drawable.ic_study_pen),
     ADD_SIGNATURE("add_signature", R.string.add_signature, R.drawable.ic_signature),
     INCOGNITO("incognito", R.string.incognito, R.drawable.ic_incognito);
 
@@ -71,6 +72,7 @@ enum class ConfigurableAction(
             USER_BOOKMARKS,
             USER_NOTES,
             USER_HIGHLIGHTS,
+            STUDY_PEN,
             ADD_SIGNATURE,
             LINKS_IN_FILE,
             OPEN_LOCAL,
@@ -131,6 +133,7 @@ enum class ConfigurableAction(
             USER_BOOKMARKS,
             USER_NOTES,
             USER_HIGHLIGHTS,
+            STUDY_PEN,
             ADD_SIGNATURE,
             LINKS_IN_FILE,
             OPEN_LOCAL,

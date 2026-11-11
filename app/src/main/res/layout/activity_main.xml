@@ -59,9 +59,11 @@
         android:layout_height="wrap_content"
         android:layout_margin="16dp"
         android:visibility="gone"
-        app:cardBackgroundColor="?attr/colorSurfaceContainerHigh"
-        app:cardCornerRadius="16dp"
-        app:cardElevation="6dp"
+        app:cardBackgroundColor="@color/study_glass_fill_strong"
+        app:cardCornerRadius="24dp"
+        app:cardElevation="10dp"
+        app:strokeColor="@color/study_glass_edge"
+        app:strokeWidth="1dp"
         app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent">
@@ -112,9 +114,11 @@
         android:layout_height="wrap_content"
         android:layout_margin="16dp"
         android:visibility="gone"
-        app:cardBackgroundColor="?attr/colorSurfaceContainerHigh"
-        app:cardCornerRadius="16dp"
-        app:cardElevation="6dp"
+        app:cardBackgroundColor="@color/study_glass_fill_strong"
+        app:cardCornerRadius="24dp"
+        app:cardElevation="10dp"
+        app:strokeColor="@color/study_glass_edge"
+        app:strokeWidth="1dp"
         app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
@@ -708,5 +712,17 @@
             </androidx.appcompat.widget.LinearLayoutCompat>
         </androidx.appcompat.widget.LinearLayoutCompat>
     </androidx.constraintlayout.widget.ConstraintLayout>
+
+    <!-- MJ Study floating pen toolbar (liquid glass) -->
+    <include
+        android:id="@+id/studyToolbar"
+        layout="@layout/study_pen_toolbar"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginBottom="12dp"
+        android:visibility="gone"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent" />
 
 </androidx.constraintlayout.widget.ConstraintLayout>

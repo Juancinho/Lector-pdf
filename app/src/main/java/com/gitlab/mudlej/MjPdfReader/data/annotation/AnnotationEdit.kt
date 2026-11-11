@@ -60,6 +60,25 @@ sealed class AnnotationEdit {
         val strokeWidth: Float,
     ) : AnnotationEdit()
 
+    /**
+     * One pressure-sensitive /Ink annotation. Strokes are PDF user-space x,y
+     * pairs; pressures (one per point, 0..1) may be empty for uniform width.
+     */
+    data class AddInk(
+        override val page: Int,
+        val group: String,
+        val strokes: List<FloatArray>,
+        val pressures: List<FloatArray>,
+        val color: Int,
+        val width: Float,
+        val createdDate: String? = null,
+    ) : AnnotationEdit()
+
+    data class DeleteInk(
+        override val page: Int,
+        val group: String,
+    ) : AnnotationEdit()
+
     fun toJsonLine(): String {
         val json = JsonObject()
         json.addProperty(KEY_OP, opName())
@@ -98,6 +117,15 @@ sealed class AnnotationEdit {
                 json.add(KEY_RECT, rectToJson(rect))
                 json.add(KEY_STROKES, strokesToJson(strokes))
             }
+            is AddInk -> {
+                json.addProperty(KEY_GROUP, group)
+                json.addProperty(KEY_COLOR, color)
+                json.addProperty(KEY_STROKE_WIDTH, width)
+                json.add(KEY_STROKES, strokesToJson(strokes))
+                json.add(KEY_PRESSURES, strokesToJson(pressures))
+                createdDate?.let { json.addProperty(KEY_CREATED, it) }
+            }
+            is DeleteInk -> json.addProperty(KEY_GROUP, group)
         }
         return json.toString()
     }
@@ -110,6 +138,8 @@ sealed class AnnotationEdit {
         is SetFieldText -> OP_SET_FIELD_TEXT
         is SetFieldChecked -> OP_SET_FIELD_CHECKED
         is AddSignature -> OP_ADD_SIGNATURE
+        is AddInk -> OP_ADD_INK
+        is DeleteInk -> OP_DELETE_INK
     }
 
     companion object {
@@ -136,6 +166,9 @@ sealed class AnnotationEdit {
         private const val OP_SET_FIELD_TEXT = "setFieldText"
         private const val OP_SET_FIELD_CHECKED = "setFieldChecked"
         private const val OP_ADD_SIGNATURE = "addSignature"
+        private const val OP_ADD_INK = "addInk"
+        private const val OP_DELETE_INK = "deleteInk"
+        private const val KEY_PRESSURES = "pressures"
 
         fun fromJsonLine(line: String): AnnotationEdit? = runCatching {
             val json = JsonParser.parseString(line).asJsonObject
@@ -180,6 +213,16 @@ sealed class AnnotationEdit {
                     color = json.get(KEY_COLOR).asInt,
                     strokeWidth = json.get(KEY_STROKE_WIDTH).asFloat,
                 )
+                OP_ADD_INK -> AddInk(
+                    page = page,
+                    group = json.get(KEY_GROUP).asString,
+                    strokes = strokesFromJson(json.getAsJsonArray(KEY_STROKES)),
+                    pressures = json.getAsJsonArray(KEY_PRESSURES)?.let(::strokesFromJson).orEmpty(),
+                    color = json.get(KEY_COLOR).asInt,
+                    width = json.get(KEY_STROKE_WIDTH).asFloat,
+                    createdDate = optionalString(json, KEY_CREATED),
+                )
+                OP_DELETE_INK -> DeleteInk(page = page, group = json.get(KEY_GROUP).asString)
                 else -> null
             }
         }.getOrNull()

@@ -17,6 +17,7 @@ import androidx.annotation.StringRes
 import androidx.appcompat.app.AppCompatDialog
 import androidx.appcompat.content.res.AppCompatResources
 import com.gitlab.mudlej.MjPdfReader.R
+import com.gitlab.mudlej.MjPdfReader.study.ui.GlassSurfaces
 import com.gitlab.mudlej.MjPdfReader.ui.reader.MainActivity
 import com.google.android.material.color.MaterialColors
 import com.google.android.material.divider.MaterialDivider
@@ -90,6 +91,7 @@ fun showReaderActionsDialog(activity: MainActivity, content: ReaderMenuContent):
         setContentView(scroll)
     }
     dismiss = { dialog.dismiss() }
+    GlassSurfaces.applyToDialogWindow(dialog.window)
     dialog.show()
     return dialog
 }

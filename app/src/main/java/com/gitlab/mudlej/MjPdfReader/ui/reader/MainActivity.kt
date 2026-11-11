@@ -103,6 +103,10 @@ class MainActivity : AppCompatActivity(), ReaderUi {
 
     private val readerBackCallback = object : OnBackPressedCallback(true) {
         override fun handleOnBackPressed() {
+            if (reader.studyPenToolbar.isShowing) {
+                reader.studyPenToolbar.hide()
+                return
+            }
             if (annotationController.hasUnsavedAnnotations) {
                 runAfterDirtyAnnotationPrompt(PostSaveAction.LEAVE_READER)
                 return
@@ -492,7 +496,13 @@ class MainActivity : AppCompatActivity(), ReaderUi {
         val params = binding.saveAnnotationsFab.layoutParams as ConstraintLayout.LayoutParams
         val defaultBottomMargin = (24 * resources.displayMetrics.density).toInt()
         val cardAtBottom = reader.inlineAnnotationActionController.isCardAtBottom()
-        val bottomMargin = if (cardAtBottom && binding.textSelectionActionCard.height > 0) {
+        val toolbar = binding.studyToolbar.root
+        val bottomMargin = if (toolbar.visibility == View.VISIBLE) {
+            if (toolbar.height == 0) {
+                toolbar.post { updateDirtyUiPosition() }
+            }
+            toolbar.height + (16 * resources.displayMetrics.density).toInt()
+        } else if (cardAtBottom && binding.textSelectionActionCard.height > 0) {
             binding.textSelectionActionCard.height + (32 * resources.displayMetrics.density).toInt()
         } else {
             defaultBottomMargin
@@ -868,6 +878,7 @@ class MainActivity : AppCompatActivity(), ReaderUi {
         when (item.itemId) {
             android.R.id.home -> navigateHome()
             R.id.toolbarPrimaryActionOption,
+            R.id.studyPenOption,
             R.id.toolbarSecondaryActionOption -> if (!reader.toolbarActionController.handle(item)) return super.onOptionsItemSelected(item)
             R.id.readerActionsOption -> reader.readerMenu.show()
             else -> return super.onOptionsItemSelected(item)

@@ -177,8 +177,18 @@ class AnnotationController(
         }
     }
 
+    /**
+     * Applies an edit to the open document without journaling it. Callers that
+     * succeed record the edit through the normal [recordEdit] path.
+     */
+    fun applyLive(edit: AnnotationEdit): Boolean = applyEditToView(edit)
+
     private fun applyEdit(edit: AnnotationEdit) {
         applyContentTag(edit)
+        applyEditToView(edit)
+    }
+
+    private fun applyEditToView(edit: AnnotationEdit): Boolean {
         val pdfView = binding.pdfView
         val applied = when (edit) {
             is AnnotationEdit.Add ->
@@ -195,10 +205,23 @@ class AnnotationController(
                 pdfView.setFormFieldChecked(edit.page, edit.fieldIndex, edit.checked)
             is AnnotationEdit.AddSignature ->
                 pdfView.addSignature(edit.page, edit.rect, edit.strokes.toTypedArray(), edit.color, edit.strokeWidth)
+            is AnnotationEdit.AddInk ->
+                pdfView.addInkAnnotation(
+                    edit.page,
+                    edit.strokes.toTypedArray(),
+                    edit.pressures.takeIf { it.size == edit.strokes.size }?.toTypedArray(),
+                    edit.color,
+                    edit.width,
+                    edit.group,
+                    edit.createdDate,
+                )
+            is AnnotationEdit.DeleteInk ->
+                pdfView.removeInkAnnotation(edit.page, edit.group)
         }
         if (!applied) {
             Log.w(TAG, "applyEdit: skipped ${edit.javaClass.simpleName} on page ${edit.page}")
         }
+        return applied
     }
 
     private fun highlightReference(page: Int, group: String): PDFView.HighlightAnnotation {

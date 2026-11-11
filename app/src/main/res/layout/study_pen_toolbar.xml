@@ -1,0 +1,223 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- SPDX-License-Identifier: GPL-3.0-or-later. Floating liquid-glass pen toolbar:
+     one tool group, options anchored above it, collapsed while reading. -->
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="wrap_content"
+    android:layout_height="wrap_content"
+    android:clipChildren="false"
+    android:clipToPadding="false"
+    android:gravity="center_horizontal"
+    android:orientation="vertical"
+    android:padding="8dp">
+
+    <LinearLayout
+        android:id="@+id/studyOptionsPanel"
+        android:layout_width="360dp"
+        android:layout_height="wrap_content"
+        android:layout_marginBottom="12dp"
+        android:background="@drawable/bg_glass_panel"
+        android:elevation="8dp"
+        android:orientation="vertical"
+        android:paddingStart="20dp"
+        android:paddingTop="16dp"
+        android:paddingEnd="20dp"
+        android:paddingBottom="12dp"
+        android:visibility="gone"
+        tools:visibility="visible">
+
+        <TextView
+            android:id="@+id/studyOptionsTitle"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:textColor="@color/study_ink"
+            android:textSize="16sp"
+            android:textStyle="bold"
+            tools:text="Pen" />
+
+        <HorizontalScrollView
+            android:id="@+id/studyColorScroll"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="8dp"
+            android:scrollbars="none">
+
+            <LinearLayout
+                android:id="@+id/studyColorRow"
+                android:layout_width="wrap_content"
+                android:layout_height="48dp"
+                android:orientation="horizontal" />
+        </HorizontalScrollView>
+
+        <TextView
+            android:id="@+id/studyWidthLabel"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="8dp"
+            android:textColor="@color/study_muted"
+            android:textSize="14sp"
+            tools:text="Maximum width · 1.6 pt" />
+
+        <com.google.android.material.slider.Slider
+            android:id="@+id/studyWidthSlider"
+            android:layout_width="match_parent"
+            android:layout_height="48dp"
+            android:contentDescription="@string/study_width_label"
+            android:stepSize="0.1"
+            android:valueFrom="0.5"
+            android:valueTo="6"
+            app:labelBehavior="gone"
+            app:thumbColor="@color/study_ink"
+            app:trackColorActive="@color/study_ink"
+            app:trackColorInactive="@color/study_glass_divider" />
+
+        <com.google.android.material.button.MaterialButton
+            android:id="@+id/studyMoreColorsButton"
+            style="@style/Widget.Material3.Button.TextButton"
+            android:layout_width="wrap_content"
+            android:layout_height="48dp"
+            android:text="@string/study_more_highlight_colors"
+            android:textColor="@color/study_ink" />
+
+        <TextView
+            android:id="@+id/studyToolHint"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="4dp"
+            android:textColor="@color/study_muted"
+            android:textSize="13sp"
+            tools:text="Touch strokes to remove them." />
+
+        <View
+            android:layout_width="match_parent"
+            android:layout_height="1dp"
+            android:layout_marginTop="12dp"
+            android:layout_marginBottom="4dp"
+            android:background="@color/study_glass_divider" />
+
+        <com.google.android.material.materialswitch.MaterialSwitch
+            android:id="@+id/studyStylusOnlySwitch"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:minHeight="48dp"
+            android:text="@string/study_stylus_only"
+            android:textColor="@color/study_ink"
+            android:textSize="14sp" />
+
+        <com.google.android.material.materialswitch.MaterialSwitch
+            android:id="@+id/studyPenAlwaysSwitch"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:minHeight="48dp"
+            android:text="@string/study_pen_always_writes"
+            android:textColor="@color/study_ink"
+            android:textSize="14sp" />
+
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="4dp"
+            android:text="@string/study_pen_buttons_hint"
+            android:textColor="@color/study_muted"
+            android:textSize="12sp" />
+    </LinearLayout>
+
+    <HorizontalScrollView
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:clipChildren="false"
+        android:clipToPadding="false"
+        android:padding="4dp"
+        android:scrollbars="none">
+
+        <LinearLayout
+            android:id="@+id/studyToolbarPill"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:background="@drawable/bg_glass_pill"
+            android:contentDescription="@string/study_pen_toolbar"
+            android:elevation="10dp"
+            android:gravity="center_vertical"
+            android:orientation="horizontal"
+            android:padding="4dp">
+
+            <ImageButton
+                android:id="@+id/studyToolRead"
+                style="@style/StudyToolButton"
+                android:contentDescription="@string/study_tool_read"
+                android:src="@drawable/ic_study_hand" />
+
+            <ImageButton
+                android:id="@+id/studyToolHighlighter"
+                style="@style/StudyToolButton"
+                android:contentDescription="@string/study_tool_highlighter"
+                android:src="@drawable/ic_study_highlighter" />
+
+            <ImageButton
+                android:id="@+id/studyToolPen"
+                style="@style/StudyToolButton"
+                android:contentDescription="@string/study_tool_pen"
+                android:src="@drawable/ic_study_pen" />
+
+            <ImageButton
+                android:id="@+id/studyToolMarker"
+                style="@style/StudyToolButton"
+                android:contentDescription="@string/study_tool_marker"
+                android:src="@drawable/ic_study_marker" />
+
+            <ImageButton
+                android:id="@+id/studyToolEraser"
+                style="@style/StudyToolButton"
+                android:contentDescription="@string/study_tool_eraser"
+                android:src="@drawable/ic_study_eraser" />
+
+            <View style="@style/StudyToolDivider" />
+
+            <FrameLayout
+                android:id="@+id/studyColorButton"
+                android:layout_width="48dp"
+                android:layout_height="48dp"
+                android:background="@drawable/bg_glass_tool"
+                android:contentDescription="@string/study_tool_color"
+                android:focusable="true">
+
+                <View
+                    android:id="@+id/studyColorDot"
+                    android:layout_width="26dp"
+                    android:layout_height="26dp"
+                    android:layout_gravity="center"
+                    android:background="@drawable/bg_study_swatch"
+                    android:importantForAccessibility="no" />
+            </FrameLayout>
+
+            <ImageButton
+                android:id="@+id/studyOptionsButton"
+                style="@style/StudyToolButton"
+                android:contentDescription="@string/study_tool_options"
+                android:src="@drawable/ic_study_tune" />
+
+            <View style="@style/StudyToolDivider" />
+
+            <ImageButton
+                android:id="@+id/studyUndoButton"
+                style="@style/StudyToolButton"
+                android:contentDescription="@string/study_undo"
+                android:src="@drawable/ic_study_undo" />
+
+            <ImageButton
+                android:id="@+id/studyRedoButton"
+                style="@style/StudyToolButton"
+                android:contentDescription="@string/study_redo"
+                android:src="@drawable/ic_study_redo" />
+
+            <View style="@style/StudyToolDivider" />
+
+            <ImageButton
+                android:id="@+id/studyDoneButton"
+                style="@style/StudyToolButton"
+                android:contentDescription="@string/study_done"
+                android:src="@drawable/ic_study_done" />
+        </LinearLayout>
+    </HorizontalScrollView>
+</LinearLayout>

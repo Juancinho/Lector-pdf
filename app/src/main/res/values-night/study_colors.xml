@@ -5,4 +5,13 @@
     <color name="study_outline">#565E54</color>
     <color name="study_subtle">#2C312D</color>
     <color name="study_accent">#ADCEB6</color>
+    <color name="study_glass_fill">#BF1C1F1D</color>
+    <color name="study_glass_fill_strong">#E61C1F1D</color>
+    <color name="study_glass_fill_blurred">#8C1C1F1D</color>
+    <color name="study_glass_edge">#33FFFFFF</color>
+    <color name="study_glass_outline">#66000000</color>
+    <color name="study_glass_sheen">#1FFFFFFF</color>
+    <color name="study_glass_sheen_end">#00FFFFFF</color>
+    <color name="study_glass_selected">#29FFFFFF</color>
+    <color name="study_glass_divider">#29FFFFFF</color>
 </resources>

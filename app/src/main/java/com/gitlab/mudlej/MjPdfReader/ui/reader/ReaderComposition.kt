@@ -62,6 +62,13 @@ import com.gitlab.mudlej.MjPdfReader.ui.reader.controls.PdfThemeController
 import com.gitlab.mudlej.MjPdfReader.ui.reader.controls.ZoomSwipeLockController
 import com.gitlab.mudlej.MjPdfReader.ui.reader.controls.readingdirection.ReadingDirectionController
 import com.gitlab.mudlej.MjPdfReader.ui.reader.controls.readingdirection.ReadingDirectionResolver
+import com.gitlab.mudlej.MjPdfReader.study.annotation.HighlightStyle
+import com.gitlab.mudlej.MjPdfReader.study.annotation.HighlightStyleStore
+import com.gitlab.mudlej.MjPdfReader.study.pen.PenSettingsStore
+import com.gitlab.mudlej.MjPdfReader.study.pen.StudyPenController
+import com.gitlab.mudlej.MjPdfReader.study.ui.HighlightStyleDialog
+import com.gitlab.mudlej.MjPdfReader.study.ui.StudyPenToolbar
+import com.gitlab.mudlej.MjPdfReader.core.io.pdfDateNow
 import com.gitlab.mudlej.MjPdfReader.ui.reader.input.EdgeTapPager
 import com.gitlab.mudlej.MjPdfReader.ui.reader.input.MousePager
 import com.gitlab.mudlej.MjPdfReader.ui.reader.input.TapDispatcher
@@ -304,6 +311,54 @@ class ReaderComposition(
         dictionaryDefinitionController::defineWord,
         ::openSettings,
     ) { fullScreenOptionsManager.showAllTemporarilyOrHide() }
+    private val highlightStyleStore by lazy {
+        HighlightStyleStore(androidx.preference.PreferenceManager.getDefaultSharedPreferences(activity))
+    }
+    private val penSettingsStore by lazy {
+        PenSettingsStore(androidx.preference.PreferenceManager.getDefaultSharedPreferences(activity))
+    }
+    val studyPenController: StudyPenController = StudyPenController(
+        binding.pdfView,
+        annotationController::applyLive,
+        ::onAnnotationEdit,
+        ::canEditDocument,
+        { highlightStyleStore.current.argb },
+        ::pdfDateNow,
+        {
+            inlineAnnotationActionController.hideActions()
+            if (binding.pdfView.hasTextSelection()) {
+                binding.pdfView.clearTextSelection()
+            }
+        },
+    ) {
+        AppSnackbar.make(binding.root, R.string.study_pen_write_failed, Snackbar.LENGTH_SHORT).show()
+    }
+    val studyPenToolbar: StudyPenToolbar by lazy {
+        StudyPenToolbar(
+            binding.studyToolbar,
+            studyPenController,
+            { pref.getHighlightColors() },
+            { highlightStyleStore.current },
+            { color ->
+                val previous = highlightStyleStore.current
+                highlightStyleStore.use(
+                    HighlightStyle.fromArgb(color, previous.meaning.takeIf { previous.argb == color }.orEmpty())
+                )
+                inlineAnnotationActionController.rebuildHighlightSwatches()
+            },
+            {
+                if (activity.supportFragmentManager.findFragmentByTag(HighlightStyleDialog.RESULT) == null) {
+                    HighlightStyleDialog.newInstance().show(activity.supportFragmentManager, HighlightStyleDialog.RESULT)
+                }
+            },
+            penSettingsStore::save,
+        ) { visible ->
+            if (visible) {
+                inlineAnnotationActionController.hideActions()
+            }
+            ui.updateDirtyUiPosition()
+        }
+    }
     val annotationSaveController: AnnotationSaveController = AnnotationSaveController(
         activity,
         binding,
@@ -500,6 +555,8 @@ class ReaderComposition(
 
     init {
         inlineAnnotationActionController.configure { annotationSaveController.saveHighlights() }
+        inlineAnnotationActionController.onHighlightStyleChanged = { studyPenToolbar.onHighlightStyleChanged() }
+        studyPenController.attach(penSettingsStore.load())
         vm.onSaveComplete = { outcome ->
             if (!activity.isFinishing && !activity.isDestroyed) {
                 annotationSaveController.deliverSaveOutcome(outcome)
@@ -621,6 +678,7 @@ class ReaderComposition(
         documentLoader.subscribe(object : DocumentListener {
             override fun onDocumentReset() {
                 inlineAnnotationActionController.hideActions()
+                studyPenController.onDocumentChanged()
                 signatureController.cancelPlacement()
                 annotationController.resetContentTags()
             }
@@ -762,6 +820,7 @@ class ReaderComposition(
             linksInFile = { readerNavigationController.showLinks() },
             print = ::printFile,
             addSignature = { signatureController.showSignatureDialog() },
+            studyPen = { if (doc.hasFile()) studyPenToolbar.toggle() },
             toggleIncognito = ::toggleIncognito,
         )
     }

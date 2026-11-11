@@ -63,6 +63,9 @@ class InlineAnnotationActionController(
     private val toggleReaderChrome: () -> Unit,
 ) {
     private var activeHighlightAnnotation: PDFView.HighlightAnnotation? = null
+
+    /** Called after the current highlight style changes (swatch or style editor). */
+    var onHighlightStyleChanged: (() -> Unit)? = null
     private val whitespaceRegex = Regex("\\s+")
 
     private val styleStore by lazy { HighlightStyleStore(PreferenceManager.getDefaultSharedPreferences(activity)) }
@@ -287,12 +290,14 @@ class InlineAnnotationActionController(
         if (!canEditDocument()) return
         val previous = styleStore.current
         styleStore.use(HighlightStyle.fromArgb(color, previous.meaning.takeIf { previous.argb == color }.orEmpty()))
+        onHighlightStyleChanged?.invoke()
         val annotation = activeHighlightAnnotation
         if (annotation != null) {
             updateActiveHighlightAnnotationColor(annotation, color)
-        } else {
+        } else if (binding.pdfView.hasTextSelection()) {
             addInlineHighlight(color)
         }
+        // Without a selection (style picked from the pen toolbar) only the style changes.
     }
 
     private fun addInlineHighlight(color: Int) {

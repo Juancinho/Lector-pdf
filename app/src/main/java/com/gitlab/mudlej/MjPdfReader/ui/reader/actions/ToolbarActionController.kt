@@ -16,12 +16,15 @@ class ToolbarActionController(
         configureButton(menu.findItem(R.id.toolbarPrimaryActionOption), primaryActionId())
         configureButton(menu.findItem(R.id.toolbarSecondaryActionOption), secondaryActionId())
         menu.findItem(R.id.readerActionsOption)?.isVisible = true
+        val studyPen = actionResolver.action(ConfigurableAction.STUDY_PEN)
+        menu.findItem(R.id.studyPenOption)?.isVisible = studyPen?.visible == true
     }
 
     fun handle(item: MenuItem): Boolean {
         return when (item.itemId) {
             R.id.toolbarPrimaryActionOption -> actionResolver.perform(primaryActionId())
             R.id.toolbarSecondaryActionOption -> actionResolver.perform(secondaryActionId())
+            R.id.studyPenOption -> actionResolver.perform(ConfigurableAction.STUDY_PEN.id)
             else -> false
         }
     }

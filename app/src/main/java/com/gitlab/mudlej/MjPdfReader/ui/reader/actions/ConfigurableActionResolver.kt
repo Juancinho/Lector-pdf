@@ -61,6 +61,7 @@ class ConfigurableActionResolver(
         val linksInFile: () -> Unit,
         val print: () -> Unit,
         val addSignature: () -> Unit,
+        val studyPen: () -> Unit,
         val toggleIncognito: () -> Unit,
     )
 
@@ -257,6 +258,12 @@ class ConfigurableActionResolver(
                 R.drawable.ic_print,
                 visible = fileAvailable,
                 run = handlers.print,
+            )
+            ConfigurableAction.STUDY_PEN -> ConfiguredAction(
+                R.string.study_pen_open,
+                R.drawable.ic_study_pen,
+                visible = fileAvailable,
+                run = handlers.studyPen,
             )
             ConfigurableAction.ADD_SIGNATURE -> ConfiguredAction(
                 R.string.add_signature,

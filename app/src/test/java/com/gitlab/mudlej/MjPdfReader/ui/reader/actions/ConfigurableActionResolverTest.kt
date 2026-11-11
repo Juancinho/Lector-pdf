@@ -205,6 +205,7 @@ class ConfigurableActionResolverTest {
                 linksInFile = { calls.add("links_in_file") },
                 print = { calls.add("print") },
                 addSignature = { calls.add("add_signature") },
+                studyPen = { calls.add("study_pen") },
                 toggleIncognito = { calls.add("incognito") },
             ),
         )

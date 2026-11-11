@@ -39,4 +39,45 @@
     <style name="StudyPanelShape" parent="ShapeAppearance.Material3.Corner.Medium">
         <item name="cornerSize">20dp</item>
     </style>
+    <string name="study_pen_open">Write and highlight</string>
+    <string name="study_pen_toolbar">Pen tools</string>
+    <string name="study_tool_read">Read and scroll</string>
+    <string name="study_tool_highlighter">Highlighter: sweep the pen over text</string>
+    <string name="study_tool_pen">Pen</string>
+    <string name="study_tool_marker">Marker</string>
+    <string name="study_tool_eraser">Eraser</string>
+    <string name="study_tool_color">Tool color</string>
+    <string name="study_tool_options">Tool options</string>
+    <string name="study_undo">Undo</string>
+    <string name="study_redo">Redo</string>
+    <string name="study_done">Done</string>
+    <string name="study_options_highlighter">Highlighter</string>
+    <string name="study_options_pen">Pen</string>
+    <string name="study_options_marker">Marker</string>
+    <string name="study_options_eraser">Eraser</string>
+    <string name="study_options_read">Reading</string>
+    <string name="study_width">Maximum width · %1$s pt</string>
+    <string name="study_width_label">Maximum width</string>
+    <string name="study_more_highlight_colors">More highlight colors…</string>
+    <string name="study_stylus_only">Only the pen writes; fingers scroll and zoom</string>
+    <string name="study_pen_always_writes">Pen writes while reading too</string>
+    <string name="study_eraser_hint">Touch strokes or highlights to remove them. Undo brings them back.</string>
+    <string name="study_pen_buttons_hint">Pen button: hold to erase while writing. While reading, hold it and sweep over text to highlight. Ink width follows pen pressure.</string>
+    <string name="study_pen_color_description">%1$s color %2$s</string>
+    <string name="study_selected">selected</string>
+    <string name="study_pen_write_failed">Couldn\'t change the annotation</string>
+    <style name="StudyToolButton">
+        <item name="android:layout_width">48dp</item>
+        <item name="android:layout_height">48dp</item>
+        <item name="android:background">@drawable/bg_glass_tool</item>
+        <item name="android:scaleType">center</item>
+        <item name="android:tint">@color/study_ink</item>
+    </style>
+    <style name="StudyToolDivider">
+        <item name="android:layout_width">1dp</item>
+        <item name="android:layout_height">24dp</item>
+        <item name="android:layout_marginStart">6dp</item>
+        <item name="android:layout_marginEnd">6dp</item>
+        <item name="android:background">@color/study_glass_divider</item>
+    </style>
 </resources>

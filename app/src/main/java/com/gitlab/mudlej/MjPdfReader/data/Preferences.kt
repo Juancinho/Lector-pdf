@@ -342,6 +342,7 @@ class Preferences(private val prefMan: SharedPreferences) {
                 com.gitlab.mudlej.MjPdfReader.study.annotation.HighlightStyleStore.CURRENT,
                 com.gitlab.mudlej.MjPdfReader.study.annotation.HighlightStyleStore.RECENT,
                 com.gitlab.mudlej.MjPdfReader.study.annotation.HighlightStyleStore.FAVORITES,
+                com.gitlab.mudlej.MjPdfReader.study.pen.PenSettingsStore.KEY,
                 highlightColorsKey, listFilterKey, homeTabKey, homeViewModeKey, homeProgressStyleKey,
                 homeGridSizeKey, homeTitleEllipsizeKey, homeSortKey, scanModeKey, pageFitPolicyKey,
                 tapToTurnKey, backupFolderTreeUriKey, autoBackupLastErrorKey, translationModeKey,

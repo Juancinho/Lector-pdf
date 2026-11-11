@@ -24,8 +24,17 @@
         />
 
     <item
-        android:id="@+id/readerActionsOption"
+        android:id="@+id/studyPenOption"
         android:orderInCategory="3"
+        android:title="@string/study_pen_open"
+        android:icon="@drawable/ic_study_pen"
+        app:showAsAction="always"
+        android:visible="false"
+        />
+
+    <item
+        android:id="@+id/readerActionsOption"
+        android:orderInCategory="4"
         android:title="@string/actions"
         android:icon="@drawable/ic_burger_menu"
         app:showAsAction="always" />
