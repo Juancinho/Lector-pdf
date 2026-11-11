@@ -1,0 +1,8 @@
+<resources>
+    <item name="study_hex_input" type="id" />
+    <item name="study_red_input" type="id" />
+    <item name="study_green_input" type="id" />
+    <item name="study_blue_input" type="id" />
+    <item name="study_meaning_input" type="id" />
+    <item name="study_opacity_slider" type="id" />
+</resources>

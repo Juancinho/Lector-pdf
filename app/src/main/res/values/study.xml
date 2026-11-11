@@ -1,0 +1,42 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- The first Study release supports English and Spanish. Other existing
+     upstream locales intentionally use Android's English fallback. -->
+<resources xmlns:tools="http://schemas.android.com/tools" tools:ignore="MissingTranslation">
+    <string name="study_highlight_title">Highlight style</string>
+    <string name="study_highlight_subtitle">A color for every idea.</string>
+    <string name="study_custom_color">Custom highlight color</string>
+    <string name="study_hex">HEX</string>
+    <string name="study_red">Red</string>
+    <string name="study_green">Green</string>
+    <string name="study_blue">Blue</string>
+    <string name="study_opacity">Opacity · %1$d%%</string>
+    <string name="study_meaning">Meaning (optional)</string>
+    <string name="study_meaning_hint">e.g. Definition, key idea, question</string>
+    <string name="study_favorite">Save as favorite</string>
+    <string name="study_favorites">Favorites</string>
+    <string name="study_recent">Recently used</string>
+    <string name="study_invalid_hex">Enter #RGB or #RRGGBB</string>
+    <string name="study_invalid_rgb">Each channel must be between 0 and 255</string>
+    <string name="study_preview">The ideas worth keeping.</string>
+    <string name="study_use_highlight">Use highlight</string>
+    <string name="study_swatch_description">Highlight %1$s · %2$d%%</string>
+    <dimen name="study_space_xs">4dp</dimen>
+    <dimen name="study_space_sm">8dp</dimen>
+    <dimen name="study_space_md">16dp</dimen>
+    <dimen name="study_space_lg">24dp</dimen>
+    <dimen name="study_control_min">48dp</dimen>
+    <dimen name="study_radius_control">12dp</dimen>
+    <dimen name="study_radius_panel">20dp</dimen>
+    <style name="StudyColorDialog" parent="ThemeOverlay.Material3.MaterialAlertDialog">
+        <item name="colorPrimary">@color/study_ink</item>
+        <item name="colorOnPrimary">@color/study_surface</item>
+        <item name="colorSurface">@color/study_surface</item>
+        <item name="colorOnSurface">@color/study_ink</item>
+        <item name="colorOnSurfaceVariant">@color/study_muted</item>
+        <item name="colorOutline">@color/study_outline</item>
+        <item name="shapeAppearanceMediumComponent">@style/StudyPanelShape</item>
+    </style>
+    <style name="StudyPanelShape" parent="ShapeAppearance.Material3.Corner.Medium">
+        <item name="cornerSize">20dp</item>
+    </style>
+</resources>
