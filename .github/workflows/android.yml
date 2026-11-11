@@ -38,13 +38,18 @@ jobs:
           sdkmanager 'platforms;android-36' 'build-tools;36.0.0' 'ndk;29.0.14206865'
       - name: Install native build tools
         run: python -m pip install requests cmake ninja
+      # The key is computed once, before the native build writes generated files
+      # into build_dependencies/ (the cache post step re-evaluates its inputs).
+      - name: Compute native cache key
+        id: native-key
+        run: echo "key=native-arm64-ndk29-${{ inputs.pdfium || 'prebuilt' }}-${{ hashFiles('build_dependencies/**', 'build_dependencies.py', 'PdfiumAndroid/src/main/jni/**') }}" >> "$GITHUB_OUTPUT"
       - name: Cache pinned native build
         uses: actions/cache@v4
         with:
           path: |
             PdfiumAndroid/src/main/jni/lib
             PdfiumAndroid/src/main/libs
-          key: native-arm64-ndk29-${{ inputs.pdfium || 'prebuilt' }}-${{ hashFiles('build_dependencies/**', 'build_dependencies.py', 'PdfiumAndroid/src/main/jni/**') }}
+          key: ${{ steps.native-key.outputs.key }}
       - name: Build native dependencies and JNI
         env:
           PDFIUM_MODE: ${{ inputs.pdfium || 'prebuilt' }}
