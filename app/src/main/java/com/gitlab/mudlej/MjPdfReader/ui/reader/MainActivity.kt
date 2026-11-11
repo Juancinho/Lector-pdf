@@ -465,6 +465,7 @@ class MainActivity : AppCompatActivity(), ReaderUi {
             return
         }
         annotationController.replayJournal()
+        reader.refreshInkAfterRestore()
         updateDirtyUi()
     }
 

@@ -1,0 +1,26 @@
+<resources xmlns:tools="http://schemas.android.com/tools" tools:ignore="MissingTranslation">
+    <string name="study_tools">Study tools</string>
+    <string name="study_read">Read</string>
+    <string name="study_write">Write</string>
+    <string name="study_pen">Pen</string>
+    <string name="study_pencil">Pencil</string>
+    <string name="study_marker">Highlighter</string>
+    <string name="study_eraser">Stroke eraser</string>
+    <string name="study_lasso">Lasso · move / resize</string>
+    <string name="study_line">Line</string>
+    <string name="study_arrow">Arrow</string>
+    <string name="study_rectangle">Rectangle</string>
+    <string name="study_ellipse">Ellipse</string>
+    <string name="study_undo">Undo ink</string>
+    <string name="study_redo">Redo ink</string>
+    <string name="study_hide_tools">Hide tools</string>
+    <string name="study_ink_options">Ink and thickness</string>
+    <string name="study_nib_width">Thickness · %1$.1f pt</string>
+    <string name="study_pressure">Use pen pressure when available</string>
+    <string name="study_ink_hint">Write with your pen. Navigate with your fingers.</string>
+    <string name="study_ink_failed">The ink could not be changed. Try again before saving.</string>
+    <string name="study_ink_loading">Loading page annotations…</string>
+    <string name="study_ink_selected">%1$d strokes selected · drag to move, corner to resize</string>
+    <string name="study_ink_limit">Select fewer strokes to keep editing responsive.</string>
+    <string name="study_save_ink">Save PDF</string>
+</resources>

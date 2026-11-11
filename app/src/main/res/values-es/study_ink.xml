@@ -1,0 +1,26 @@
+<resources>
+    <string name="study_tools">Herramientas de estudio</string>
+    <string name="study_read">Leer</string>
+    <string name="study_write">Escribir</string>
+    <string name="study_pen">Bolígrafo</string>
+    <string name="study_pencil">Lápiz</string>
+    <string name="study_marker">Rotulador</string>
+    <string name="study_eraser">Goma de trazos</string>
+    <string name="study_lasso">Lazo · mover y escalar</string>
+    <string name="study_line">Línea</string>
+    <string name="study_arrow">Flecha</string>
+    <string name="study_rectangle">Rectángulo</string>
+    <string name="study_ellipse">Elipse</string>
+    <string name="study_undo">Deshacer tinta</string>
+    <string name="study_redo">Rehacer tinta</string>
+    <string name="study_hide_tools">Ocultar herramientas</string>
+    <string name="study_ink_options">Tinta y grosor</string>
+    <string name="study_nib_width">Grosor · %1$.1f pt</string>
+    <string name="study_pressure">Usar la presión del lápiz cuando esté disponible</string>
+    <string name="study_ink_hint">Escribe con el lápiz. Navega con los dedos.</string>
+    <string name="study_ink_failed">No se pudo modificar la tinta. Inténtalo de nuevo antes de guardar.</string>
+    <string name="study_ink_loading">Cargando anotaciones de la página…</string>
+    <string name="study_ink_selected">%1$d trazos seleccionados · arrastra para mover o usa la esquina para escalar</string>
+    <string name="study_ink_limit">Selecciona menos trazos para mantener la edición fluida.</string>
+    <string name="study_save_ink">Guardar PDF</string>
+</resources>

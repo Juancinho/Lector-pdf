@@ -29,3 +29,7 @@ Install ID `io.github.juancinho.mjstudy`, version `0.1.0-study`, launcher name M
 ## Build profiles
 
 First debug delivery uses upstream's explicit checksum-pinned prebuilt PDFium 7920 arm64 profile plus a newly compiled JNI bridge. It omits upstream Arabic source patches; this limitation must accompany the artifact. `--pdfium from-source` preserves those patches but requires depot_tools/GN and a longer build. CI offers either profile explicitly. Never package old JNI after signature changes.
+
+## Ink slice
+
+`study/ink` adds immutable PDF-space strokes, bounded command history, strict metadata codec and rollback-capable patch mutation. The native reader interceptor preserves the original gesture listener. A draw-only overlay previews active input; standard PDFium Ink annotations render committed strokes. Existing render fences, staged saves and annotation journaling are reused. `InkPatch` stores serialized before/after strokes for idempotent recovery. Read STYLUS.md for current cache/sample limits, synchronous pen-up mutation and hardware validation boundaries.

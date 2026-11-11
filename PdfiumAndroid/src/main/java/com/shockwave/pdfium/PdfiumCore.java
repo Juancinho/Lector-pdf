@@ -155,6 +155,31 @@ public class PdfiumCore {
 
     private native PdfDocument.HighlightAnnotation[] nativeGetHighlightAnnotations(long pagePtr);
 
+    private native boolean nativeAddStudyInk(long pagePtr, float[] samples, int color, float width,
+                                              String identifier, String data, boolean pressureEnabled);
+    private native String[] nativeGetStudyInk(long pagePtr);
+    private native boolean nativeRemoveStudyInk(long pagePtr, String identifier);
+
+    public boolean addStudyInk(PdfDocument doc, int pageIndex, float[] samples, int color, float width,
+                                String identifier, String data, boolean pressureEnabled) {
+        synchronized (lock) {
+            Long page = doc.mNativePagesPtr.get(pageIndex);
+            return page != null && nativeAddStudyInk(page, samples, color, width, identifier, data, pressureEnabled);
+        }
+    }
+    public String[] getStudyInk(PdfDocument doc, int pageIndex) {
+        synchronized (lock) {
+            Long page = doc.mNativePagesPtr.get(pageIndex);
+            return page == null ? new String[0] : nativeGetStudyInk(page);
+        }
+    }
+    public boolean removeStudyInk(PdfDocument doc, int pageIndex, String identifier) {
+        synchronized (lock) {
+            Long page = doc.mNativePagesPtr.get(pageIndex);
+            return page != null && nativeRemoveStudyInk(page, identifier);
+        }
+    }
+
     private native String[] nativeGetPageFonts(long pagePtr);
 
     private native boolean nativeAddSignatureContent(long docPtr, long pagePtr,

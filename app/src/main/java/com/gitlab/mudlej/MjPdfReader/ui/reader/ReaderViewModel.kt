@@ -52,6 +52,12 @@ class ReaderViewModel(state: SavedStateHandle) : ViewModel() {
     var bookmarksLoadedForHash: String? = null
     var bookmarkActionState = false
 
+    val studyInkHistory = com.gitlab.mudlej.MjPdfReader.study.ink.InkHistory()
+    var studyInkDocument: String? = null
+    var studyToolbarExpanded = false
+    var studyInkEnabled = false
+    var studyInkTool = com.gitlab.mudlej.MjPdfReader.study.ink.InkTool.PEN
+
     var signatureDirtyBeforePlacement = false
     var pendingSignaturePage = -1
     var pendingSignatureRect: RectF? = null

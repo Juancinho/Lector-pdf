@@ -2454,6 +2454,65 @@ public class PDFView extends RelativeLayout {
         return added;
     }
 
+    // An optional pen interceptor must preserve DragPinchManager's existing touch listener.
+    private android.view.View.OnTouchListener studyInputHandler;
+    private boolean studyInputOwned;
+    public void setStudyInputHandler(android.view.View.OnTouchListener handler) {
+        studyInputHandler = handler;
+        studyInputOwned = false;
+    }
+    @Override public boolean dispatchTouchEvent(MotionEvent event) {
+        boolean handled = studyInputHandler != null && studyInputHandler.onTouch(this, event);
+        if (handled) {
+            if (!studyInputOwned && event.getActionMasked() != MotionEvent.ACTION_DOWN) {
+                MotionEvent cancel = MotionEvent.obtain(event);
+                cancel.setAction(MotionEvent.ACTION_CANCEL);
+                super.dispatchTouchEvent(cancel);
+                cancel.recycle();
+            }
+            studyInputOwned = event.getActionMasked() != MotionEvent.ACTION_UP
+                && event.getActionMasked() != MotionEvent.ACTION_CANCEL;
+            return true;
+        }
+        studyInputOwned = false;
+        return super.dispatchTouchEvent(event);
+    }
+
+    public int studyPageAt(float viewX, float viewY) {
+        if (pdfFile == null) return -1;
+        float x = viewX - currentXOffset, y = viewY - currentYOffset;
+        int page = pdfFile.getPageAtOffset(isSwipeVertical() ? y : x, isSwipeVertical() ? x : y, zoom);
+        if (page < 0 || page >= pdfFile.getPagesCount()) return -1;
+        float originX = isSwipeVertical() ? pdfFile.getSecondaryPageOffset(page, zoom) : pdfFile.getPageOffset(page, zoom);
+        float originY = isSwipeVertical() ? pdfFile.getPageOffset(page, zoom) : pdfFile.getSecondaryPageOffset(page, zoom);
+        SizeF size = pdfFile.getScaledPageSize(page, zoom);
+        return x >= originX && x <= originX + size.getWidth() && y >= originY && y <= originY + size.getHeight() ? page : -1;
+    }
+    public PointF studyViewToPdf(int page, float viewX, float viewY) {
+        if (pdfFile == null || page < 0 || page >= pdfFile.getPagesCount()) return null;
+        pdfFile.ensurePageGeometry(page);
+        return pdfFile.documentToPdf(page, zoom, viewX - currentXOffset, viewY - currentYOffset);
+    }
+    public PointF studyPdfToView(int page, float x, float y) {
+        if (pdfFile == null || page < 0 || page >= pdfFile.getPagesCount()) return null;
+        RectF rect = pdfFile.pdfRectToDocument(page, zoom, x, y, x, y, false);
+        return new PointF(rect.centerX() + currentXOffset, rect.centerY() + currentYOffset);
+    }
+    public boolean addStudyInk(int page, float[] samples, int color, float width, String identifier, String data, boolean pressure) {
+        if (pdfFile == null) return false;
+        boolean added = pdfFile.addStudyInk(page, samples, color, width, identifier, data, pressure);
+        if (added) pageContentChanged(page);
+        return added;
+    }
+    @androidx.annotation.WorkerThread
+    public String[] getStudyInk(int page) { return pdfFile == null ? new String[0] : pdfFile.getStudyInk(page); }
+    public boolean removeStudyInk(int page, String identifier) {
+        if (pdfFile == null) return false;
+        boolean removed = pdfFile.removeStudyInk(page, identifier);
+        if (removed) pageContentChanged(page);
+        return removed;
+    }
+
     public boolean addSignature(int pageIndex, RectF pdfRect, float[][] strokes, int color,
                                 float normalizedStrokeWidth) {
         if (pdfFile == null) {

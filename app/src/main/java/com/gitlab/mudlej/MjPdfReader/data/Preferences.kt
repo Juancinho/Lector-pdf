@@ -322,11 +322,11 @@ class Preferences(private val prefMan: SharedPreferences) {
                 autoFullScreenKey, alwaysHorizontalKey, homeDisabledKey, homeShowPdfTitleKey,
                 homeFolderFlatKey, homeBadgePagesKey, homeBadgeProgressKey, homeBadgeLastOpenedKey,
                 homeBadgeFileSizeKey, homeBadgeStatusKey, historyEnabledKey, keepSharedCopiesKey,
-                dictionaryDefineWordsKey, autoBackupEnabledKey, openPdfsInSeparateWindowsKey,
+                "study.ink.pressure", dictionaryDefineWordsKey, autoBackupEnabledKey, openPdfsInSeparateWindowsKey,
                 textModeReadableLineLengthKey,
             ).forEach { put(it, kindBoolean) }
             listOf(
-                hideDelayKey, goToPageGridColumnsKey, scrollSpeedKey, homeListTitleLinesKey,
+                "study.ink.color", hideDelayKey, goToPageGridColumnsKey, scrollSpeedKey, homeListTitleLinesKey,
                 homeGridTitleLinesKey, autoBackupHourKey, autoBackupMinuteKey, lastSeenVersionCodeKey,
                 textModeHorizontalMarginKey,
             ).forEach { put(it, kindInt) }
@@ -334,7 +334,7 @@ class Preferences(private val prefMan: SharedPreferences) {
                 autoBackupLastRunKey, autoBackupErrorAcknowledgedRunKey, autoBackupEnabledAtKey,
             ).forEach { put(it, kindLong) }
             listOf(
-                partSizeKey, maxZoomKey, textModeFontSizeKey, textModeLineSpacingKey,
+                "study.ink.width", partSizeKey, maxZoomKey, textModeFontSizeKey, textModeLineSpacingKey,
             ).forEach { put(it, kindFloat) }
             listOf(
                 interfaceThemeKey, pdfPagesThemeKey, primaryButtonActionKey,

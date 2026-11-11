@@ -32,7 +32,8 @@ Spacing scale: 4, 8, 12, 16, 24, 32dp. Panel inset 24dp; field separation 12dp; 
 - Inputs: outlined, visible label, inline validation, disabled commit for invalid HEX/RGB. Edits synchronize only after valid input. Never silently interpret ARGB as RGB.
 - Primary commit: highest contrast. Secondary cancel: quiet. Pressed/focus/ripple feedback uses native Material states. Disabled commit cannot write a stale color. A selected color must have text/outline cues, not just hue.
 - Favorite/recent controls expose HEX, opacity and meaning to accessibility services. Meanings are preference labels, not hidden annotation metadata.
-- Future floating toolbar: one tool group at a time, collapsed when reading, transient options anchored to the active tool. Do not add an always-visible grid of every feature.
+- Ink toolbar: collapsed “Write” pill, expanded card bounded to 760dp, quiet 48dp monoline icon buttons and a visible current-tool label. Horizontal overflow keeps targets large on compact screens. Selected tools use a tinted neutral surface and accent icon; disabled history actions are dimmed. Save and collapse remain in the header. Color/nib settings use progressive disclosure in one scrollable dialog. Configurable/favorite tool groups remain planned.
+- Ink palette: graphite, clear blue, warm coral, green and gold offer a more cheerful study character without saturating the reader chrome. PDF colors are content choices; theme changes never recolor saved strokes.
 
 ## Responsive behavior
 

@@ -18,6 +18,7 @@ import androidx.activity.result.contract.ActivityResultContracts.OpenDocument
 import androidx.activity.result.contract.ActivityResultContracts.RequestPermission
 import androidx.activity.result.contract.ActivityResultContracts.StartActivityForResult
 import androidx.appcompat.content.res.AppCompatResources
+import com.gitlab.mudlej.MjPdfReader.study.ink.InkController
 import androidx.lifecycle.lifecycleScope
 import com.github.barteksc.pdfviewer.PDFView.Configurator
 import com.github.barteksc.pdfviewer.listener.OnTextSelectionChangeListener
@@ -318,11 +319,15 @@ class ReaderComposition(
         createAnnotationDestinationLauncher,
         { readerNavigationController.clearActiveSearchResultHighlight() },
         ui::updateDirtyUi,
-        { signatureController.commitPendingSignature() },
+        { inkController.beforeSave() && signatureController.commitPendingSignature() },
         activity::performPostSaveAction,
     ) {
         ui.updateTitle()
     }
+    private val inkController = InkController(
+        activity, binding.pdfView, vm, scope, ::canEditDocument, ::onAnnotationEdit,
+        { annotationSaveController.saveHighlights() },
+    )
     val cropMarginsController: CropMarginsController = CropMarginsController(
         activity,
         binding,
@@ -509,6 +514,7 @@ class ReaderComposition(
     }
 
     fun onActivityDestroyed() {
+        inkController.destroy()
         readerNavigationController.onActivityDestroyed()
         if (activity.isFinishing) {
             vm.onSaveComplete = null
@@ -593,6 +599,7 @@ class ReaderComposition(
 
             override fun onPageChanged(pageIndex: Int) {
                 readerNavigationController.onPageChanged(pageIndex)
+                inkController.loadPage(pageIndex)
             }
 
             override fun onFileHashComputed() {
@@ -622,10 +629,12 @@ class ReaderComposition(
             override fun onDocumentReset() {
                 inlineAnnotationActionController.hideActions()
                 signatureController.cancelPlacement()
+                inkController.onDocument(null)
                 annotationController.resetContentTags()
             }
 
             override fun onDocumentLoaded(event: DocumentLoadedEvent) {
+                inkController.onDocument(event.documentUri.toString())
                 activity.maybeRestoreAnnotations(event.documentUri, event.loadToken)
                 signatureController.resumeRestoredPlacementIfNeeded()
             }
@@ -638,6 +647,7 @@ class ReaderComposition(
     }
 
     fun wireViews() {
+        inkController.attach()
         binding.pdfView.setPreviewTagSource(annotationController.previewTagSource)
         binding.pdfView.setOnStampPlacementDiscardListener { signatureController.cancelPlacement() }
         binding.exitFullScreenButton.setOnClickListener { fullscreenController.exitFullscreen() }
@@ -676,6 +686,8 @@ class ReaderComposition(
             }
         }
     }
+
+    fun refreshInkAfterRestore() { inkController.invalidateCache() }
 
     fun onResume() {
         fullScreenButtonController.configure()

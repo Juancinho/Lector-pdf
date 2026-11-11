@@ -9,6 +9,7 @@ import android.util.Log
 import com.github.barteksc.pdfviewer.PDFView
 import com.github.barteksc.pdfviewer.ReplayMeasurement
 import com.github.barteksc.pdfviewer.preview.TagSource
+import com.gitlab.mudlej.MjPdfReader.study.ink.*
 import com.gitlab.mudlej.MjPdfReader.BuildConfig
 import com.gitlab.mudlej.MjPdfReader.data.HistoryPolicy
 import com.gitlab.mudlej.MjPdfReader.data.annotation.AnnotationEdit
@@ -85,6 +86,7 @@ class AnnotationController(
     }
 
     private fun renderAffectingHash(edit: AnnotationEdit): Int? = when (edit) {
+        is AnnotationEdit.InkPatch,
         is AnnotationEdit.AddSignature,
         is AnnotationEdit.SetFieldText,
         is AnnotationEdit.SetFieldChecked -> edit.toJsonLine().hashCode()
@@ -181,6 +183,17 @@ class AnnotationController(
         applyContentTag(edit)
         val pdfView = binding.pdfView
         val applied = when (edit) {
+            is AnnotationEdit.InkPatch -> {
+                val before = edit.before.mapNotNull(InkCodec::decode)
+                val after = edit.after.mapNotNull(InkCodec::decode)
+                if (before.size != edit.before.size || after.size != edit.after.size ||
+                    (before + after).any { it.page != edit.page } || (before.isEmpty() && after.isEmpty())) false
+                else InkMutator.apply(object : InkWriter {
+                    override fun add(stroke: InkStroke) = pdfView.addStudyInk(stroke.page, stroke.nativePoints(), stroke.color,
+                        stroke.width, stroke.id, InkCodec.encode(stroke), stroke.pressureEnabled)
+                    override fun remove(stroke: InkStroke) = pdfView.removeStudyInk(stroke.page, stroke.id)
+                }, InkChange(before, after))
+            }
             is AnnotationEdit.Add ->
                 pdfView.addHighlightAnnotation(edit.page, edit.rects, edit.color, edit.contents, edit.group, edit.createdDate)
             is AnnotationEdit.Recolor ->

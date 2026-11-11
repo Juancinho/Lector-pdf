@@ -60,11 +60,21 @@ sealed class AnnotationEdit {
         val strokeWidth: Float,
     ) : AnnotationEdit()
 
+    data class InkPatch(
+        override val page: Int,
+        val before: List<String>,
+        val after: List<String>,
+    ) : AnnotationEdit()
+
     fun toJsonLine(): String {
         val json = JsonObject()
         json.addProperty(KEY_OP, opName())
         json.addProperty(KEY_PAGE, page)
         when (this) {
+            is InkPatch -> {
+                json.add("before", JsonArray().apply { before.forEach { add(it) } })
+                json.add("after", JsonArray().apply { after.forEach { add(it) } })
+            }
             is Add -> {
                 json.addProperty(KEY_GROUP, group)
                 json.addProperty(KEY_COLOR, color)
@@ -103,6 +113,7 @@ sealed class AnnotationEdit {
     }
 
     private fun opName(): String = when (this) {
+        is InkPatch -> "ink"
         is Add -> OP_ADD
         is Recolor -> OP_RECOLOR
         is SetNote -> OP_SET_NOTE
@@ -141,6 +152,7 @@ sealed class AnnotationEdit {
             val json = JsonParser.parseString(line).asJsonObject
             val page = json.get(KEY_PAGE).asInt
             when (json.get(KEY_OP).asString) {
+                "ink" -> InkPatch(page, json.getAsJsonArray("before").map { it.asString }, json.getAsJsonArray("after").map { it.asString })
                 OP_ADD -> Add(
                     page = page,
                     group = json.get(KEY_GROUP).asString,

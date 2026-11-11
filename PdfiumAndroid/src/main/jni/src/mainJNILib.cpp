@@ -2887,3 +2887,140 @@ JNI_FUNC(jobject, PdfiumCore, nativePageCoordsToDevice)(JNI_ARGS, jlong pagePtr,
 }
 
 }//extern C
+
+extern "C" {
+// MJ Study standard vector /Ink annotations. Mutation is atomic per annotation:
+// a partially initialized annotation is removed before returning failure.
+JNI_FUNC(jboolean, PdfiumCore, nativeAddStudyInk)(JNI_ARGS,
+    jlong pagePtr, jfloatArray samples, jint color, jfloat width,
+    jstring identifier, jstring data, jboolean pressureEnabled) {
+    FPDF_PAGE page = reinterpret_cast<FPDF_PAGE>(pagePtr);
+    if (!page || !samples || !isfinite(width) || width < 0.1f || width > 256.f) return false;
+    const jsize length = env->GetArrayLength(samples);
+    if (length < 3 || length % 3 || length > 4096 * 3) return false;
+    const std::vector<FPDF_WCHAR> id = jstringToWide(env, identifier);
+    if (id.empty() || id.size() > 101 || !data || env->GetStringLength(data) > 600000) return false;
+    // Recovery replay and redo are idempotent.
+    for (int i = 0; i < FPDFPage_GetAnnotCount(page); ++i) {
+        FPDF_ANNOTATION existing = FPDFPage_GetAnnot(page, i);
+        const bool same = existing && FPDFAnnot_GetSubtype(existing) == FPDF_ANNOT_INK
+                && wideEquals(getAnnotWideString(existing, "NM"), id);
+        if (existing) FPDFPage_CloseAnnot(existing);
+        if (same) return true;
+    }
+    std::vector<jfloat> values(length);
+    env->GetFloatArrayRegion(samples, 0, length, values.data());
+    if (env->ExceptionCheck()) return false;
+    std::vector<FS_POINTF> points;
+    float left = values[0], right = values[0], bottom = values[1], top = values[1];
+    for (jsize i = 0; i < length; i += 3) {
+        if (!isfinite(values[i]) || !isfinite(values[i+1]) || !isfinite(values[i+2])
+                || fabs(values[i]) > 1000000 || fabs(values[i+1]) > 1000000
+                || values[i+2] < 0 || values[i+2] > 1) return false;
+        FS_POINTF point = {values[i], values[i+1]};
+        points.push_back(point);
+        left = fmin(left, point.x); right = fmax(right, point.x);
+        bottom = fmin(bottom, point.y); top = fmax(top, point.y);
+    }
+    // PDF InkList needs a segment even for a dot.
+    if (points.size() == 1) { FS_POINTF dot = {points[0].x + 0.01f, points[0].y}; points.push_back(dot); }
+    const unsigned int red = (color >> 16) & 255, green = (color >> 8) & 255;
+    const unsigned int blue = color & 255, alpha = (static_cast<unsigned int>(color) >> 24) & 255;
+    FPDF_ANNOTATION annot = FPDFPage_CreateAnnot(page, FPDF_ANNOT_INK);
+    if (!annot) return false;
+    FS_RECTF bounds = {left - width, top + width, right + width, bottom - width};
+    bool ok = FPDFAnnot_SetRect(annot, &bounds)
+            && FPDFAnnot_SetColor(annot, FPDFANNOT_COLORTYPE_Color, red, green, blue, alpha)
+            && FPDFAnnot_SetBorder(annot, 0, 0, width)
+            && FPDFAnnot_AddInkStroke(annot, points.data(), points.size()) >= 0
+            && FPDFAnnot_SetFlags(annot, FPDF_ANNOT_FLAG_PRINT)
+            && setAnnotAsciiString(annot, "T", "MJ Study")
+            && setAnnotWideString(env, annot, "NM", identifier)
+            && setAnnotWideString(env, annot, "MJInkData", data);
+    // Build one standard appearance path. A filled outline carries varying
+    // pressure without thousands of per-segment page objects. InkList remains
+    // a standards-compatible centerline fallback in other readers.
+    FPDF_PAGEOBJECT path = nullptr;
+    if (ok && pressureEnabled && points.size() > 2) {
+        std::vector<FS_POINTF> a, b;
+        for (size_t i = 0; i < points.size(); ++i) {
+            const FS_POINTF previous = points[i == 0 ? 0 : i - 1];
+            const FS_POINTF next = points[i + 1 < points.size() ? i + 1 : i];
+            const float dx = next.x - previous.x, dy = next.y - previous.y;
+            const float distance = hypotf(dx, dy);
+            const float nx = distance > .0001f ? -dy / distance : 0;
+            const float ny = distance > .0001f ? dx / distance : 1;
+            const float radius = width * (.25f + .75f * values[i * 3 + 2]) * .5f;
+            FS_POINTF sideA = {points[i].x + nx * radius, points[i].y + ny * radius};
+            FS_POINTF sideB = {points[i].x - nx * radius, points[i].y - ny * radius};
+            a.push_back(sideA); b.push_back(sideB);
+        }
+        path = FPDFPageObj_CreateNewPath(a[0].x, a[0].y);
+        ok = path != nullptr;
+        for (size_t i = 1; ok && i < a.size(); ++i) ok = FPDFPath_LineTo(path, a[i].x, a[i].y);
+        for (size_t i = b.size(); ok && i > 0; --i) ok = FPDFPath_LineTo(path, b[i-1].x, b[i-1].y);
+        ok = ok && FPDFPath_Close(path) && FPDFPath_SetDrawMode(path, FPDF_FILLMODE_WINDING, false)
+                && FPDFPageObj_SetFillColor(path, red, green, blue, 255);
+    } else if (ok) {
+        path = FPDFPageObj_CreateNewPath(points[0].x, points[0].y);
+        ok = path != nullptr;
+        for (size_t i = 1; ok && i < points.size(); ++i) ok = FPDFPath_LineTo(path, points[i].x, points[i].y);
+        ok = ok && FPDFPath_SetDrawMode(path, 0, true)
+                && FPDFPageObj_SetStrokeColor(path, red, green, blue, 255)
+                && FPDFPageObj_SetStrokeWidth(path, width)
+                && FPDFPageObj_SetLineCap(path, FPDF_LINECAP_ROUND)
+                && FPDFPageObj_SetLineJoin(path, FPDF_LINEJOIN_ROUND);
+    }
+    if (ok) {
+        ok = FPDFAnnot_AppendObject(annot, path);
+        if (ok) path = nullptr; // owned by annotation after success
+    }
+    if (path) FPDFPageObj_Destroy(path);
+    const int index = FPDFPage_GetAnnotIndex(page, annot);
+    FPDFPage_CloseAnnot(annot);
+    if (!ok && index >= 0) FPDFPage_RemoveAnnot(page, index);
+    return ok;
+}
+
+JNI_FUNC(jobjectArray, PdfiumCore, nativeGetStudyInk)(JNI_ARGS, jlong pagePtr) {
+    FPDF_PAGE page = reinterpret_cast<FPDF_PAGE>(pagePtr);
+    std::vector<std::vector<FPDF_WCHAR>> records;
+    size_t totalCharacters = 0;
+    if (page) for (int i = 0; i < FPDFPage_GetAnnotCount(page); ++i) {
+        FPDF_ANNOTATION annot = FPDFPage_GetAnnot(page, i);
+        if (!annot) continue;
+        if (FPDFAnnot_GetSubtype(annot) == FPDF_ANNOT_INK
+                && FPDFAnnot_GetStringValue(annot, "MJInkData", nullptr, 0) <= 1200002) {
+            const std::vector<FPDF_WCHAR> data = getAnnotWideString(annot, "MJInkData");
+            totalCharacters += data.size();
+            if (!data.empty() && totalCharacters <= 4000000 && records.size() < 2000) records.push_back(data);
+        }
+        FPDFPage_CloseAnnot(annot);
+    }
+    jclass stringClass = env->FindClass("java/lang/String");
+    jobjectArray result = env->NewObjectArray(records.size(), stringClass, nullptr);
+    for (size_t i = 0; i < records.size(); ++i) {
+        jstring record = wideToJString(env, records[i]);
+        env->SetObjectArrayElement(result, i, record); env->DeleteLocalRef(record);
+    }
+    env->DeleteLocalRef(stringClass);
+    return result;
+}
+
+JNI_FUNC(jboolean, PdfiumCore, nativeRemoveStudyInk)(JNI_ARGS, jlong pagePtr, jstring identifier) {
+    FPDF_PAGE page = reinterpret_cast<FPDF_PAGE>(pagePtr);
+    if (!page) return false;
+    const std::vector<FPDF_WCHAR> id = jstringToWide(env, identifier);
+    if (id.empty()) return false;
+    for (int i = FPDFPage_GetAnnotCount(page) - 1; i >= 0; --i) {
+        FPDF_ANNOTATION annot = FPDFPage_GetAnnot(page, i);
+        const bool matches = annot && FPDFAnnot_GetSubtype(annot) == FPDF_ANNOT_INK
+                && !getAnnotWideString(annot, "MJInkData").empty()
+                && wideEquals(getAnnotWideString(annot, "NM"), id);
+        if (annot) FPDFPage_CloseAnnot(annot);
+        if (matches) return FPDFPage_RemoveAnnot(page, i);
+    }
+    return true; // idempotent journal replay
+}
+
+} // extern C: MJ Study JNI

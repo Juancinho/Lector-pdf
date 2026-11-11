@@ -9,8 +9,8 @@ This is a sequence of functional deliveries, not a list of completed promises.
 - [x] Document architecture, design system and pen investigation.
 - [x] Compile the development fork, both native ABIs and the device-test APK; pass all executable JVM tests.
 - [x] Add Android CI workflow with unit tests, lint, debug/test APK artifacts.
-- [ ] Confirm target GitHub repository and publish branch/PR (none matching MJ Study is connected in this session).
-- [ ] Run workflow on GitHub after publishing.
+- [x] Publish imported source to Juancinho/Lector-pdf. Preserve upstream authorship; oversized historical archives and connector-managed workflow files are excluded from imported history.
+- [x] Start GitHub builds; fix runner SDK setup. Require green checks before accepting the ink delivery.
 
 ## Phase 1: custom highlighting
 
@@ -24,14 +24,17 @@ This is a sequence of functional deliveries, not a list of completed promises.
 
 ## Phase 2: tablet reader
 
-- [ ] Floating tool groups, read/write modes, hide controls, responsive page/annotation panels.
+- [x] Collapsible floating ink toolbar, read/write modes and native light/dark components.
+- [ ] Configurable favorite tool groups, fully hidden reading controls and responsive page/annotation panels.
 - [ ] Apply common tokens across reader chrome, day/night and accessibility states.
 
 ## Phase 3: pen engine
 
-- [ ] Capability diagnostics on Xiaomi hardware, page-coordinate transforms, pen/finger routing.
-- [ ] Pressure/smoothing/palm state machine, vector tools, undo/redo, standard /Ink persistence.
-- [ ] Lasso and transformations after coordinate/serialization tests pass.
+- [x] Implement PDF-space geometry, pen/finger routing, pressure normalization, historical samples and smoothing.
+- [x] Implement vector pen/pencil/marker/shapes, stroke eraser, lasso move/scale, bounded undo/redo, standard /Ink and journal patches.
+- [ ] Execute native integration tests, independent renderer checks and physical capability diagnostics.
+- [ ] Validate Xiaomi pressure/buttons/palm rejection and profile latency/memory.
+- [ ] Tool favorites, tilt, long-stroke segmentation, rotation transforms and external ink editing.
 
 ## Phase 4: library
 

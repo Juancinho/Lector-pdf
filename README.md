@@ -16,9 +16,11 @@ The pen engine, redesigned tablet toolbar and advanced library are planned, not 
 
 ## Try it
 
-Install the arm64 debug APK from a successful GitHub Actions run (Actions → MJ Study Android → artifact `mj-study-arm64-debug-…`). The workflow also supplies an instrumentation-test APK. Debug builds are for testing; CI debug signing keys may change between runners, so updates across builds may require reinstalling until stable signing is configured. Export work before uninstalling.
+Install the arm64 debug APK from a successful GitHub Actions run (Actions → MJ Study Android → artifact `mj-study-arm64-debug-…`). The workflow also supplies an instrumentation-test APK. Debug builds are for testing. CI caches its debug signing key across builds while the cache exists; local builds use their own key. Switching signing keys requires reinstalling, so export PDFs/settings first. Release signing remains a future setup.
 
 Open a PDF with selectable text, long-press/select a phrase, tap **+**, choose HEX/RGB and opacity, then **Use highlight**. Tap a saved highlight and **+** to recolor. Press the existing save control and choose a writable destination; open the saved copy in another reader to check compatibility. Meanings label personal presets; they are not embedded note text.
+
+Tap **Write** to open the floating ink toolbar. Use the pen to write and fingers to navigate. Choose pen/pencil/freehand marker, shapes, whole-stroke eraser or lasso; drag inside a lasso selection to move it and its upper-right handle to resize. Color, nib width and pressure are in the palette button. Undo/redo belongs to the current document session. Save a PDF copy before leaving. See [ink behavior and limits](docs/STYLUS.md); Xiaomi hardware acceptance is pending.
 
 ## Build
 
@@ -41,7 +43,7 @@ Output: `app/build/outputs/apk/debug/app-debug.apk`. First debug target is arm64
 
 - [Architecture](docs/ARCHITECTURE.md)
 - [Design system and Astryx reference](docs/DESIGN_SYSTEM.md)
-- [Digital ink investigation](docs/STYLUS.md)
+- [Digital ink engine](docs/STYLUS.md)
 - [Tests and tablet checklist](docs/TESTING.md)
 - [Development instructions](AGENTS.md)
 

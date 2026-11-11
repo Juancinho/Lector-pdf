@@ -1558,6 +1558,33 @@ class PdfFile implements ViewportMath.Layout {
         formFieldRectCache.remove(pageIndex);
     }
 
+    public boolean addStudyInk(int pageIndex, float[] samples, int color, float width,
+                                String identifier, String data, boolean pressureEnabled) {
+        if (disposed || pdfDocument == null || documentPage(pageIndex) < 0) return false;
+        fenceRenders();
+        try {
+            openPage(pageIndex);
+            return pdfiumCore.addStudyInk(pdfDocument, documentPage(pageIndex), samples, color, width, identifier, data, pressureEnabled);
+        } catch (PageRenderingException e) { return false; }
+        finally { renderGate.unlock(); }
+    }
+    public String[] getStudyInk(int pageIndex) {
+        if (disposed || pdfDocument == null || documentPage(pageIndex) < 0) return new String[0];
+        try {
+            openPage(pageIndex);
+            return pdfiumCore.getStudyInk(pdfDocument, documentPage(pageIndex));
+        } catch (PageRenderingException e) { return new String[0]; }
+    }
+    public boolean removeStudyInk(int pageIndex, String identifier) {
+        if (disposed || pdfDocument == null || documentPage(pageIndex) < 0) return false;
+        fenceRenders();
+        try {
+            openPage(pageIndex);
+            return pdfiumCore.removeStudyInk(pdfDocument, documentPage(pageIndex), identifier);
+        } catch (PageRenderingException e) { return false; }
+        finally { renderGate.unlock(); }
+    }
+
     public boolean setHighlightAnnotationColor(int pageIndex, int annotationIndex,
                                                String groupKey, int color) {
         if (disposed || pdfDocument == null) {
