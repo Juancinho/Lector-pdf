@@ -43,13 +43,18 @@ jobs:
           sdkmanager 'platforms;android-36' 'build-tools;36.0.0' 'ndk;29.0.14206865'
       - name: Install native build tools
         run: python -m pip install requests cmake ninja
+      - name: Fingerprint tracked native sources
+        id: native_sources
+        run: |
+          digest=$(git ls-files -z build_dependencies build_dependencies.py PdfiumAndroid/src/main/jni | xargs -0 sha256sum | sha256sum | cut -d ' ' -f1)
+          echo "digest=$digest" >> "$GITHUB_OUTPUT"
       - name: Cache pinned native build
         uses: actions/cache@v4
         with:
           path: |
             PdfiumAndroid/src/main/jni/lib
             PdfiumAndroid/src/main/libs
-          key: native-arm64-ndk29-${{ inputs.pdfium || 'prebuilt' }}-${{ hashFiles('build_dependencies/**', 'build_dependencies.py', 'PdfiumAndroid/src/main/jni/src/**', 'PdfiumAndroid/src/main/jni/include/**', 'PdfiumAndroid/src/main/jni/Android.mk', 'PdfiumAndroid/src/main/jni/Application.mk') }}
+          key: native-arm64-ndk29-${{ inputs.pdfium || 'prebuilt' }}-${{ steps.native_sources.outputs.digest }}
       - name: Build native dependencies and JNI
         env:
           PDFIUM_MODE: ${{ inputs.pdfium || 'prebuilt' }}
@@ -100,19 +105,29 @@ jobs:
           yes | sdkmanager --licenses > /dev/null || true
           sdkmanager 'platforms;android-36' 'build-tools;36.0.0' 'ndk;29.0.14206865' emulator 'system-images;android-30;default;x86_64'
           python -m pip install requests cmake ninja
+      - name: Fingerprint tracked native sources
+        id: native_sources
+        run: |
+          digest=$(git ls-files -z build_dependencies build_dependencies.py PdfiumAndroid/src/main/jni | xargs -0 sha256sum | sha256sum | cut -d ' ' -f1)
+          echo "digest=$digest" >> "$GITHUB_OUTPUT"
       - uses: actions/cache@v4
         with:
           path: |
             PdfiumAndroid/src/main/jni/lib
             PdfiumAndroid/src/main/libs
-          key: native-x86_64-ndk29-${{ hashFiles('build_dependencies/**', 'build_dependencies.py', 'PdfiumAndroid/src/main/jni/src/**', 'PdfiumAndroid/src/main/jni/include/**', 'PdfiumAndroid/src/main/jni/Android.mk', 'PdfiumAndroid/src/main/jni/Application.mk') }}
+          key: native-x86_64-ndk29-${{ steps.native_sources.outputs.digest }}
       - name: Build native x86_64 runtime
         run: ANDROID_NDK="$ANDROID_HOME/ndk/29.0.14206865" python build_dependencies.py --pdfium prebuilt --abi x86_64
       - name: Boot accelerated Android emulator
         run: |
           sudo chmod 666 /dev/kvm
-          echo no | avdmanager create avd -n study-ci -k 'system-images;android-30;default;x86_64' --force
-          "$ANDROID_HOME/emulator/emulator" -avd study-ci -no-window -no-audio -no-boot-anim -no-snapshot -gpu swiftshader -feature -Vulkan -accel on > emulator.log 2>&1 &
+          export ANDROID_USER_HOME="$RUNNER_TEMP/study-android"
+          export ANDROID_AVD_HOME="$ANDROID_USER_HOME/avd"
+          mkdir -p "$ANDROID_AVD_HOME"
+          avdmanager create avd -n study-ci -k 'system-images;android-30;default;x86_64' --device pixel_c --path "$ANDROID_AVD_HOME/study-ci.avd" --force
+          test -s "$ANDROID_AVD_HOME/study-ci.ini"
+          printf '%s\n' 'disk.dataPartition.size=2G' 'hw.lcd.width=1280' 'hw.lcd.height=800' 'hw.lcd.density=160' >> "$ANDROID_AVD_HOME/study-ci.avd/config.ini"
+          "$ANDROID_HOME/emulator/emulator" -avd study-ci -no-window -no-audio -no-boot-anim -no-snapshot -gpu swiftshader -feature -Vulkan -accel on -memory 2048 -cores 2 > emulator.log 2>&1 &
           trap 'cat emulator.log' EXIT
           timeout 180 adb wait-for-device
           timeout 180 bash -c 'until [ "$(adb shell getprop sys.boot_completed 2>/dev/null | tr -d "\r")" = 1 ]; do sleep 2; done'
