@@ -30,7 +30,7 @@ Pen information in the ink options displays actual observed InputDevice name/sou
 
 ## Validation gate
 
-Unit coverage checks pressure normalization, geometry, shapes, codec, bounds, journal serialization, undo/redo order and transform rollback. `InkPersistenceTest` exercises native create/save/reopen, visible appearance and idempotent removal. `InkInputTest` injects synthetic finger/pen events and checks PDF coordinates after zoom. CI runs these with the highlight/editor integration tests on an accelerated API 30 x86_64 emulator. See DELIVERY.md for actual results; configured tests are not completed tests.
+Unit coverage checks pressure normalization, geometry, shapes, codec, bounds, journal serialization, undo/redo order and transform rollback. `InkPersistenceTest` exercises native create/save/reopen, visible appearance and idempotent removal. `InkInputTest` injects synthetic finger/pen events, verifies finger navigation, stops page inertia on pen-down and checks PDF coordinates after zoom. Six targeted study tests pass on an accelerated API 30 x86_64 CI emulator, including highlight persistence and invalid editor-draft recreation. This is software regression coverage, not a physical stylus certification; see DELIVERY.md.
 
 Physical acceptance must record tablet model, Android/HyperOS, pen model, reported ranges, pressure values, tool IDs and button events. Test palm contacts before/during/after pen, simultaneous fingers, cancellation, all rotations, crop, zoom/scroll, dark mode, long writing sessions and independent-reader/print compatibility. No physical Xiaomi verification has been performed here.
 

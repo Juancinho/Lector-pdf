@@ -6,6 +6,8 @@ Status: development handwriting build. Physical Xiaomi acceptance remains pendin
 
 Native floating/collapsible toolbar; read/write modes; pen, softer pencil, transparent freehand marker, line/arrow/rectangle/ellipse; configurable HEX color/nib width/pressure preference; whole-stroke eraser; lasso selection, move and uniform scale; bounded per-document undo/redo. Finger navigation keeps the upstream gesture listener. Ink is PDF-space vector geometry, saved as standard printable Ink annotations with appearance streams and optional embedded editing metadata. Existing staged save/recovery and settings backup are reused.
 
+Pen-down now stops page fling/snap motion, cancels a finger gesture that the pen takes over and forwards down/up to auto-scroll. Invalid HEX/RGB drafts, opacity and meaning also survive editor recreation without writing preferences on Cancel.
+
 Custom text highlights from 0.1 remain available. Original PDFium renderer, GPL attribution, offline operation and distinct installed ID are preserved. See STYLUS.md for exact limits; advanced library/page tools and the full requested roadmap are not complete.
 
 ## Verification
@@ -13,9 +15,9 @@ Custom text highlights from 0.1 remain available. Original PDFium renderer, GPL 
 - Native JNI built for arm64-v8a and x86_64; exported ink JNI symbols checked.
 - 1,104 JVM tests passed, 57 skipped, zero failures/errors (785 app, 290 viewer, 29 native bridge).
 - Debug APK and instrumentation APK assembled. Lint passed: zero errors, 307 warnings (including inherited warnings). APK signature verified; all five native libraries per ABI match the newly built binaries byte-for-byte.
-- Transparency-corrected APK SHA-256: `579e49b899d4209a0c6b3d005cf6c3ec395dac35248dfb444707864e71725f72`. Local debug signing differs from CI signing.
-- GitHub has also compiled the ink APK and passed JVM/lint on the PR. The initial run then failed while hashing generated native files for its post-build cache; cache inputs have been narrowed to source files. APK artifact was uploaded successfully.
-- Android integration has not passed: the first emulator boot failed and its diagnostic adb command waited for a device. The logs identified mismatched AVD discovery paths. The workflow now sets explicit Android user/AVD directories, selects a tablet profile, bounds both waits and emits emulator logs. A fresh run must pass before acceptance.
+- Current CI arm64 debug APK SHA-256: `5a18f35c016e2b0453e20dc6f858fc69b4f1e7bef9929d1980afe3f4bc5953d9`. It contains all five required native libraries. CI and locally produced debug builds may use different signing keys.
+- GitHub Actions passes the complete JVM/lint/APK job and the native Android integration job on the PR.
+- Six targeted study tests pass on an accelerated API 30 x86_64 emulator: highlight persistence/recolor, invalid-draft recreation, native ink create/save/reopen/removal, pressure and marker-opacity appearance, and synthetic finger/pen routing after zoom/scroll. Pen-down stopping page inertia is covered. These tests use synthetic input and do not establish Xiaomi hardware behavior.
 - No physical tablet/pen, real pressure range, palm rejection, latency, cross-reader interoperability or large-PDF stress test has been verified here.
 - PDFium prebuilt profile is pinned to 7920 and omits upstream Arabic patches. Source mode remains available.
 

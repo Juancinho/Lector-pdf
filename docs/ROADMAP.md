@@ -19,7 +19,8 @@ This is a sequence of functional deliveries, not a list of completed promises.
 - [x] Integrate selection-card creation/recolor and settings entry.
 - [x] Carry opacity through Java/JNI, standard PDF annotations, overlays and journal edits.
 - [x] Add unit coverage and native save/reopen instrumentation test.
-- [ ] Native save/reopen test on device, third-party PDF reader comparison, landscape/font-size visual acceptance.
+- [x] Native save/reopen and editor-recreation tests on the API 30 CI emulator.
+- [ ] Physical-device save/reopen, third-party PDF reader comparison, landscape/font-size visual acceptance.
 - [ ] See TESTING.md and DELIVERY.md for actual build/test outcomes; implementation checkmarks do not imply hardware verification.
 
 ## Phase 2: tablet reader
@@ -32,7 +33,8 @@ This is a sequence of functional deliveries, not a list of completed promises.
 
 - [x] Implement PDF-space geometry, pen/finger routing, pressure normalization, historical samples and smoothing.
 - [x] Implement vector pen/pencil/marker/shapes, stroke eraser, lasso move/scale, bounded undo/redo, standard /Ink and journal patches.
-- [ ] Execute native integration tests, independent renderer checks and physical capability diagnostics.
+- [x] Execute targeted native create/save/reopen and synthetic pen/finger integration tests in CI.
+- [ ] Independent-reader checks and physical capability diagnostics.
 - [ ] Validate Xiaomi pressure/buttons/palm rejection and profile latency/memory.
 - [ ] Tool favorites, tilt, long-stroke segmentation, rotation transforms and external ink editing.
 
