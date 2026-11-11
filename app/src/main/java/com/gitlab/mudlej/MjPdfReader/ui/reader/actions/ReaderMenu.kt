@@ -55,31 +55,23 @@ class ReaderMenu(
     private fun menuContent(): ReaderMenuContent {
         return ReaderMenuContent(
             sections = listOf(
-                ReaderMenuSection(actionsSection()),
-                ReaderMenuSection(pagesSection()),
+                ReaderMenuSection(R.string.study_reader_reading, readingSection()),
+                ReaderMenuSection(R.string.study_reader_study, studySection()),
+                ReaderMenuSection(R.string.study_reader_document, documentSection()),
             ),
         )
     }
 
-    private fun actionsSection(): List<ReaderAction> {
+    private fun readingSection(): List<ReaderAction> {
         return listOfNotNull(
-            action(ConfigurableAction.OPEN_LOCAL),
-            action(ConfigurableAction.SWITCH_THEME),
             action(ConfigurableAction.SEARCH),
             action(ConfigurableAction.GO_TO_PAGE),
-            action(ConfigurableAction.BOOKMARK_PAGE),
+            action(ConfigurableAction.TABLE_OF_CONTENTS),
+            action(ConfigurableAction.SWITCH_THEME),
             action(ConfigurableAction.FULLSCREEN),
             action(ConfigurableAction.READING_DIRECTION),
             action(ConfigurableAction.CROP_MARGINS),
-            action(ConfigurableAction.SCREENSHOT),
-            action(ConfigurableAction.EXTRACT_TEXT),
-            action(ConfigurableAction.SHARE),
-            action(ConfigurableAction.PRINT),
-            action(ConfigurableAction.ADD_SIGNATURE),
-            action(ConfigurableAction.RELOAD),
-            action(ConfigurableAction.OPEN_ONLINE),
-            action(ConfigurableAction.FILE_METADATA),
-            action(ConfigurableAction.INCOGNITO),
+            action(ConfigurableAction.TEXT_MODE),
             ReaderAction(R.string.toggle_shortcuts, R.drawable.ic_awesome, visible = hasFile()) {
                 toggleSecondBar()
             },
@@ -89,14 +81,26 @@ class ReaderMenu(
         )
     }
 
-    private fun pagesSection(): List<ReaderAction> {
+    private fun studySection(): List<ReaderAction> = listOfNotNull(
+        action(ConfigurableAction.BOOKMARK_PAGE),
+        action(ConfigurableAction.USER_BOOKMARKS),
+        action(ConfigurableAction.USER_NOTES),
+        action(ConfigurableAction.USER_HIGHLIGHTS),
+        action(ConfigurableAction.ADD_SIGNATURE),
+        action(ConfigurableAction.EXTRACT_TEXT),
+        action(ConfigurableAction.LINKS_IN_FILE),
+    )
+
+    private fun documentSection(): List<ReaderAction> {
         return listOfNotNull(
-            action(ConfigurableAction.TABLE_OF_CONTENTS),
-            action(ConfigurableAction.USER_BOOKMARKS),
-            action(ConfigurableAction.USER_NOTES),
-            action(ConfigurableAction.USER_HIGHLIGHTS),
-            action(ConfigurableAction.TEXT_MODE),
-            action(ConfigurableAction.LINKS_IN_FILE),
+            action(ConfigurableAction.OPEN_LOCAL),
+            action(ConfigurableAction.OPEN_ONLINE),
+            action(ConfigurableAction.SCREENSHOT),
+            action(ConfigurableAction.SHARE),
+            action(ConfigurableAction.PRINT),
+            action(ConfigurableAction.RELOAD),
+            action(ConfigurableAction.FILE_METADATA),
+            action(ConfigurableAction.INCOGNITO),
             action(ConfigurableAction.SETTINGS),
             action(ConfigurableAction.ABOUT),
         )

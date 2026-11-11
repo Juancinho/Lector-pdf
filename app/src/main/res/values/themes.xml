@@ -82,6 +82,20 @@
         <item name="android:windowNoTitle">true</item>
     </style>
 
+    <style name="StudyReaderTheme" parent="TextModeTheme">
+        <item name="materialAlertDialogTheme">@style/StudyReaderDialog</item>
+    </style>
+
+    <style name="StudyReaderDialog" parent="ChromeMaterialAlertDialog">
+        <item name="shapeAppearanceOverlay">@style/StudyReaderDialogShape</item>
+        <item name="colorSurface">@color/reader_glass_solid</item>
+    </style>
+
+    <style name="StudyReaderDialogShape" parent="">
+        <item name="cornerFamily">rounded</item>
+        <item name="cornerSize">28dp</item>
+    </style>
+
     <style name="HomeTheme" parent="@style/MJ_PDF_THEME">
         <item name="windowActionBar">false</item>
         <item name="windowNoTitle">true</item>

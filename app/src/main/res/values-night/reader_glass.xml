@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <color name="reader_glass_top">#F4364359</color>
+    <color name="reader_glass_bottom">#ED202B3E</color>
+    <color name="reader_glass_rim">#626F88AC</color>
+    <color name="reader_glass_solid">#253145</color>
+    <color name="reader_glass_ink">#F3F6FF</color>
+    <color name="reader_glass_muted">#C0CCE0</color>
+    <color name="reader_glass_tint">#3A4D71</color>
+    <color name="reader_glass_accent">#BDD2FF</color>
+    <color name="reader_glass_desk">#161F2E</color>
+</resources>

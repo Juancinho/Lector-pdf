@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="study_reader_menu">Herramientas PDF</string>
+    <string name="study_reader_reading">Lectura</string>
+    <string name="study_reader_study">Estudio</string>
+    <string name="study_reader_document">Documento</string>
+    <string name="study_ink_shapes">Formas</string>
+</resources>

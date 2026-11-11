@@ -16,9 +16,9 @@ import com.github.barteksc.pdfviewer.PDFView
 import com.gitlab.mudlej.MjPdfReader.R
 import com.gitlab.mudlej.MjPdfReader.data.annotation.AnnotationEdit
 import com.gitlab.mudlej.MjPdfReader.study.annotation.HighlightStyle
+import com.gitlab.mudlej.MjPdfReader.study.ui.useReaderGlass
 import com.gitlab.mudlej.MjPdfReader.ui.reader.ReaderViewModel
 import com.google.android.material.button.MaterialButton
-import com.google.android.material.card.MaterialCardView
 import com.google.android.material.checkbox.MaterialCheckBox
 import com.google.android.material.dialog.MaterialAlertDialogBuilder
 import com.google.android.material.slider.Slider
@@ -60,11 +60,18 @@ class InkController(
     private var transformStart: InkPoint?=null
     private var resize=false
     private var transformed=listOf<InkStroke>()
-    private lateinit var card: MaterialCardView
+    private lateinit var card: FrameLayout
+    private val resizeToolbar = View.OnLayoutChangeListener { _, left, _, right, _, oldLeft, _, oldRight, _ ->
+        val width = right - left
+        if (width > dp(32) && width != oldRight - oldLeft) {
+            card.layoutParams = card.layoutParams.apply { this.width = minOf(dp(720), width - dp(32)) }
+        }
+    }
     private lateinit var open: MaterialButton
     private lateinit var title: TextView
     private lateinit var undo: MaterialButton
     private lateinit var redo: MaterialButton
+    private lateinit var shapes: MaterialButton
     private val toolButtons=mutableMapOf<InkTool,MaterialButton>()
     private var generation=0
     private val writer=object:InkWriter {
@@ -80,11 +87,9 @@ class InkController(
         val parent=pdf.parent as ViewGroup
         parent.addView(overlay,ViewGroup.LayoutParams(-1,-1))
         overlay.importantForAccessibility=View.IMPORTANT_FOR_ACCESSIBILITY_NO
-        card=MaterialCardView(activity).apply {
-            radius=dp(18).toFloat(); cardElevation=dp(4).toFloat(); strokeWidth=dp(1)
-            strokeColor=activity.getColor(R.color.study_outline)
-            setCardBackgroundColor(activity.getColor(R.color.study_surface))
-            layoutParams=CoordinatorLayout.LayoutParams(minOf(dp(760),activity.resources.displayMetrics.widthPixels-dp(32)),-2).apply {
+        card=FrameLayout(activity).apply {
+            useReaderGlass()
+            layoutParams=CoordinatorLayout.LayoutParams(minOf(dp(720),activity.resources.displayMetrics.widthPixels-dp(32)),-2).apply {
                 gravity=Gravity.TOP or Gravity.CENTER_HORIZONTAL
                 setMargins(dp(16),dp(12),dp(16),0)
             }
@@ -93,8 +98,13 @@ class InkController(
         val body=LinearLayout(activity).apply { orientation=LinearLayout.VERTICAL; setPadding(dp(8),dp(4),dp(8),dp(4)) }
         val header=LinearLayout(activity).apply { gravity=Gravity.CENTER_VERTICAL }
         title=TextView(activity).apply {
-            text=activity.getString(R.string.study_tools); textSize=14f
-            setTextColor(activity.getColor(R.color.study_ink)); setPadding(dp(12),0,dp(8),0)
+            text=activity.getString(R.string.study_tools)
+            textSize=15f
+            typeface=android.graphics.Typeface.create("sans-serif-medium", android.graphics.Typeface.NORMAL)
+            maxLines=1
+            ellipsize=android.text.TextUtils.TruncateAt.END
+            setTextColor(activity.getColor(R.color.reader_glass_ink))
+            setPadding(dp(12),0,dp(8),0)
         }
         header.addView(title,LinearLayout.LayoutParams(0,-2,1f))
         header.addView(button(R.string.study_save_ink,R.drawable.study_save){cancelGesture();save()})
@@ -108,25 +118,32 @@ class InkController(
             Triple(InkTool.HIGHLIGHTER,R.string.study_marker,R.drawable.study_marker),
             Triple(InkTool.ERASER,R.string.study_eraser,R.drawable.study_eraser),
             Triple(InkTool.LASSO,R.string.study_lasso,R.drawable.study_lasso),
-            Triple(InkTool.LINE,R.string.study_line,R.drawable.study_line),
-            Triple(InkTool.ARROW,R.string.study_arrow,R.drawable.study_arrow),
-            Triple(InkTool.RECTANGLE,R.string.study_rectangle,R.drawable.study_rectangle),
-            Triple(InkTool.ELLIPSE,R.string.study_ellipse,R.drawable.study_ellipse),
         ).forEach { (tool,label,icon) ->
-            val b=button(label,icon){cancelGesture();vm.studyInkEnabled=true;vm.studyInkTool=tool;clearSelection();loadPage(pdf.currentPage);refresh()}
+            val b=button(label,icon){selectTool(tool)}
             toolButtons[tool]=b;row.addView(b)
         }
         row.addView(button(R.string.study_ink_options,R.drawable.study_palette){showOptions()})
+        shapes = button(R.string.study_ink_shapes, R.drawable.study_rectangle, ::showShapes)
+        row.addView(shapes)
         undo=button(R.string.study_undo,R.drawable.study_undo){history.peekUndo()?.let { if(apply(it,false)){history.didUndo();refresh()} }}
         redo=button(R.string.study_redo,R.drawable.study_redo){history.peekRedo()?.let { if(apply(it,false)){history.didRedo();refresh()} }}
         row.addView(undo);row.addView(redo)
-        body.addView(HorizontalScrollView(activity).apply { isHorizontalScrollBarEnabled=false;addView(row) })
+        body.addView(HorizontalScrollView(activity).apply {
+            isHorizontalScrollBarEnabled = true
+            isScrollbarFadingEnabled = true
+            addView(row)
+        })
         card.addView(body);parent.addView(card)
+        pdf.addOnLayoutChangeListener(resizeToolbar)
         open=MaterialButton(activity).apply {
             text=activity.getString(R.string.study_write);setIconResource(R.drawable.study_pen)
             isAllCaps=false;minHeight=dp(48);cornerRadius=dp(24)
-            backgroundTintList=ColorStateList.valueOf(activity.getColor(R.color.study_accent))
-            setTextColor(activity.getColor(R.color.study_surface));iconTint=ColorStateList.valueOf(activity.getColor(R.color.study_surface))
+            backgroundTintList=ColorStateList.valueOf(activity.getColor(R.color.reader_glass_solid))
+            strokeColor=ColorStateList.valueOf(activity.getColor(R.color.reader_glass_rim))
+            strokeWidth=dp(1)
+            elevation=dp(5).toFloat()
+            setTextColor(activity.getColor(R.color.reader_glass_accent))
+            iconTint=ColorStateList.valueOf(activity.getColor(R.color.reader_glass_accent))
             layoutParams=CoordinatorLayout.LayoutParams(-2,-2).apply {
                 gravity=Gravity.TOP or Gravity.END;setMargins(dp(16),dp(12),dp(16),0)
             }
@@ -147,27 +164,59 @@ class InkController(
         contentDescription=activity.getString(label);TooltipCompat.setTooltipText(this,contentDescription)
         setIconResource(icon);iconSize=dp(22);iconPadding=0;insetTop=0;insetBottom=0
         minWidth=dp(48);minimumWidth=dp(48);minHeight=dp(48);minimumHeight=dp(48)
-        setPadding(dp(12),0,dp(12),0);cornerRadius=dp(12)
+        setPadding(dp(12),0,dp(12),0);cornerRadius=dp(18)
         layoutParams=LinearLayout.LayoutParams(dp(48),dp(48))
-        iconTint=ColorStateList.valueOf(activity.getColor(R.color.study_ink))
+        iconTint=ColorStateList.valueOf(activity.getColor(R.color.reader_glass_ink))
         setOnClickListener { if(canEdit())action() }
     }
     private fun collapse() {
         cancelGesture();vm.studyInkEnabled=false;vm.studyToolbarExpanded=false;clearSelection()
         card.visibility=View.GONE;open.visibility=View.VISIBLE;refresh()
     }
+
+    private val shapeTools = listOf(InkTool.LINE, InkTool.ARROW, InkTool.RECTANGLE, InkTool.ELLIPSE)
+
+    private fun showShapes() {
+        MaterialAlertDialogBuilder(activity, R.style.StudyColorDialog)
+            .setTitle(R.string.study_ink_shapes)
+            .setSingleChoiceItems(
+                shapeTools.map { activity.getString(toolLabel(it)) }.toTypedArray(),
+                if (enabled()) shapeTools.indexOf(vm.studyInkTool) else -1,
+            ) { dialog, index ->
+                selectTool(shapeTools[index])
+                dialog.dismiss()
+            }
+            .setNegativeButton(R.string.cancel, null)
+            .show()
+    }
+
+    private fun selectTool(tool: InkTool) {
+        cancelGesture()
+        vm.studyInkEnabled = true
+        vm.studyInkTool = tool
+        clearSelection()
+        loadPage(pdf.currentPage)
+        refresh()
+    }
+
     private fun refresh() {
         if(!::undo.isInitialized)return
         undo.isEnabled=history.canUndo;redo.isEnabled=history.canRedo
         undo.alpha=if(history.canUndo)1f else .38f;redo.alpha=if(history.canRedo)1f else .38f
-        toolButtons.forEach { (tool,b) ->
-            val selected=enabled()&&vm.studyInkTool==tool
-            b.isSelected=selected
-            b.backgroundTintList=ColorStateList.valueOf(if(selected)activity.getColor(R.color.study_subtle)else Color.TRANSPARENT)
-            b.iconTint=ColorStateList.valueOf(if(selected)activity.getColor(R.color.study_accent)else activity.getColor(R.color.study_ink))
-        }
+        toolButtons.forEach { (tool, button) -> tintTool(button, enabled() && vm.studyInkTool == tool) }
+        tintTool(shapes, enabled() && vm.studyInkTool in shapeTools)
         title.text=if(selected.isNotEmpty())activity.getString(R.string.study_ink_selected,selected.size)
             else activity.getString(if(enabled())toolLabel(vm.studyInkTool)else R.string.study_read)
+    }
+
+    private fun tintTool(button: MaterialButton, selected: Boolean) {
+        button.isSelected = selected
+        button.backgroundTintList = ColorStateList.valueOf(
+            if (selected) activity.getColor(R.color.reader_glass_tint) else Color.TRANSPARENT,
+        )
+        button.iconTint = ColorStateList.valueOf(
+            activity.getColor(if (selected) R.color.reader_glass_accent else R.color.reader_glass_ink),
+        )
     }
     private fun toolLabel(tool:InkTool)=when(tool){
         InkTool.PEN->R.string.study_pen;InkTool.PENCIL->R.string.study_pencil;InkTool.HIGHLIGHTER->R.string.study_marker
@@ -203,7 +252,12 @@ class InkController(
     }
     fun invalidateCache(){generation++;pageInk.clear();loading.clear();clearSelection();loadPage(pdf.currentPage)}
     fun beforeSave():Boolean { if(pointer>=0)finish();cancelGesture();return true }
-    fun destroy(){generation++;pdf.setStudyInputHandler(null);cancelGesture()}
+    fun destroy() {
+        generation++
+        pdf.removeOnLayoutChangeListener(resizeToolbar)
+        pdf.setStudyInputHandler(null)
+        cancelGesture()
+    }
     private fun clearSelection(){selected=emptyList();overlay.selected=emptyList();overlay.invalidate()}
     private fun cancelGesture(){pointer=-1;activePage=-1;samples.clear();erased.clear();transformStart=null;transformed=emptyList();overlay.clearPreview();suppressFingers=false}
 

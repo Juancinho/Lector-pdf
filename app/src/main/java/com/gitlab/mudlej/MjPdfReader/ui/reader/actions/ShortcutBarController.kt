@@ -8,6 +8,7 @@ import android.widget.ImageView
 import android.widget.LinearLayout
 import android.widget.Toast
 import androidx.appcompat.widget.AppCompatImageView
+import com.gitlab.mudlej.MjPdfReader.R
 import com.gitlab.mudlej.MjPdfReader.core.ui.toast
 import com.gitlab.mudlej.MjPdfReader.data.Preferences
 import com.gitlab.mudlej.MjPdfReader.databinding.ActivityMainBinding
@@ -52,8 +53,10 @@ class ShortcutBarController(
         val paddingHorizontal = context.dp(16)
         val paddingVertical = context.dp(8)
         return AppCompatImageView(context).apply {
-            layoutParams = LinearLayout.LayoutParams(context.dp(56), context.dp(40))
+            layoutParams = LinearLayout.LayoutParams(context.dp(52), context.dp(48))
             setImageResource(configuredAction.iconRes)
+            setColorFilter(context.getColor(R.color.reader_glass_ink))
+            setBackgroundResource(R.drawable.reader_glass_button)
             contentDescription = context.getString(configuredAction.titleRes)
             scaleType = ImageView.ScaleType.CENTER_INSIDE
             setPadding(paddingHorizontal, paddingVertical, paddingHorizontal, paddingVertical)

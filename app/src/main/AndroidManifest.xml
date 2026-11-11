@@ -84,6 +84,7 @@
             android:theme="@style/TextModeTheme" />
         <activity
             android:name=".ui.reader.MainActivity"
+            android:theme="@style/StudyReaderTheme"
             android:configChanges="keyboardHidden|orientation|screenSize|smallestScreenSize|screenLayout"
             android:documentLaunchMode="intoExisting"
             android:exported="true">

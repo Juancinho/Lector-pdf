@@ -86,9 +86,8 @@ class FullscreenController(
     }
 
     private fun showSystemUi() {
-        ColorUtil.colorize(activity, activity.window, activity.supportActionBar)
+        ColorUtil.colorize(activity, activity.window, null)
         activity.supportActionBar?.show()
-        binding.appBarBottomShadow.visibility = View.VISIBLE
         if (pref.getSecondBarEnabled()) {
             updateShortcutBarVisibility()
         }
@@ -98,7 +97,6 @@ class FullscreenController(
 
     private fun hideSystemUi() {
         activity.supportActionBar?.hide()
-        binding.appBarBottomShadow.visibility = View.GONE
         binding.secondBarScrollView.visibility = View.GONE
         ColorUtil.enterFullscreen(activity.window)
         binding.pdfView.scrollHandle?.setTopReachLimit(statusBarInset())
