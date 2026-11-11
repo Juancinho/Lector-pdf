@@ -3,6 +3,7 @@
 package com.gitlab.mudlej.MjPdfReader.data
 
 import android.content.SharedPreferences
+import androidx.core.content.edit
 import com.gitlab.mudlej.MjPdfReader.ui.reader.annotation.HighlightPalette
 import com.gitlab.mudlej.MjPdfReader.ui.reader.actions.ConfigurableAction
 import com.gitlab.mudlej.MjPdfReader.ui.home.HomeGridSize
@@ -124,6 +125,7 @@ class Preferences(private val prefMan: SharedPreferences) {
         const val secondaryButtonActionKey = "secondaryButtonAction"
         const val fullScreenOverlayActionsKey = "fullScreenOverlayActions"
         const val fullScreenOverlayActionOrderKey = "fullScreenOverlayActionOrder"
+        const val studyPenOverlayMigratedKey = "study.fullscreen.pen.migrated.v1"
         const val shortcutBarActionsKey = "shortcutBarActions"
         const val shortcutBarActionOrderKey = "shortcutBarActionOrder"
         const val screenOnKey = "screenOn"
@@ -496,6 +498,29 @@ class Preferences(private val prefMan: SharedPreferences) {
         return safeGetStringSet(fullScreenOverlayActionsKey, fullScreenOverlayActionsDefault)?.toSet()
             ?: fullScreenOverlayActionsDefault
     }
+    /**
+     * One-time migration for 0.2.x: people who already customised the full-screen
+     * side menu also get "Write and highlight", placed right after Exit. Their
+     * later choices (including removing it) are respected.
+     */
+    fun ensureStudyPenInFullScreenOverlayOnce() {
+        if (prefMan.getBoolean(studyPenOverlayMigratedKey, false)) {
+            return
+        }
+        val penId = ConfigurableAction.STUDY_PEN.id
+        val actions = getFullScreenOverlayActions()
+        val order = getFullScreenOverlayActionOrder().filterNot { it == penId }.toMutableList()
+        val exitIndex = order.indexOf(ConfigurableAction.EXIT_FULLSCREEN.id)
+        order.add(if (exitIndex >= 0) exitIndex + 1 else 0, penId)
+        val customisedActions = prefMan.contains(fullScreenOverlayActionsKey)
+        val customisedOrder = prefMan.contains(fullScreenOverlayActionOrderKey)
+        prefMan.edit {
+            if (customisedActions) putStringSet(fullScreenOverlayActionsKey, actions + penId)
+            if (customisedOrder) putString(fullScreenOverlayActionOrderKey, order.joinToString(","))
+            putBoolean(studyPenOverlayMigratedKey, true)
+        }
+    }
+
     fun getFullScreenOverlayActionOrder(): List<String> {
         return safeGetString(fullScreenOverlayActionOrderKey, null)
             ?.split(",")

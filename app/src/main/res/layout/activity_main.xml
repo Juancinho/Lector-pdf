@@ -713,16 +713,15 @@
         </androidx.appcompat.widget.LinearLayoutCompat>
     </androidx.constraintlayout.widget.ConstraintLayout>
 
-    <!-- MJ Study floating pen toolbar (liquid glass) -->
+    <!-- MJ Study floating pen toolbar (liquid glass). Anchored top-start; StudyPenToolbar
+         positions it with translations from the saved position. -->
     <include
         android:id="@+id/studyToolbar"
         layout="@layout/study_pen_toolbar"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:layout_marginBottom="12dp"
         android:visibility="gone"
-        app:layout_constraintBottom_toBottomOf="parent"
-        app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintStart_toStartOf="parent" />
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toTopOf="parent" />
 
 </androidx.constraintlayout.widget.ConstraintLayout>

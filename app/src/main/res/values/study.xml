@@ -27,7 +27,7 @@
     <dimen name="study_control_min">48dp</dimen>
     <dimen name="study_radius_control">12dp</dimen>
     <dimen name="study_radius_panel">20dp</dimen>
-    <style name="StudyColorDialog" parent="ThemeOverlay.Material3.MaterialAlertDialog">
+    <style name="Base.StudyColorDialog" parent="ThemeOverlay.Material3.MaterialAlertDialog">
         <item name="colorPrimary">@color/study_ink</item>
         <item name="colorOnPrimary">@color/study_surface</item>
         <item name="colorSurface">@color/study_surface</item>
@@ -36,9 +36,31 @@
         <item name="colorOutline">@color/study_outline</item>
         <item name="shapeAppearanceMediumComponent">@style/StudyPanelShape</item>
     </style>
+    <style name="StudyColorDialog" parent="Base.StudyColorDialog" />
     <style name="StudyPanelShape" parent="ShapeAppearance.Material3.Corner.Medium">
         <item name="cornerSize">20dp</item>
     </style>
+    <string name="study_tool_color">Tool color and options</string>
+    <string name="study_move_toolbar">Move toolbar. Double-tap to switch between horizontal and vertical</string>
+    <string name="study_collapse_toolbar">Collapse toolbar</string>
+    <string name="study_expand_toolbar">Expand pen toolbar</string>
+    <string name="study_section_color">Color</string>
+    <string name="study_section_pen_buttons">Pen buttons</string>
+    <string name="study_primary_button">Button 1 (primary)</string>
+    <string name="study_secondary_button">Button 2 (secondary)</string>
+    <string name="study_section_toolbar">Toolbar</string>
+    <string name="study_layout_horizontal">Horizontal</string>
+    <string name="study_layout_vertical">Vertical</string>
+    <string name="study_button_erase">Erase</string>
+    <string name="study_button_highlight">Highlight</string>
+    <string name="study_button_select">Select</string>
+    <string name="study_button_none">Nothing</string>
+    <string name="study_hint_pen">Fine ink. Width follows pen pressure.</string>
+    <string name="study_hint_marker">Translucent ink for emphasis. Width follows pressure.</string>
+    <string name="study_hint_highlighter">Sweep the pen over text; it snaps to whole words.</string>
+    <string name="study_hint_eraser">Touch strokes or highlights to remove them. Undo brings them back.</string>
+    <string name="study_hint_read">The pen scrolls like a finger. Hold a pen button to use its action.</string>
+    <string name="study_highlight_sample">Ideas worth keeping</string>
     <string name="study_pen_open">Write and highlight</string>
     <string name="study_pen_toolbar">Pen tools</string>
     <string name="study_tool_read">Read and scroll</string>
@@ -46,8 +68,6 @@
     <string name="study_tool_pen">Pen</string>
     <string name="study_tool_marker">Marker</string>
     <string name="study_tool_eraser">Eraser</string>
-    <string name="study_tool_color">Tool color</string>
-    <string name="study_tool_options">Tool options</string>
     <string name="study_undo">Undo</string>
     <string name="study_redo">Redo</string>
     <string name="study_done">Done</string>
@@ -55,29 +75,100 @@
     <string name="study_options_pen">Pen</string>
     <string name="study_options_marker">Marker</string>
     <string name="study_options_eraser">Eraser</string>
-    <string name="study_options_read">Reading</string>
-    <string name="study_width">Maximum width · %1$s pt</string>
     <string name="study_width_label">Maximum width</string>
     <string name="study_more_highlight_colors">More highlight colors…</string>
     <string name="study_stylus_only">Only the pen writes; fingers scroll and zoom</string>
     <string name="study_pen_always_writes">Pen writes while reading too</string>
-    <string name="study_eraser_hint">Touch strokes or highlights to remove them. Undo brings them back.</string>
-    <string name="study_pen_buttons_hint">Pen button: hold to erase while writing. While reading, hold it and sweep over text to highlight. Ink width follows pen pressure.</string>
+    <string name="study_pen_buttons_hint">While held, each pen button does its action in any mode. Some systems reserve pen buttons for their own shortcuts.</string>
     <string name="study_pen_color_description">%1$s color %2$s</string>
     <string name="study_selected">selected</string>
     <string name="study_pen_write_failed">Couldn\'t change the annotation</string>
-    <style name="StudyToolButton">
-        <item name="android:layout_width">48dp</item>
+    <style name="StudyIconButton">
+        <item name="android:layout_width">44dp</item>
         <item name="android:layout_height">48dp</item>
         <item name="android:background">@drawable/bg_glass_tool</item>
         <item name="android:scaleType">center</item>
         <item name="android:tint">@color/study_ink</item>
     </style>
+    <style name="StudyToolCell">
+        <item name="android:layout_width">46dp</item>
+        <item name="android:layout_height">64dp</item>
+        <item name="android:background">@drawable/bg_glass_tool_cell</item>
+        <item name="android:clipChildren">true</item>
+        <item name="android:focusable">true</item>
+        <item name="android:clickable">true</item>
+    </style>
+    <style name="StudyToolArt">
+        <item name="android:layout_width">30dp</item>
+        <item name="android:layout_height">45dp</item>
+        <item name="android:layout_gravity">center</item>
+        <item name="android:importantForAccessibility">no</item>
+    </style>
+    <style name="StudySectionLabel">
+        <item name="android:layout_width">match_parent</item>
+        <item name="android:layout_height">wrap_content</item>
+        <item name="android:layout_marginTop">14dp</item>
+        <item name="android:layout_marginBottom">2dp</item>
+        <item name="android:fontFamily">sans-serif-medium</item>
+        <item name="android:textColor">@color/study_ink</item>
+        <item name="android:textSize">14sp</item>
+    </style>
+    <style name="StudyFieldLabel">
+        <item name="android:layout_width">match_parent</item>
+        <item name="android:layout_height">wrap_content</item>
+        <item name="android:layout_marginTop">6dp</item>
+        <item name="android:textColor">@color/study_muted</item>
+        <item name="android:textSize">13sp</item>
+    </style>
+    <style name="StudyPanelDivider">
+        <item name="android:layout_width">match_parent</item>
+        <item name="android:layout_height">1dp</item>
+        <item name="android:layout_marginTop">14dp</item>
+        <item name="android:background">@color/study_glass_divider</item>
+    </style>
+    <style name="StudySwitch">
+        <item name="android:layout_width">match_parent</item>
+        <item name="android:layout_height">wrap_content</item>
+        <item name="android:minHeight">48dp</item>
+        <item name="android:textColor">@color/study_ink</item>
+        <item name="android:textSize">14sp</item>
+        <item name="thumbTint">@color/study_switch_thumb</item>
+        <item name="trackTint">@color/study_switch_track</item>
+        <item name="trackDecorationTint">@android:color/transparent</item>
+    </style>
+    <style name="StudySegmentButton" parent="Widget.Material3.Button.OutlinedButton">
+        <item name="android:layout_width">0dp</item>
+        <item name="android:layout_height">44dp</item>
+        <item name="android:layout_weight">1</item>
+        <item name="android:textColor">@color/study_segment_content</item>
+        <item name="iconTint">@color/study_segment_content</item>
+        <item name="iconSize">18dp</item>
+        <item name="iconGravity">textStart</item>
+        <item name="backgroundTint">@color/study_segment_background</item>
+        <item name="strokeColor">@color/study_glass_divider</item>
+        <item name="android:insetTop">0dp</item>
+        <item name="android:insetBottom">0dp</item>
+    </style>
+    <style name="StudyChip" parent="Widget.Material3.Chip.Filter">
+        <item name="checkedIconVisible">false</item>
+        <item name="chipMinHeight">34dp</item>
+        <item name="chipStartPadding">6dp</item>
+        <item name="chipEndPadding">6dp</item>
+        <item name="textStartPadding">4dp</item>
+        <item name="textEndPadding">4dp</item>
+        <item name="android:textSize">13sp</item>
+        <item name="chipBackgroundColor">@color/study_segment_background</item>
+        <item name="chipStrokeColor">@color/study_glass_divider</item>
+        <item name="chipStrokeWidth">0.75dp</item>
+        <item name="android:textColor">@color/study_segment_content</item>
+        <item name="checkedIconTint">@color/study_segment_content</item>
+        <item name="chipCornerRadius">16dp</item>
+    </style>
     <style name="StudyToolDivider">
         <item name="android:layout_width">1dp</item>
-        <item name="android:layout_height">24dp</item>
-        <item name="android:layout_marginStart">6dp</item>
-        <item name="android:layout_marginEnd">6dp</item>
+        <item name="android:layout_height">28dp</item>
+        <item name="android:layout_marginStart">5dp</item>
+        <item name="android:layout_marginEnd">5dp</item>
         <item name="android:background">@color/study_glass_divider</item>
     </style>
 </resources>

@@ -3,6 +3,7 @@ package com.gitlab.mudlej.MjPdfReader.study.pen
 
 import android.content.SharedPreferences
 import androidx.core.content.edit
+import com.github.barteksc.pdfviewer.PenButtonAction
 import com.github.barteksc.pdfviewer.PenTool
 import com.google.gson.JsonObject
 import com.google.gson.JsonParser
@@ -20,13 +21,22 @@ data class PenSettings(
     val stylusOnly: Boolean = true,
     val penAlwaysWrites: Boolean = false,
     val lastWritingTool: PenTool = PenTool.PEN,
+    val primaryButton: PenButtonAction = PenButtonAction.ERASER,
+    val secondaryButton: PenButtonAction = PenButtonAction.SELECT_TEXT,
+    val toolbarVertical: Boolean = false,
+    val toolbarCollapsed: Boolean = false,
+    /** Toolbar position as fractions of the free space (0 = left/top, 1 = right/bottom). */
+    val toolbarX: Float = 0.5f,
+    val toolbarY: Float = 1f,
 ) {
     fun normalized(): PenSettings = copy(
         penColor = penColor or OPAQUE,
         penWidth = penWidth.coerceIn(PEN_WIDTH_RANGE.start, PEN_WIDTH_RANGE.endInclusive),
         markerColor = withMarkerAlpha(markerColor),
         markerWidth = markerWidth.coerceIn(MARKER_WIDTH_RANGE.start, MARKER_WIDTH_RANGE.endInclusive),
-        lastWritingTool = lastWritingTool.takeIf { it != PenTool.NONE && it != PenTool.ERASER } ?: PenTool.PEN,
+        lastWritingTool = lastWritingTool.takeIf { it.isInk || it == PenTool.HIGHLIGHTER } ?: PenTool.PEN,
+        toolbarX = toolbarX.takeIf { it.isFinite() }?.coerceIn(0f, 1f) ?: 0.5f,
+        toolbarY = toolbarY.takeIf { it.isFinite() }?.coerceIn(0f, 1f) ?: 1f,
     )
 
     companion object {
@@ -72,6 +82,12 @@ class PenSettingsStore(private val preferences: SharedPreferences) {
             json.addProperty("stylusOnly", settings.stylusOnly)
             json.addProperty("penAlwaysWrites", settings.penAlwaysWrites)
             json.addProperty("lastWritingTool", settings.lastWritingTool.name)
+            json.addProperty("primaryButton", settings.primaryButton.name)
+            json.addProperty("secondaryButton", settings.secondaryButton.name)
+            json.addProperty("toolbarVertical", settings.toolbarVertical)
+            json.addProperty("toolbarCollapsed", settings.toolbarCollapsed)
+            json.addProperty("toolbarX", settings.toolbarX)
+            json.addProperty("toolbarY", settings.toolbarY)
             return json.toString()
         }
 
@@ -87,6 +103,8 @@ class PenSettingsStore(private val preferences: SharedPreferences) {
                 runCatching { json[key].asFloat.takeIf { it.isFinite() } ?: fallback }.getOrDefault(fallback)
             fun bool(key: String, fallback: Boolean) = runCatching { json[key].asBoolean }.getOrDefault(fallback)
             val tool = runCatching { PenTool.valueOf(json["lastWritingTool"].asString) }.getOrDefault(PenTool.PEN)
+            fun button(key: String, fallback: PenButtonAction) =
+                runCatching { PenButtonAction.valueOf(json[key].asString) }.getOrDefault(fallback)
             return PenSettings(
                 penColor = int("penColor", defaults.penColor),
                 penWidth = float("penWidth", defaults.penWidth),
@@ -95,6 +113,12 @@ class PenSettingsStore(private val preferences: SharedPreferences) {
                 stylusOnly = bool("stylusOnly", defaults.stylusOnly),
                 penAlwaysWrites = bool("penAlwaysWrites", defaults.penAlwaysWrites),
                 lastWritingTool = tool,
+                primaryButton = button("primaryButton", defaults.primaryButton),
+                secondaryButton = button("secondaryButton", defaults.secondaryButton),
+                toolbarVertical = bool("toolbarVertical", defaults.toolbarVertical),
+                toolbarCollapsed = bool("toolbarCollapsed", defaults.toolbarCollapsed),
+                toolbarX = float("toolbarX", defaults.toolbarX),
+                toolbarY = float("toolbarY", defaults.toolbarY),
             ).normalized()
         }
     }

@@ -48,6 +48,7 @@
         <item name="popupMenuBackground">@drawable/chrome_popup_background</item>
         <item name="materialAlertDialogTheme">@style/ChromeMaterialAlertDialog</item>
         <item name="snackbarStyle">@style/ChromeSnackbar</item>
+        <item name="bottomSheetDialogTheme">@style/StudyBottomSheetDialog</item>
         <item name="snackbarButtonStyle">@style/ChromeSnackbarButton</item>
         <item name="snackbarTextViewStyle">@style/ChromeSnackbarTextView</item>
 <!--        <item name="actionBarStyle">@style/MyActionBarStyle</item>-->
@@ -170,7 +171,11 @@
     </style>
 
 
-    <style name="ChromeMaterialAlertDialog" parent="ThemeOverlay.Material3.MaterialAlertDialog">
+    <!-- Dialogs are liquid glass: a dense frosted surface; values-v31 adds a real blur of
+         everything behind the dialog where the system enables cross-window blur. -->
+    <style name="Base.ChromeMaterialAlertDialog" parent="ThemeOverlay.Material3.MaterialAlertDialog">
+        <item name="colorSurfaceContainerHigh">@color/study_glass_dialog</item>
+        <item name="android:backgroundDimAmount">0.22</item>
         <item name="buttonBarButtonStyle">@style/ChromeDialogButton</item>
         <item name="buttonBarPositiveButtonStyle">@style/ChromeDialogButton</item>
         <item name="buttonBarNegativeButtonStyle">@style/ChromeDialogButton</item>
@@ -181,21 +186,23 @@
         <item name="android:buttonBarNeutralButtonStyle">@style/ChromeDialogButton</item>
     </style>
 
+    <style name="ChromeMaterialAlertDialog" parent="Base.ChromeMaterialAlertDialog" />
+
     <style name="CompactMaterialAlertDialog" parent="ChromeMaterialAlertDialog">
         <item name="windowFixedWidthMajor">420dp</item>
         <item name="windowFixedWidthMinor">420dp</item>
     </style>
 
     <style name="ChromeSnackbar" parent="Widget.Material3.Snackbar">
-        <item name="backgroundTint">?attr/colorSurfaceContainerHigh</item>
+        <item name="backgroundTint">@color/study_glass_dialog</item>
         <item name="shapeAppearance">@style/ChromeSnackbarShape</item>
-        <item name="elevation">6dp</item>
+        <item name="elevation">10dp</item>
         <item name="android:layout_margin">16dp</item>
     </style>
 
     <style name="ChromeSnackbarShape" parent="">
         <item name="cornerFamily">rounded</item>
-        <item name="cornerSize">16dp</item>
+        <item name="cornerSize">20dp</item>
     </style>
 
     <style name="ChromeSnackbarTextView" parent="Widget.Material3.Snackbar.TextView">
@@ -208,5 +215,25 @@
         <item name="strokeColor">@android:color/transparent</item>
         <item name="android:backgroundTint">@android:color/transparent</item>
         <item name="android:textColor">?attr/colorOnSurface</item>
+    </style>
+
+    <style name="Base.StudyBottomSheetDialog" parent="ThemeOverlay.Material3.BottomSheetDialog">
+        <item name="bottomSheetStyle">@style/StudyBottomSheet</item>
+        <item name="android:backgroundDimAmount">0.2</item>
+    </style>
+
+    <style name="StudyBottomSheetDialog" parent="Base.StudyBottomSheetDialog" />
+
+    <style name="StudyBottomSheet" parent="Widget.Material3.BottomSheet.Modal">
+        <item name="backgroundTint">@color/study_glass_dialog</item>
+        <item name="shapeAppearance">@style/StudyBottomSheetShape</item>
+    </style>
+
+    <style name="StudyBottomSheetShape" parent="">
+        <item name="cornerFamily">rounded</item>
+        <item name="cornerSizeTopLeft">28dp</item>
+        <item name="cornerSizeTopRight">28dp</item>
+        <item name="cornerSizeBottomLeft">0dp</item>
+        <item name="cornerSizeBottomRight">0dp</item>
     </style>
 </resources>

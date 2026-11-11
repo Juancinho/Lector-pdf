@@ -1,13 +1,13 @@
 <?xml version="1.0" encoding="utf-8"?>
-<!-- SPDX-License-Identifier: GPL-3.0-or-later. Liquid-glass surface: translucent fill,
-     hairline outline, inner specular edge and a top sheen. -->
+<!-- SPDX-License-Identifier: GPL-3.0-or-later. Floating capsule: translucent fill, hairline
+     outline, inner specular edge and a soft top sheen. -->
 <layer-list xmlns:android="http://schemas.android.com/apk/res/android">
     <item>
         <shape android:shape="rectangle">
-            <corners android:radius="28dp" />
+            <corners android:radius="34dp" />
             <solid android:color="@color/study_glass_fill" />
             <stroke
-                android:width="1dp"
+                android:width="0.75dp"
                 android:color="@color/study_glass_outline" />
         </shape>
     </item>
@@ -17,10 +17,11 @@
         android:right="1dp"
         android:top="1dp">
         <shape android:shape="rectangle">
-            <corners android:radius="27dp" />
+            <corners android:radius="33dp" />
             <gradient
                 android:angle="270"
                 android:centerColor="@color/study_glass_sheen_end"
+                android:centerY="0.45"
                 android:endColor="@color/study_glass_sheen_end"
                 android:startColor="@color/study_glass_sheen" />
             <stroke

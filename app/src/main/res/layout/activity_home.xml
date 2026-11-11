@@ -6,12 +6,14 @@
     android:id="@+id/homeRoot"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
+    android:background="@drawable/bg_study_ambient"
     tools:context=".ui.home.HomeActivity">
 
     <com.google.android.material.appbar.AppBarLayout
         android:id="@+id/appBarLayout"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
+        android:background="@android:color/transparent"
         android:fitsSystemWindows="true"
         app:liftOnScroll="false">
 
@@ -19,7 +21,10 @@
             android:id="@+id/searchBar"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:hint="@string/home_search_hint" />
+            android:hint="@string/home_search_hint"
+            app:backgroundTint="@color/study_glass_fill"
+            app:strokeColor="@color/study_glass_edge"
+            app:strokeWidth="1dp" />
 
         <com.google.android.material.appbar.MaterialToolbar
             android:id="@+id/selectionToolbar"
@@ -33,6 +38,7 @@
             android:id="@+id/homeTabs"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
+            android:background="@android:color/transparent"
             app:tabMode="fixed" />
     </com.google.android.material.appbar.AppBarLayout>
 

@@ -357,6 +357,8 @@ class ReaderComposition(
                 inlineAnnotationActionController.hideActions()
             }
             ui.updateDirtyUiPosition()
+        }.also { toolbar ->
+            toolbar.attachBackdrop(binding.pdfView) { binding.pdfView.isPenGestureActive }
         }
     }
     val annotationSaveController: AnnotationSaveController = AnnotationSaveController(
@@ -557,6 +559,7 @@ class ReaderComposition(
         inlineAnnotationActionController.configure { annotationSaveController.saveHighlights() }
         inlineAnnotationActionController.onHighlightStyleChanged = { studyPenToolbar.onHighlightStyleChanged() }
         studyPenController.attach(penSettingsStore.load())
+        pref.ensureStudyPenInFullScreenOverlayOnce()
         vm.onSaveComplete = { outcome ->
             if (!activity.isFinishing && !activity.isDestroyed) {
                 annotationSaveController.deliverSaveOutcome(outcome)

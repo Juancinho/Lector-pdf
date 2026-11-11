@@ -6,13 +6,19 @@
     <color name="study_subtle">#EEF0EC</color>
     <color name="study_accent">#476C58</color>
     <!-- Liquid-glass chrome: translucent frosted surfaces with a specular edge. -->
-    <color name="study_glass_fill">#C9FBFBF9</color>
-    <color name="study_glass_fill_strong">#EBFBFBF9</color>
-    <color name="study_glass_fill_blurred">#99FBFBF9</color>
+    <color name="study_glass_fill">#E6FBFBF9</color>
+    <color name="study_glass_fill_strong">#F2FBFBF9</color>
+    <color name="study_glass_fill_blurred">#8CFBFBF9</color>
     <color name="study_glass_edge">#CCFFFFFF</color>
     <color name="study_glass_outline">#1F202321</color>
     <color name="study_glass_sheen">#73FFFFFF</color>
     <color name="study_glass_sheen_end">#00FFFFFF</color>
     <color name="study_glass_selected">#1C202321</color>
     <color name="study_glass_divider">#26202321</color>
+    <color name="study_swatch_ring">#FFFFFFFF</color>
+    <color name="study_accent_strong">#FF3E8E63</color>
+    <color name="study_paper">#FFFFFFFF</color>
+    <color name="study_eraser_rubber">#FFF2A39B</color>
+    <color name="study_glass_dialog">#FAFBFBF9</color>
+    <color name="study_glass_card">#B3FFFFFF</color>
 </resources>

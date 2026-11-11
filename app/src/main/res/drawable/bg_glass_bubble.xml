@@ -1,0 +1,28 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- SPDX-License-Identifier: GPL-3.0-or-later. Collapsed toolbar bubble. -->
+<layer-list xmlns:android="http://schemas.android.com/apk/res/android">
+    <item>
+        <shape android:shape="oval">
+            <solid android:color="@color/study_glass_fill" />
+            <stroke
+                android:width="0.75dp"
+                android:color="@color/study_glass_outline" />
+        </shape>
+    </item>
+    <item
+        android:bottom="1dp"
+        android:left="1dp"
+        android:right="1dp"
+        android:top="1dp">
+        <shape android:shape="oval">
+            <gradient
+                android:angle="270"
+                android:centerColor="@color/study_glass_sheen_end"
+                android:endColor="@color/study_glass_sheen_end"
+                android:startColor="@color/study_glass_sheen" />
+            <stroke
+                android:width="1dp"
+                android:color="@color/study_glass_edge" />
+        </shape>
+    </item>
+</layer-list>

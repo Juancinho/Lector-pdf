@@ -1,0 +1,29 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- SPDX-License-Identifier: GPL-3.0-or-later. Colour well: the inner disc is tinted at
+     runtime; a white ring and a hairline keep any colour legible on glass. -->
+<layer-list xmlns:android="http://schemas.android.com/apk/res/android">
+    <item>
+        <shape android:shape="oval">
+            <solid android:color="@color/study_glass_outline" />
+        </shape>
+    </item>
+    <item
+        android:bottom="0.75dp"
+        android:left="0.75dp"
+        android:right="0.75dp"
+        android:top="0.75dp">
+        <shape android:shape="oval">
+            <solid android:color="@color/study_swatch_ring" />
+        </shape>
+    </item>
+    <item
+        android:id="@+id/swatch_fill"
+        android:bottom="3dp"
+        android:left="3dp"
+        android:right="3dp"
+        android:top="3dp">
+        <shape android:shape="oval">
+            <solid android:color="#FF000000" />
+        </shape>
+    </item>
+</layer-list>

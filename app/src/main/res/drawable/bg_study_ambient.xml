@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- SPDX-License-Identifier: GPL-3.0-or-later. Soft ambient backdrop that gives glass
+     surfaces something to refract; deliberately low contrast. -->
+<shape xmlns:android="http://schemas.android.com/apk/res/android"
+    android:shape="rectangle">
+    <gradient
+        android:angle="315"
+        android:centerColor="#FFE9EEEA"
+        android:endColor="#FFEDEFF4"
+        android:startColor="#FFF5F6F2"
+        android:type="linear" />
+</shape>

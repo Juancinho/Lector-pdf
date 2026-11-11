@@ -261,7 +261,7 @@ class ConfigurableActionResolver(
             )
             ConfigurableAction.STUDY_PEN -> ConfiguredAction(
                 R.string.study_pen_open,
-                R.drawable.ic_study_pen,
+                R.drawable.ic_glass_pencil,
                 visible = fileAvailable,
                 run = handlers.studyPen,
             )

@@ -1,6 +1,31 @@
 <?xml version="1.0" encoding="utf-8"?>
-<!-- Written by Mudlej. License is GPLv3. -->
-<shape xmlns:android="http://schemas.android.com/apk/res/android">
-    <corners android:radius="4dp" />
-    <solid android:color="?attr/colorSurfaceContainerHigh" />
-</shape>
+<!-- SPDX-License-Identifier: GPL-3.0-or-later. Liquid-glass surface (see docs/DESIGN_SYSTEM.md). -->
+<layer-list xmlns:android="http://schemas.android.com/apk/res/android">
+    <item>
+        <shape android:shape="rectangle">
+            <corners android:radius="18dp" />
+            <solid android:color="@color/study_glass_fill_strong" />
+            <stroke
+                android:width="0.75dp"
+                android:color="@color/study_glass_outline" />
+        </shape>
+    </item>
+    <item
+        android:bottom="1dp"
+        android:left="1dp"
+        android:right="1dp"
+        android:top="1dp">
+        <shape android:shape="rectangle">
+            <corners android:radius="17dp" />
+            <gradient
+                android:angle="270"
+                android:centerColor="@color/study_glass_sheen_end"
+                android:centerY="0.3"
+                android:endColor="@color/study_glass_sheen_end"
+                android:startColor="@color/study_glass_sheen" />
+            <stroke
+                android:width="1dp"
+                android:color="@color/study_glass_edge" />
+        </shape>
+    </item>
+</layer-list>

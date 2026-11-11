@@ -46,7 +46,7 @@ enum class ConfigurableAction(
     USER_HIGHLIGHTS("user_highlights", R.string.user_highlights_title, R.drawable.ic_highlight),
     LINKS_IN_FILE("links_in_file", R.string.links_in_file, R.drawable.ic_links_in_file),
     PRINT("print", R.string.print_file, R.drawable.ic_print),
-    STUDY_PEN("study_pen", R.string.study_pen_open, R.drawable.ic_study_pen),
+    STUDY_PEN("study_pen", R.string.study_pen_open, R.drawable.ic_glass_pencil),
     ADD_SIGNATURE("add_signature", R.string.add_signature, R.drawable.ic_signature),
     INCOGNITO("incognito", R.string.incognito, R.drawable.ic_incognito);
 
@@ -88,6 +88,7 @@ enum class ConfigurableAction(
         )
 
         val fullScreenOverlayActions = listOf(
+            STUDY_PEN,
             BRIGHTNESS,
             SWITCH_THEME,
             ROTATE,
@@ -169,6 +170,7 @@ enum class ConfigurableAction(
         val defaultFullScreenOverlayOrder = listOf(EXIT_FULLSCREEN) + fullScreenOverlayActions
 
         val defaultFullScreenOverlayActionIds = setOf(
+            STUDY_PEN.id,
             ROTATE.id,
             BRIGHTNESS.id,
             AUTO_SCROLL.id,
@@ -181,6 +183,7 @@ enum class ConfigurableAction(
         ) + requiredFullScreenOverlayActionIds
 
         val dynamicFullScreenOverlayActions = listOf(
+            STUDY_PEN,
             SWITCH_THEME,
             NAV_BACK,
             NAV_FORWARD,

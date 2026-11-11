@@ -1,0 +1,31 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- SPDX-License-Identifier: GPL-3.0-or-later. MJ Study tool artwork. -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:aapt="http://schemas.android.com/aapt"
+    android:width="30dp"
+    android:height="45dp"
+    android:viewportWidth="24"
+    android:viewportHeight="36">
+    <path
+        android:pathData="M6,38 V10.2 Q6,5.6 10.6,5.6 H13.4 Q18,5.6 18,10.2 V38 Z"
+        android:strokeColor="#FF6E756D"
+        android:strokeLineJoin="round"
+        android:strokeWidth="0.85">
+        <aapt:attr name="android:fillColor">
+            <gradient
+                android:centerColor="#FF444945"
+                android:endColor="#FF303431"
+                android:endX="18"
+                android:endY="20"
+                android:startColor="#FF575C58"
+                android:startX="6"
+                android:startY="20"
+                android:type="linear" />
+        </aapt:attr>
+    </path>
+    <path
+        android:pathData="M7.3,11 V37"
+        android:strokeColor="#33FFFFFF"
+        android:strokeLineCap="round"
+        android:strokeWidth="0.8" />
+</vector>

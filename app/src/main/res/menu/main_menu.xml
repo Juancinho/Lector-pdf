@@ -27,7 +27,7 @@
         android:id="@+id/studyPenOption"
         android:orderInCategory="3"
         android:title="@string/study_pen_open"
-        android:icon="@drawable/ic_study_pen"
+        android:icon="@drawable/ic_glass_pencil"
         app:showAsAction="always"
         android:visible="false"
         />

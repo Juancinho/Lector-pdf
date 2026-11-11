@@ -496,12 +496,17 @@ class MainActivity : AppCompatActivity(), ReaderUi {
         val params = binding.saveAnnotationsFab.layoutParams as ConstraintLayout.LayoutParams
         val defaultBottomMargin = (24 * resources.displayMetrics.density).toInt()
         val cardAtBottom = reader.inlineAnnotationActionController.isCardAtBottom()
-        val toolbar = binding.studyToolbar.root
-        val bottomMargin = if (toolbar.visibility == View.VISIBLE) {
-            if (toolbar.height == 0) {
-                toolbar.post { updateDirtyUiPosition() }
-            }
-            toolbar.height + (16 * resources.displayMetrics.density).toInt()
+        val density = resources.displayMetrics.density
+        val toolbarBounds = reader.studyPenToolbar.visibleBounds()
+        val fabZone = android.graphics.Rect(
+            binding.root.width - (96 * density).toInt(),
+            binding.root.height - (112 * density).toInt(),
+            binding.root.width,
+            binding.root.height,
+        )
+        val bottomMargin = if (toolbarBounds != null && android.graphics.Rect.intersects(toolbarBounds, fabZone)) {
+            // The floating toolbar sits over the save button's corner: lift the button above it.
+            binding.root.height - toolbarBounds.top + (12 * density).toInt()
         } else if (cardAtBottom && binding.textSelectionActionCard.height > 0) {
             binding.textSelectionActionCard.height + (32 * resources.displayMetrics.density).toInt()
         } else {

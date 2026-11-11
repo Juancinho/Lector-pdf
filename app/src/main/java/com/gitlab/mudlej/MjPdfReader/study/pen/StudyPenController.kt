@@ -82,6 +82,7 @@ class StudyPenController(
         )
         pdfView.setPenStylusOnly(settings.stylusOnly)
         pdfView.setPenAlwaysWrites(settings.penAlwaysWrites)
+        pdfView.setPenButtonActions(settings.primaryButton, settings.secondaryButton)
     }
 
     fun undo(): Boolean {

@@ -6,8 +6,8 @@
     android:id="@+id/listCard"
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
-    android:layout_marginHorizontal="2dp"
-    android:layout_marginVertical="2dp"
+    android:layout_marginHorizontal="4dp"
+    android:layout_marginVertical="3dp"
     android:checkable="true"
     android:clickable="true"
     android:focusable="true"
@@ -16,9 +16,10 @@
     app:checkedIconGravity="TOP_START"
     app:cardForegroundColor="@color/home_card_checked_foreground"
     app:cardBackgroundColor="@color/home_list_row_background"
-    app:cardCornerRadius="12dp"
+    app:cardCornerRadius="18dp"
     app:cardElevation="0dp"
-    app:strokeWidth="0dp">
+    app:strokeColor="@color/study_glass_edge"
+    app:strokeWidth="1dp">
 
     <LinearLayout
         android:layout_width="match_parent"

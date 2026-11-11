@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- SPDX-License-Identifier: GPL-3.0-or-later. Android 12+: real backdrop blur behind dialogs
+     and sheets. The system ignores these when cross-window blur is disabled (battery saver,
+     developer option or device policy), and the dense glass fill keeps text legible. -->
+<resources>
+    <style name="ChromeMaterialAlertDialog" parent="Base.ChromeMaterialAlertDialog">
+        <item name="android:windowBlurBehindEnabled">true</item>
+        <item name="android:windowBlurBehindRadius">28dp</item>
+    </style>
+
+    <style name="StudyBottomSheetDialog" parent="Base.StudyBottomSheetDialog">
+        <item name="android:windowBlurBehindEnabled">true</item>
+        <item name="android:windowBlurBehindRadius">24dp</item>
+    </style>
+
+    <style name="StudyColorDialog" parent="Base.StudyColorDialog">
+        <item name="android:windowBlurBehindEnabled">true</item>
+        <item name="android:windowBlurBehindRadius">28dp</item>
+    </style>
+</resources>

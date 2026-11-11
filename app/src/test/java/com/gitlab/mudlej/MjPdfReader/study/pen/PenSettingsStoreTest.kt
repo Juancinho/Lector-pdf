@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 package com.gitlab.mudlej.MjPdfReader.study.pen
 
+import com.github.barteksc.pdfviewer.PenButtonAction
 import com.github.barteksc.pdfviewer.PenTool
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
@@ -19,6 +20,12 @@ class PenSettingsStoreTest {
             stylusOnly = false,
             penAlwaysWrites = true,
             lastWritingTool = PenTool.MARKER,
+            primaryButton = PenButtonAction.HIGHLIGHTER,
+            secondaryButton = PenButtonAction.NONE,
+            toolbarVertical = true,
+            toolbarCollapsed = true,
+            toolbarX = 0.1f,
+            toolbarY = 0.75f,
         )
         assertEquals(settings, PenSettingsStore.decode(PenSettingsStore.encode(settings)))
     }
@@ -34,6 +41,21 @@ class PenSettingsStoreTest {
         assertEquals(PenSettings.MARKER_WIDTH_RANGE.endInclusive, decoded.markerWidth)
         assertFalse(decoded.stylusOnly)
         assertEquals(PenTool.PEN, decoded.lastWritingTool)
+    }
+
+    @Test
+    fun buttonDefaultsAreEraseAndSelectAndLayoutIsClamped() {
+        val defaults = PenSettingsStore.decode(null)
+        assertEquals(PenButtonAction.ERASER, defaults.primaryButton)
+        assertEquals(PenButtonAction.SELECT_TEXT, defaults.secondaryButton)
+        val decoded = PenSettingsStore.decode(
+            """{"primaryButton":"LASER","toolbarX":4.0,"toolbarY":-2,"toolbarVertical":true}"""
+        )
+        assertEquals(PenButtonAction.ERASER, decoded.primaryButton)
+        assertEquals(1f, decoded.toolbarX)
+        assertEquals(0f, decoded.toolbarY)
+        assertTrue(decoded.toolbarVertical)
+        assertEquals(PenTool.PEN, PenSettings(lastWritingTool = PenTool.SELECT).normalized().lastWritingTool)
     }
 
     @Test
