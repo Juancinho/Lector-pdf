@@ -1,3 +1,37 @@
+# Delivery 0.2.0-study · 11 November 2026
+
+Status: **development APK, physical acceptance pending**. Pen and glass slice on top of 0.1.0-study.
+
+## Implemented
+
+- Floating liquid-glass pen toolbar (Read, Highlighter, Pen, Marker, Eraser, colour, options, Undo, Redo, Done) opened from a pen icon in the top bar, the actions menu or configurable shortcuts; Back closes it. Options panel with tool colours, maximum width, "only the pen writes" and "pen writes while reading".
+- Pen highlighter: sweep over text → word-snapped standard /Highlight in the current highlight style (shared with the selection card), listed in Highlights.
+- Pressure-sensitive pen and translucent marker as standard /Ink with a variable-width appearance stream; MJ Study redraws them as cached vector overlays without re-rendering pages.
+- Whole-stroke eraser for MJ Study ink and highlights; undo/redo; journal recovery for ink (`addInk`/`deleteInk`).
+- Pen routing: stylus writes, fingers navigate, pen takes over a finger gesture, palm guard while writing, historical samples, unbuffered dispatch, hover cursor, pen buttons (primary = erase while writing, either = highlight while reading), `TOOL_TYPE_ERASER` erases.
+- Glass styling for the selection card, crop status card and actions menu (real backdrop blur where Android 12+ enables cross-window blur). English and Spanish strings.
+
+## Verified in this environment
+
+| Check | Result |
+| --- | --- |
+| Native JNI with new /Ink functions | Rebuilt for arm64-v8a (prebuilt PDFium profile); `nativeCreateInkAnnotation`, `nativeGetInkAnnotations`, `nativeRemoveInkAnnotation` exported |
+| app JVM tests | 821 passed; 39 skipped (includes new PenSettingsStore, PenHistory and ink journal tests) |
+| AndroidPdfViewer JVM tests | 319 passed; 16 skipped (includes new InkGeometry and PenInputPolicy tests) |
+| PdfiumAndroid JVM tests | 31 passed; 2 skipped |
+| Lint | Passed: 0 errors, 305 warnings (same count as 0.1.0; new code adds none of its own) |
+| Debug APK / device-test APK | Assembled; all five arm64 .so files in the APK byte-identical to the newly built libraries |
+
+Environment notes: the SDK/NDK had to be downloaded into the session; two inherited `BackupFolderNamingTest` cases fail when the JVM runs with an ASCII filesystem encoding (no UTF-8 locale) and pass with `LANG=C.UTF-8`; the numbers above are from the UTF-8 run. One transient Gradle failure (`extractDebugAnnotations`) passed on retry.
+
+## Not verified / limitations
+
+- No Xiaomi Pad 7 or Xiaomi pen and no emulator able to load the arm64 PDFium build were available. Pressure response, which pen buttons HyperOS forwards to apps, hover, palm behaviour, latency and visual polish are **untested on hardware**. The new `InkPersistenceTest` (native create → save → reopen → erase → save → reopen) is compiled, not run.
+- Cross-reader rendering of the generated ink appearance (Acrobat, Xodo, pdf.js) is unverified. The appearance stream format was checked against PDFium's own `FPDFAnnot_SetAP` source for the pinned API (BBox from /Rect, `/GS` ExtGState for /CA).
+- The eraser removes whole strokes/highlights, only those created by MJ Study. No partial eraser, lasso, shapes or text boxes yet.
+- In-window glass is a translucent frosted fill; Android Views cannot blur content behind a view in the same window.
+- Only the arm64 prebuilt PDFium profile was built (upstream Arabic patches omitted, as in 0.1.0).
+
 # Delivery 0.1.0-study · 11 November 2026
 
 Status: **development APK, physical acceptance pending**. This is the first custom-highlighting slice; it is not a finished tablet/stylus product.

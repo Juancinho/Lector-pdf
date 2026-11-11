@@ -24,14 +24,19 @@ This is a sequence of functional deliveries, not a list of completed promises.
 
 ## Phase 2: tablet reader
 
-- [ ] Floating tool groups, read/write modes, hide controls, responsive page/annotation panels.
-- [ ] Apply common tokens across reader chrome, day/night and accessibility states.
+- [x] Floating liquid-glass pen toolbar (one tool group, options panel on demand, read/write modes, Done/back closes). Entry from the top bar pen icon, the actions menu and configurable shortcuts.
+- [x] Glass tokens (light/dark) applied to the toolbar, selection card, crop status card and actions menu (real backdrop blur on Android 12+ when the system enables cross-window blur).
+- [ ] Responsive page/annotation side panels; glass tokens across the remaining reader chrome and settings.
+- [ ] Visual acceptance on Xiaomi Pad 7: portrait/landscape, split screen, 200% font, TalkBack, dark mode.
 
 ## Phase 3: pen engine
 
-- [ ] Capability diagnostics on Xiaomi hardware, page-coordinate transforms, pen/finger routing.
-- [ ] Pressure/smoothing/palm state machine, vector tools, undo/redo, standard /Ink persistence.
-- [ ] Lasso and transformations after coordinate/serialization tests pass.
+- [x] Page-coordinate transform (PDF user space ↔ document, rotation and crop aware) and pen/finger routing: stylus writes, fingers scroll/zoom; pen takes over a finger gesture cleanly.
+- [x] Pen highlighter: sweep over text → word-snapped standard /Highlight with the current highlight style; listed with the other highlights.
+- [x] Pressure-sensitive pen and translucent marker as standard /Ink (centreline /InkList, variable-width /AP outline, MJPressure sidecar inside the same annotation), stroke eraser for ink and app highlights, undo/redo through the recovery journal.
+- [x] Pen buttons policy: primary = eraser while writing, secondary = highlighter; while reading, holding a button and sweeping highlights. Eraser tool type always erases. Hover cursor. Palm guard while writing.
+- [ ] Capability diagnostics and acceptance on Xiaomi Pad 7 + Xiaomi pen (pressure range, which buttons reach the app, hover, latency, palm). Nothing pen-related is hardware-verified yet.
+- [ ] Partial (point) eraser, lasso and transformations after coordinate/serialization tests pass.
 
 ## Phase 4: library
 

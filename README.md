@@ -2,6 +2,17 @@
 
 Native, open-source academic PDF reading and annotation for Android. Forked from [MJ PDF by Mudlej](https://gitlab.com/mudlej_android/mj_pdf_reader), licensed under GPLv3-or-later; upstream history and third-party notices are preserved.
 
+## Development delivery · 0.2.0-study: pen and glass
+
+- **Write and highlight** (pen icon in the top bar): a floating liquid-glass toolbar with Read, Highlighter, Pen, Marker, Eraser, colour, options, Undo/Redo and Done.
+- **Highlight with the pen**: sweep the pen over text; the selection snaps to words and becomes a standard PDF highlight in the current highlight style, listed in Highlights like any other.
+- **Pressure-sensitive ink**: pen and translucent marker strokes are standard `/Ink` annotations whose appearance follows pen pressure, so other readers show the same variable width.
+- **Pen buttons and palm**: while writing, hold the primary pen button to erase (secondary = highlighter); while reading, hold a pen button and sweep over text to highlight without opening the toolbar. Only the pen writes by default; fingers keep scrolling and zooming, and resting-palm touches are ignored while writing.
+- Undo/redo, the recovery journal and the existing staged save cover all pen changes.
+- Glass surfaces for the selection card and actions menu (real backdrop blur on Android 12+ when the system allows it).
+
+Pen pressure, buttons, hover and palm behaviour are implemented against Android's stylus APIs but **have not been verified on a Xiaomi Pad 7 and Xiaomi pen**; see [delivery status](docs/DELIVERY.md).
+
 ## First development delivery · 0.1.0-study
 
 - PDFium rendering and the existing lightweight Kotlin/Views reader.
@@ -12,7 +23,7 @@ Native, open-source academic PDF reading and annotation for Android. Forked from
 - Separate installation ID `io.github.juancinho.mjstudy`, alongside original MJ PDF.
 - No mandatory account, ads or initialized remote crash reporter. Local PDF reading and highlighting work offline.
 
-The pen engine, redesigned tablet toolbar and advanced library are planned, not implemented. See [roadmap](docs/ROADMAP.md) and [delivery status](docs/DELIVERY.md). Physical testing on Xiaomi Pad 7 is still required.
+The advanced library, side panels and partial eraser/lasso remain planned. See [roadmap](docs/ROADMAP.md) and [delivery status](docs/DELIVERY.md). Physical testing on Xiaomi Pad 7 is still required.
 
 ## Try it
 

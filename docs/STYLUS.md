@@ -1,6 +1,22 @@
-# Digital ink: investigation and next implementation
+# Digital ink
 
-Status: design/investigation only. The first delivery changes text highlighting, not pen input.
+Status (0.2.0-study): implemented against Android's stylus APIs and PDFium; **not verified on Xiaomi hardware**. The original investigation follows the implementation notes.
+
+## What is implemented
+
+- Routing: `MotionEvent.getToolType` decides. With a writing tool active and "only the pen writes" (default), `TOOL_TYPE_STYLUS` writes and fingers keep PDFView's scroll/pinch. A pen landing as a second pointer during a finger gesture cancels the navigation gesture and takes over. The pen gesture owns its pointer ID until UP/CANCEL; other pointers in that gesture are ignored.
+- Palm guard (writing tools only): a finger gesture that starts while the pen is down, while it hovers (hover state older than 1.5 s is ignored), or within 400 ms of the pen lifting is ignored. This is a heuristic, not a guarantee; HyperOS may add its own palm rejection.
+- Samples: all historical samples are consumed, `requestUnbufferedDispatch` delivers stylus events as they arrive, points closer than 0.75 px are merged. Pressure is normalised by the device's reported `AXIS_PRESSURE` range, clamped to 0..1 and lightly smoothed. Fingers/mouse use a fixed pressure.
+- Buttons: primary = eraser while writing (or pen while the eraser is selected), secondary = highlighter; while reading, either button + sweep = highlight. `TOOL_TYPE_ERASER` always erases. Whether the Xiaomi pen's buttons reach the app (rather than HyperOS shortcuts) must be checked on the device.
+- Coordinates: page ownership is fixed at stroke start; samples are converted to PDF user space with the same inverse transform as text selection (zoom, page origin, scroll, crop and rotation). Overlays reproject through `PdfFile.pdfToDocumentAffine` every frame.
+- Storage: one standard `/Ink` annotation per stroke: `/InkList` centreline, `/C`, `/CA`, `/Border`, `/AP` normal appearance containing the pressure outline as one non-zero fill (no double darkening for translucent marker), and `MJPressure` per-point pressure inside the same annotation. The appearance is the authoritative look for other readers; MJ Study redraws from `/InkList` + `MJPressure`. Without the sidecar, width is uniform.
+- Eraser: whole-stroke eraser for MJ Study ink and app highlights (third-party annotations are not touched). Undo/redo replays the inverse `AnnotationEdit`s through the journal.
+
+## Hardware acceptance still required
+
+Record model, HyperOS version, pen model, `InputDevice` motion ranges (pressure, tilt), observed pressure values, button states during contact and hover, palm behaviour, latency at different zooms, all four page rotations, save/reopen in another reader (Acrobat, Xodo, Chrome/pdf.js) for opaque and translucent ink.
+
+## Original investigation
 
 Upstream SignatureView captures generic touch points, decimates input and converts it into cubic strokes. SignatureData keeps normalized vector paths. SignatureController places these with PDF coordinates, but nativeAddSignatureContent inserts page path content; it does not create editable PDF /Ink annotations. Keep it for signatures and reuse only appropriate math.
 

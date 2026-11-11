@@ -19,6 +19,21 @@ Identity: paper, graphite and a muted green accent. Color belongs to study conte
 
 Tokens live in values/study_colors.xml and values-night/study_colors.xml. No dynamic system recoloring for the new identity. PDF paper preview remains white deliberately and shows multiply blending; theme changes must not mutate saved annotation colors.
 
+### Liquid glass (0.2.0-study)
+
+| Token | Light | Dark | Purpose |
+| --- | --- | --- | --- |
+| study_glass_fill | #C9FBFBF9 | #BF1C1F1D | Floating toolbar surface |
+| study_glass_fill_strong | #EBFBFBF9 | #E61C1F1D | Cards and panels without real blur |
+| study_glass_fill_blurred | #99FBFBF9 | #8C1C1F1D | Windows with system backdrop blur |
+| study_glass_edge | #CCFFFFFF | #33FFFFFF | Inner specular edge |
+| study_glass_outline | #1F202321 | #66000000 | Outer hairline |
+| study_glass_sheen | #73FFFFFF | #1FFFFFFF | Top sheen gradient start |
+| study_glass_selected | #1C202321 | #29FFFFFF | Selected tool background |
+| study_glass_divider | #26202321 | #29FFFFFF | Group dividers, inactive tracks |
+
+Android Views cannot blur content drawn behind a view in the same window, so in-window chrome (toolbar, selection card) is a translucent frosted fill + specular edge + soft elevation, and separate windows (actions menu) use real `setBackgroundBlurRadius` blur only when `WindowManager.isCrossWindowBlurEnabled` is true; otherwise they fall back to the strong fill. Never put glass over glass; never tint the PDF.
+
 ## Typography, space and shape
 
 Use system sans (Roboto/fallback) and Android sp, respecting font scaling. Titles 22sp medium, body 16sp regular, secondary/field labels 14sp, compact swatch metadata 11sp. Never bake text into images.
@@ -32,7 +47,7 @@ Spacing scale: 4, 8, 12, 16, 24, 32dp. Panel inset 24dp; field separation 12dp; 
 - Inputs: outlined, visible label, inline validation, disabled commit for invalid HEX/RGB. Edits synchronize only after valid input. Never silently interpret ARGB as RGB.
 - Primary commit: highest contrast. Secondary cancel: quiet. Pressed/focus/ripple feedback uses native Material states. Disabled commit cannot write a stale color. A selected color must have text/outline cues, not just hue.
 - Favorite/recent controls expose HEX, opacity and meaning to accessibility services. Meanings are preference labels, not hidden annotation metadata.
-- Future floating toolbar: one tool group at a time, collapsed when reading, transient options anchored to the active tool. Do not add an always-visible grid of every feature.
+- Pen toolbar (implemented): one floating glass pill centred at the bottom: Read · Highlighter · Pen · Marker · Eraser | colour dot · options | Undo · Redo | Done (accent). 48dp targets, tooltips, selected state by background + state description, not colour alone. Re-tapping the active tool, the colour dot or options opens one panel anchored above the pill (colours, maximum width, behaviour switches, pen-button hint). Back or Done closes the toolbar and returns to reading. Entry: pen icon in the top bar. Do not add an always-visible grid of every feature.
 
 ## Responsive behavior
 

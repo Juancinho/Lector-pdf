@@ -16,6 +16,13 @@ The upstream already has grouped text-highlight annotations, recoloring/deletion
 
 Preferences do not store document geometry or replace PDF annotations. Color meanings currently label personal presets; they are not exported into the PDF. Existing edit journal carries the complete ARGB integer, so recovery preserves opacity without a second format.
 
+## Pen slice (0.2.0-study)
+
+- `AndroidPdfViewer` owns input and drawing, never persistence: `PenInputManager` routes stylus events (tool type, buttons, historical samples, unbuffered dispatch, hover, palm guard); `PenInputPolicy` holds the pure routing rules; `TextSelectionManager` gained a caret-to-caret word-snapped "sweep" that never notifies selection listeners; `InkGeometry` builds the pressure outline, the appearance stream and the pressure sidecar codec; `InkOverlayRenderer` draws cached outlines through each page's PDF→document affine transform (`PdfFile.pdfToDocumentAffine`), so zoom/scroll never rebuild geometry.
+- `PdfiumAndroid`: `nativeCreateInkAnnotation`/`nativeGetInkAnnotations`/`nativeRemoveInkAnnotation`. Ink is written as a standard `/Ink` annotation: `/InkList` centreline, `/C` + `/CA`, `/Border` width, generated `/AP` with the variable-width outline (`/GS` ExtGState for opacity), `MJGroup`/`NM`/`T`/`CreationDate`, and `MJPressure` (per-point pressure) inside the same annotation. App-owned ink shares the app highlights' hidden-while-rendering/visible-on-save rule, so the viewer draws it as an overlay with no page re-render.
+- `app/study/pen`: `StudyPenController` turns pen results into `AnnotationEdit`s (`Add`, `AddInk`, `Delete`, `DeleteInk`, `SetNote`) applied through `AnnotationController.applyLive` and recorded through the normal journal path; `PenHistory` keeps bounded undo/redo as forward/backward edit lists; `PenSettings(Store)` is one versioned preference key (in the backup whitelist) and never stores document data.
+- `app/study/ui`: `StudyPenToolbar` (floating glass toolbar + options panel) and `GlassSurfaces` (translucent surfaces; real cross-window blur only for separate windows).
+
 ## Storage and safety
 
 Retain SAF/content-URI support, existing staged save, unsaved-change gates and recovery flow. The base also has broad-storage library modes; replacing those with a redesigned SAF-first library is phase 4, not completed here. New highlight functionality requests no storage permission and writes through the existing save pipeline.
@@ -24,7 +31,7 @@ Do not add direct overwrite code to the picker. Native annotation edits may stil
 
 ## Identity and privacy
 
-Install ID `io.github.juancinho.mjstudy`, version `0.1.0-study`, launcher name MJ Study; source namespace retained to avoid a cross-project package refactor. FileProvider uses `${applicationId}`. Upstream attribution retained. Remote crash reporter initialization and backend configuration removed; dynamic colors disabled for a stable new visual identity. Existing optional upstream network document/link/translation features remain; no account is required for local reading or annotation. Full removal of unused ACRA dependencies can be a separate cleanup.
+Install ID `io.github.juancinho.mjstudy`, version `0.2.0-study`, launcher name MJ Study; source namespace retained to avoid a cross-project package refactor. FileProvider uses `${applicationId}`. Upstream attribution retained. Remote crash reporter initialization and backend configuration removed; dynamic colors disabled for a stable new visual identity. Existing optional upstream network document/link/translation features remain; no account is required for local reading or annotation. Full removal of unused ACRA dependencies can be a separate cleanup.
 
 ## Build profiles
 
