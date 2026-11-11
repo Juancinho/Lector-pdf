@@ -29,10 +29,13 @@ jobs:
           git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
           before_tree=$(git rev-parse 'study/custom-highlights^{tree}')
           python -m pip install git-filter-repo==2.47.0
-          git filter-repo --force --strip-blobs-bigger-than 95M --refs refs/heads/study/custom-highlights
-          test "$before_tree" = "$(git rev-parse 'study/custom-highlights^{tree}')"
+          git filter-repo --force --strip-blobs-bigger-than 95M --path .github/workflows --invert-paths --refs refs/heads/study/custom-highlights
+          git diff --exit-code "$before_tree" "$(git rev-parse 'study/custom-highlights^{tree}')" -- . ':(exclude).github/workflows'
           imported=$(git rev-parse study/custom-highlights)
-          tree=$(git rev-parse "$imported^{tree}")
+          export GIT_INDEX_FILE="$RUNNER_TEMP/import-index"
+          git read-tree "$imported^{tree}"
+          git restore --staged --source="$GITHUB_SHA" -- .github/workflows
+          tree=$(git write-tree)
           merge=$(printf 'Import MJ Study with upstream history and verified development commits\n' | git commit-tree "$tree" -p "$GITHUB_SHA" -p "$imported")
           git push origin "$merge:refs/heads/main" study/custom-highlights:refs/heads/study/custom-highlights
           echo "Imported source commit $imported" >> "$GITHUB_STEP_SUMMARY"
