@@ -176,6 +176,30 @@ final class TextSelectionManager {
         return new int[] {clamp(start, 0, charCount), clamp(end, 0, charCount)};
     }
 
+    /** Draws the sweep with the normal selection colour (pen "select text"). */
+    void useSelectionColorForSweep() {
+        sweepPaint.setColor(selectionPaint.getColor());
+    }
+
+    /**
+     * Turns a finished sweep into a normal selection with handles and notifies
+     * listeners, so the regular selection actions (copy, note, share…) appear.
+     */
+    boolean commitSweepAsSelection() {
+        if (!sweeping) {
+            return false;
+        }
+        sweeping = false;
+        sweepAnchorCaret = -1;
+        if (selection == null || selection.isEmpty() || pdfRunRects.isEmpty()) {
+            clear();
+            return false;
+        }
+        notifyChanged();
+        pdfView.invalidate();
+        return true;
+    }
+
     /** Ends the sweep, returning the highlight request (or null) without notifying listeners. */
     PDFView.HighlightRequest finishSweep() {
         if (!sweeping) {

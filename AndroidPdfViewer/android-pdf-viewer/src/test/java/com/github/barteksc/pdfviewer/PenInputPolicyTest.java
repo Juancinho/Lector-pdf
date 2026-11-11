@@ -17,22 +17,42 @@ public class PenInputPolicyTest {
     private static final int PRIMARY = MotionEvent.BUTTON_STYLUS_PRIMARY;
     private static final int SECONDARY = MotionEvent.BUTTON_STYLUS_SECONDARY;
 
-    @Test
-    public void readingStylusNavigatesUnlessAButtonIsHeldOrPenAlwaysWrites() {
-        assertEquals(PenTool.NONE, PenInputPolicy.resolveTool(PenTool.NONE, STYLUS, 0, false, PenTool.PEN));
-        assertEquals(PenTool.HIGHLIGHTER, PenInputPolicy.resolveTool(PenTool.NONE, STYLUS, PRIMARY, false, PenTool.PEN));
-        assertEquals(PenTool.HIGHLIGHTER, PenInputPolicy.resolveTool(PenTool.NONE, STYLUS, SECONDARY, false, PenTool.PEN));
-        assertEquals(PenTool.MARKER, PenInputPolicy.resolveTool(PenTool.NONE, STYLUS, 0, true, PenTool.MARKER));
-        assertEquals(PenTool.NONE, PenInputPolicy.resolveTool(PenTool.NONE, STYLUS, 0, true, PenTool.NONE));
+    private static final PenButtonAction ERASE = PenButtonAction.ERASER;
+    private static final PenButtonAction SELECT = PenButtonAction.SELECT_TEXT;
+    private static final PenButtonAction HIGHLIGHT = PenButtonAction.HIGHLIGHTER;
+    private static final PenButtonAction NONE = PenButtonAction.NONE;
+
+    private static PenTool resolve(PenTool selected, int toolType, int buttons, boolean always,
+                                   PenTool last, PenButtonAction primary, PenButtonAction secondary) {
+        return PenInputPolicy.resolveTool(selected, toolType, buttons, always, last, primary, secondary);
     }
 
     @Test
-    public void primaryButtonErasesWhileWritingAndSecondaryHighlights() {
-        assertEquals(PenTool.PEN, PenInputPolicy.resolveTool(PenTool.PEN, STYLUS, 0, false, PenTool.PEN));
+    public void readingStylusNavigatesUnlessAButtonIsHeldOrPenAlwaysWrites() {
+        assertEquals(PenTool.NONE, resolve(PenTool.NONE, STYLUS, 0, false, PenTool.PEN, ERASE, SELECT));
+        assertEquals(PenTool.ERASER, resolve(PenTool.NONE, STYLUS, PRIMARY, false, PenTool.PEN, ERASE, SELECT));
+        assertEquals(PenTool.SELECT, resolve(PenTool.NONE, STYLUS, SECONDARY, false, PenTool.PEN, ERASE, SELECT));
+        assertEquals(PenTool.MARKER, resolve(PenTool.NONE, STYLUS, 0, true, PenTool.MARKER, ERASE, SELECT));
+        assertEquals(PenTool.NONE, resolve(PenTool.NONE, STYLUS, 0, true, PenTool.NONE, ERASE, SELECT));
+        assertEquals(PenTool.NONE, resolve(PenTool.NONE, STYLUS, 0, true, PenTool.SELECT, ERASE, SELECT));
+    }
+
+    @Test
+    public void buttonsFollowTheConfiguredActionsInEveryMode() {
+        assertEquals(PenTool.PEN, resolve(PenTool.PEN, STYLUS, 0, false, PenTool.PEN, ERASE, SELECT));
+        assertEquals(PenTool.ERASER, resolve(PenTool.PEN, STYLUS, PRIMARY, false, PenTool.PEN, ERASE, SELECT));
+        assertEquals(PenTool.SELECT, resolve(PenTool.MARKER, STYLUS, SECONDARY, false, PenTool.PEN, ERASE, SELECT));
+        assertEquals(PenTool.HIGHLIGHTER, resolve(PenTool.PEN, STYLUS, PRIMARY, false, PenTool.PEN, HIGHLIGHT, SELECT));
+        assertEquals(PenTool.ERASER, resolve(PenTool.ERASER, STYLUS, PRIMARY, false, PenTool.PEN, ERASE, SELECT));
+        // A button set to "nothing" leaves the selected tool (or reading) in place.
+        assertEquals(PenTool.PEN, resolve(PenTool.PEN, STYLUS, PRIMARY, false, PenTool.PEN, NONE, SELECT));
+        assertEquals(PenTool.NONE, resolve(PenTool.NONE, STYLUS, PRIMARY, false, PenTool.PEN, NONE, NONE));
+        // Primary wins when both are reported.
+        assertEquals(PenTool.ERASER,
+                resolve(PenTool.PEN, STYLUS, PRIMARY | SECONDARY, false, PenTool.PEN, ERASE, SELECT));
+        // The legacy overload uses erase/select defaults.
         assertEquals(PenTool.ERASER, PenInputPolicy.resolveTool(PenTool.PEN, STYLUS, PRIMARY, false, PenTool.PEN));
-        assertEquals(PenTool.ERASER, PenInputPolicy.resolveTool(PenTool.HIGHLIGHTER, STYLUS, PRIMARY, false, PenTool.PEN));
-        assertEquals(PenTool.PEN, PenInputPolicy.resolveTool(PenTool.ERASER, STYLUS, PRIMARY, false, PenTool.PEN));
-        assertEquals(PenTool.HIGHLIGHTER, PenInputPolicy.resolveTool(PenTool.MARKER, STYLUS, SECONDARY, false, PenTool.PEN));
+        assertEquals(PenTool.SELECT, PenInputPolicy.resolveTool(PenTool.PEN, STYLUS, SECONDARY, false, PenTool.PEN));
     }
 
     @Test

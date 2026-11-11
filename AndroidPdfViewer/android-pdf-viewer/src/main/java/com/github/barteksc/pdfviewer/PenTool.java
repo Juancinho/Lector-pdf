@@ -10,7 +10,9 @@ public enum PenTool {
     /** Wide translucent pressure-sensitive /Ink. */
     MARKER,
     /** Removes MJ Study ink strokes and highlights touched by the pen. */
-    ERASER;
+    ERASER,
+    /** Sweep over text to select it (pen button action; not a toolbar tool). */
+    SELECT;
 
     public boolean isInk() {
         return this == PEN || this == MARKER;

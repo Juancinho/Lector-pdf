@@ -2301,6 +2301,13 @@ public class PDFView extends RelativeLayout {
         }
     }
 
+    /** What each pen barrel button does while held (defaults: erase, select text). */
+    public void setPenButtonActions(PenButtonAction primary, PenButtonAction secondary) {
+        if (penInputManager != null) {
+            penInputManager.setButtonActions(primary, secondary);
+        }
+    }
+
     /** When true the stylus writes with the last tool even while reading. */
     public void setPenAlwaysWrites(boolean alwaysWrites) {
         if (penInputManager != null) {

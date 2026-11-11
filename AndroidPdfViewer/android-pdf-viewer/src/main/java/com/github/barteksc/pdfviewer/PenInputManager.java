@@ -43,6 +43,8 @@ final class PenInputManager {
     private PenTool lastWritingTool = PenTool.PEN;
     private boolean stylusOnly = true;
     private boolean penAlwaysWrites;
+    private PenButtonAction primaryButtonAction = PenButtonAction.ERASER;
+    private PenButtonAction secondaryButtonAction = PenButtonAction.SELECT_TEXT;
     private int penColor = 0xFF1F2A44;
     private int markerColor = 0x66FFD54F;
     private int highlighterColor = 0x80FFD54F;
@@ -71,6 +73,7 @@ final class PenInputManager {
     private boolean penHovering;
     private long lastHoverMs;
     private boolean hoverVisible;
+    private PenTool hoverTool = PenTool.NONE;
     private float hoverX;
     private float hoverY;
 
@@ -92,7 +95,7 @@ final class PenInputManager {
             cancelGesture();
         }
         selectedTool = next;
-        if (next != PenTool.NONE && next != PenTool.ERASER) {
+        if (next != PenTool.NONE && next != PenTool.ERASER && next != PenTool.SELECT) {
             lastWritingTool = next;
         }
         hoverVisible = false;
@@ -105,6 +108,11 @@ final class PenInputManager {
 
     void setStylusOnly(boolean stylusOnly) {
         this.stylusOnly = stylusOnly;
+    }
+
+    void setButtonActions(PenButtonAction primary, PenButtonAction secondary) {
+        primaryButtonAction = primary == null ? PenButtonAction.NONE : primary;
+        secondaryButtonAction = secondary == null ? PenButtonAction.NONE : secondary;
     }
 
     void setPenAlwaysWrites(boolean penAlwaysWrites) {
@@ -151,7 +159,7 @@ final class PenInputManager {
             }
             // The pen landed while the palm rests: write, navigation never started.
             PenTool tool = PenInputPolicy.resolveTool(selectedTool, event.getToolType(event.getActionIndex()),
-                    event.getButtonState(), penAlwaysWrites, lastWritingTool);
+                    event.getButtonState(), penAlwaysWrites, lastWritingTool, primaryButtonAction, secondaryButtonAction);
             if (tool != PenTool.NONE) {
                 startGesture(tool, event, event.getActionIndex(), true);
             }
@@ -164,7 +172,7 @@ final class PenInputManager {
         int toolType = event.getToolType(index);
         if (PenInputPolicy.isPenTool(toolType)) {
             PenTool tool = PenInputPolicy.resolveTool(selectedTool, toolType, event.getButtonState(),
-                    penAlwaysWrites, lastWritingTool);
+                    penAlwaysWrites, lastWritingTool, primaryButtonAction, secondaryButtonAction);
             if (tool == PenTool.NONE) {
                 return false;
             }
@@ -202,7 +210,8 @@ final class PenInputManager {
                 hoverX = event.getX();
                 hoverY = event.getY();
                 PenTool tool = PenInputPolicy.resolveTool(selectedTool, event.getToolType(0),
-                        event.getButtonState(), penAlwaysWrites, lastWritingTool);
+                        event.getButtonState(), penAlwaysWrites, lastWritingTool, primaryButtonAction, secondaryButtonAction);
+                hoverTool = tool;
                 boolean show = tool == PenTool.ERASER || tool.isInk();
                 if (show || hoverVisible) {
                     hoverVisible = show;
@@ -242,11 +251,8 @@ final class PenInputManager {
         float y = event.getY(index);
         switch (tool) {
             case HIGHLIGHTER:
-                TextSelectionManager selection = pdfView.getTextSelectionManager();
-                if (selection != null) {
-                    selection.setSweepColor(highlighterColor);
-                    sweepStarted = selection.beginSweep(x, y);
-                }
+            case SELECT:
+                sweepStarted = beginSweep(tool, x, y);
                 break;
             case ERASER:
                 eraseAt(x, y);
@@ -302,15 +308,14 @@ final class PenInputManager {
         }
         switch (gestureTool) {
             case HIGHLIGHTER:
-                TextSelectionManager selection = pdfView.getTextSelectionManager();
-                if (selection == null) {
-                    return;
-                }
+            case SELECT:
                 if (!sweepStarted) {
-                    selection.setSweepColor(highlighterColor);
-                    sweepStarted = selection.beginSweep(x, y);
+                    sweepStarted = beginSweep(gestureTool, x, y);
                 } else {
-                    selection.extendSweep(x, y);
+                    TextSelectionManager selection = pdfView.getTextSelectionManager();
+                    if (selection != null) {
+                        selection.extendSweep(x, y);
+                    }
                 }
                 break;
             case ERASER:
@@ -339,6 +344,12 @@ final class PenInputManager {
             if (request != null && listener != null) {
                 listener.onPenHighlight(request, highlighterColor);
             }
+        } else if (tool == PenTool.SELECT) {
+            TextSelectionManager selection = pdfView.getTextSelectionManager();
+            if (selection != null) {
+                selection.commitSweepAsSelection();
+            }
+            sweepStarted = false;
         } else if (tool != null && tool.isInk()) {
             commitStroke(tool);
         }
@@ -347,7 +358,7 @@ final class PenInputManager {
     }
 
     void cancelGesture() {
-        if (gestureTool == PenTool.HIGHLIGHTER) {
+        if (gestureTool == PenTool.HIGHLIGHTER || gestureTool == PenTool.SELECT) {
             TextSelectionManager selection = pdfView.getTextSelectionManager();
             if (selection != null) {
                 selection.cancelSweep();
@@ -360,6 +371,19 @@ final class PenInputManager {
         strokePage = -1;
         erasedGroups.clear();
         pdfView.invalidate();
+    }
+
+    private boolean beginSweep(PenTool tool, float x, float y) {
+        TextSelectionManager selection = pdfView.getTextSelectionManager();
+        if (selection == null) {
+            return false;
+        }
+        if (tool == PenTool.SELECT) {
+            selection.useSelectionColorForSweep();
+        } else {
+            selection.setSweepColor(highlighterColor);
+        }
+        return selection.beginSweep(x, y);
     }
 
     // ---- Ink ----------------------------------------------------------------
@@ -557,8 +581,7 @@ final class PenInputManager {
         if (hoverVisible || erasing) {
             float x = hoverX - pdfView.getCurrentXOffset();
             float y = hoverY - pdfView.getCurrentYOffset();
-            PenTool tool = erasing ? PenTool.ERASER
-                    : (selectedTool == PenTool.NONE ? lastWritingTool : selectedTool);
+            PenTool tool = erasing ? PenTool.ERASER : hoverTool;
             if (tool == PenTool.ERASER) {
                 cursorPaint.setColor(nightMode ? 0xCCFFFFFF : 0xCC202321);
                 canvas.drawCircle(x, y, ERASER_RADIUS_DP * density, cursorPaint);
