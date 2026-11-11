@@ -32,7 +32,15 @@ Tokens live in values/study_colors.xml and values-night/study_colors.xml. No dyn
 | study_glass_selected | #1C202321 | #29FFFFFF | Selected tool background |
 | study_glass_divider | #26202321 | #29FFFFFF | Group dividers, inactive tracks |
 
-Android Views cannot blur content drawn behind a view in the same window, so in-window chrome (toolbar, selection card) is a translucent frosted fill + specular edge + soft elevation, and separate windows (actions menu) use real `setBackgroundBlurRadius` blur only when `WindowManager.isCrossWindowBlurEnabled` is true; otherwise they fall back to the strong fill. Never put glass over glass; never tint the PDF.
+Blur, by surface (0.3.0-study):
+
+- Floating pen toolbar (Android 12+): real backdrop blur. `GlassBackdropView` redraws only the page region under the capsule at 1/6 resolution before each frame and blurs it on the GPU with `RenderEffect` (18dp radius). It invalidates only when the sampled pixels change, pauses during pen strokes, and disables itself on any failure. The capsule then uses `study_glass_fill_blurred`; without blur it uses the denser `study_glass_fill`.
+- Dialogs, bottom sheets and the highlight editor (Android 12+): `windowBlurBehindEnabled` blurs everything behind the window when the system allows cross-window blur; surfaces use the near-opaque `study_glass_dialog` so text stays legible when it does not.
+- Actions menu: window background blur plus translucent glass when cross-window blur is enabled.
+- Popup menus, snackbars, the full-screen side menu and the selection card: dense frosted glass (no blur available for those windows/views).
+- Home: a low-contrast ambient gradient (`bg_study_ambient`) under translucent glass cards, search bar and tabs.
+
+Never put glass over glass; never tint the PDF.
 
 ## Typography, space and shape
 
@@ -47,7 +55,8 @@ Spacing scale: 4, 8, 12, 16, 24, 32dp. Panel inset 24dp; field separation 12dp; 
 - Inputs: outlined, visible label, inline validation, disabled commit for invalid HEX/RGB. Edits synchronize only after valid input. Never silently interpret ARGB as RGB.
 - Primary commit: highest contrast. Secondary cancel: quiet. Pressed/focus/ripple feedback uses native Material states. Disabled commit cannot write a stale color. A selected color must have text/outline cues, not just hue.
 - Favorite/recent controls expose HEX, opacity and meaning to accessibility services. Meanings are preference labels, not hidden annotation metadata.
-- Pen toolbar (implemented): one floating glass pill centred at the bottom: Read · Highlighter · Pen · Marker · Eraser | colour dot · options | Undo · Redo | Done (accent). 48dp targets, tooltips, selected state by background + state description, not colour alone. Re-tapping the active tool, the colour dot or options opens one panel anchored above the pill (colours, maximum width, behaviour switches, pen-button hint). Back or Done closes the toolbar and returns to reading. Entry: pen icon in the top bar. Do not add an always-visible grid of every feature.
+- Pen toolbar (0.3.0): a floating glass capsule: grip · Read | Highlighter · Pen · Marker · Eraser | colour well | Undo · Redo | Collapse · Done (accent disc). Instruments are drawn tools (neutral gradient body, tip/band in the live colour, eraser rubber fixed) that rise from the capsule rim when selected (200ms decelerate); in vertical layout their tips point towards the page. Drag by the grip (snaps within 28dp of an edge; position stored as fractions of free space), double-tap the grip or use the options to switch horizontal/vertical, collapse to a 60dp glass bubble with the active tool and a colour ring. Re-tapping the active tool or the colour well opens a glass popover placed beside the bar wherever it is (colour, maximum width with a live pressure-stroke preview, pen buttons, layout, behaviour). 44–48dp targets, tooltips, selection by elevation + state description, never colour alone. Back or Done closes it. Entry: pencil in the top bar, actions menu, full-screen side menu (default), shortcuts.
+- Line icons: 24dp, 1.8–2.2 stroke, round caps/joins, tinted by the view; instruments are full-colour artwork with light/dark variants.
 
 ## Responsive behavior
 

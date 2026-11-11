@@ -37,6 +37,8 @@ Use copies of documents for the first development build. Record Android/HyperOS 
 
 ## Pen slice checks (0.2.0-study)
 
+JVM (0.3.0 additions): button mapping in `PenInputPolicyTest`, toolbar layout/button fields in `PenSettingsStoreTest`, `StudyPenOverlayMigrationTest` for the full-screen menu.
+
 JVM: `InkGeometryTest` (pressure→width, outline geometry, caps/dots, appearance stream, locale-independent numbers, pressure codec), `PenInputPolicyTest` (tool resolution for stylus/eraser/finger and both buttons, palm guard, pressure smoothing), `PenSettingsStoreTest`, `PenHistoryTest`, and ink cases in `AnnotationEditJournalLineTest`.
 
 Device (native): `com.gitlab.mudlej.MjPdfReader.study.InkPersistenceTest` creates pressure ink, saves, reopens, checks /InkList, colour/opacity, width and pressure, erases, saves and reopens:
@@ -55,6 +57,9 @@ Xiaomi Pad 7 checklist for this slice:
 6. Eraser removes MJ Study strokes and highlights only; Undo restores them (with notes), Redo removes again.
 7. Save a copy, reopen in MJ Study and another reader: ink visible with the same varying width; translucent marker not darker where it overlaps itself; highlights normal. Kill the app before saving and confirm recovery replays ink.
 8. Latency and smoothness with long documents; no stutter while writing at high zoom.
+9. 0.3.0 toolbar: drag by the grip to every edge and corner (snaps, never leaves the screen), rotate the tablet (relative position kept), double-tap the grip and use the options to switch horizontal/vertical (tips point towards the page on both sides), collapse to the bubble and expand, open options next to the bar in each position. Save button moves above the bar only when they overlap.
+10. Pen buttons: set each button to erase / select / highlight / nothing and verify while reading and writing. "Select" must end in the normal selection card.
+11. Glass: on Android 12+ with blur enabled the toolbar shows a soft blur of the page (scroll/zoom under it; no lag while writing); dialogs and sheets blur the screen behind. Turn on battery saver (cross-window blur off): dialogs stay legible. Check light/dark, home cards, popup menus, snackbars and the full-screen side menu, which must list "Write and highlight" right after Exit.
 
 ## Future pen validation gate
 

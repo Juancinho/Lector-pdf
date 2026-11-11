@@ -1,3 +1,33 @@
+# Delivery 0.3.0-study · 11 November 2026
+
+Status: **development APK, physical acceptance pending**. Tablet polish on top of 0.2.0.
+
+## Implemented
+
+- Drawn instrument artwork (pen, marker, highlighter, eraser; light/dark) whose tip/band takes the live colour; selected tools rise from the capsule rim. New line icons (cursor, undo, redo, check, collapse, pencil, grip).
+- Floating toolbar: drag by the grip with edge snapping and persisted position, horizontal/vertical layout (double-tap grip or options; vertical tips point to the page), collapse to a glass bubble with a colour ring; options popover placed beside the bar with a live pressure-stroke/highlight preview.
+- Configurable pen buttons (erase / select text / highlight / nothing per button, defaults erase / select). "Select text" ends in the normal selection card.
+- "Write and highlight" in the full-screen side menu (default, plus a one-time migration for customised menus).
+- Liquid glass: real backdrop blur under the toolbar on Android 12+ (`GlassBackdropView`), blur-behind for dialogs, sheets and the highlight editor on Android 12+, glass popups, snackbars, side menu, selection card and home library (ambient gradient, glass cards, search bar, tabs).
+
+## Verified in this environment
+
+| Check | Result |
+| --- | --- |
+| app JVM tests | 824 passed; 39 skipped |
+| AndroidPdfViewer JVM tests | 319 passed; 16 skipped |
+| PdfiumAndroid JVM tests | 31 passed; 2 skipped |
+| Lint | 0 errors, 305 warnings (no new warnings in changed code) |
+| Debug / device-test APKs | Assembled; five arm64 .so files byte-identical to the built libraries |
+| Visual review | Toolbar (horizontal, vertical both sides, collapsed, options; light/dark), dialogs, home rows and side menu rendered with Robolectric native graphics in a local, uncommitted harness and inspected. Backdrop capture alignment verified; the GPU blur itself (`RenderEffect`) and elevation shadows are not rendered by Robolectric. |
+
+## Not verified / limitations
+
+- Still no Xiaomi Pad 7 / Xiaomi pen: button mapping (which physical button is "primary", HyperOS shortcuts), pressure, hover, palm, latency and the on-device look of blur/shadows are unverified.
+- The backdrop blur redraws the page region under the toolbar each changed frame (1/6 resolution, clipped); it pauses while writing. Its cost should be measured on the device; it disables itself on any capture error.
+- Cross-window blur for dialogs depends on the system setting; without it dialogs use a near-opaque glass fill.
+- Settings screens and some secondary activities keep the previous styling.
+
 # Delivery 0.2.0-study · 11 November 2026
 
 Status: **development APK, physical acceptance pending**. Pen and glass slice on top of 0.1.0-study.

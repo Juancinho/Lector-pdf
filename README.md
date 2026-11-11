@@ -2,6 +2,14 @@
 
 Native, open-source academic PDF reading and annotation for Android. Forked from [MJ PDF by Mudlej](https://gitlab.com/mudlej_android/mj_pdf_reader), licensed under GPLv3-or-later; upstream history and third-party notices are preserved.
 
+## Development delivery · 0.3.0-study: tablet polish
+
+- Drawn instruments (pen, marker, highlighter, eraser) that take the live colour and rise when selected; new line icons.
+- The pen toolbar can be dragged anywhere, laid out horizontally or vertically and collapsed into a bubble; options open beside it, with a live pressure-stroke preview.
+- Configurable pen buttons: erase, select text, highlight or nothing, for each button.
+- "Write and highlight" in the full-screen side menu.
+- Liquid glass across the app: real blur behind the toolbar (Android 12+), blurred backdrops for dialogs and sheets, glass popups, snackbars, side menu and home library.
+
 ## Development delivery · 0.2.0-study: pen and glass
 
 - **Write and highlight** (pen icon in the top bar): a floating liquid-glass toolbar with Read, Highlighter, Pen, Marker, Eraser, colour, options, Undo/Redo and Done.
