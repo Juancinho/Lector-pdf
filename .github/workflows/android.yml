@@ -1,0 +1,9 @@
+name: MJ Study Android
+on: workflow_dispatch
+permissions:
+  contents: read
+jobs:
+  pending-import:
+    runs-on: ubuntu-24.04
+    steps:
+      - run: echo 'Source import in progress. Full Android CI follows the import.'
