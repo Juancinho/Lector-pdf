@@ -189,6 +189,61 @@ public class PdfDocument {
         }
     }
 
+    /**
+     * An MJ Study-owned standard /Ink annotation. Strokes are flat x,y pairs in
+     * PDF user space (one array per /InkList path). Pressure is the optional
+     * MJPressure sidecar string kept inside the same annotation; the /InkList
+     * and the appearance stream remain the authoritative standard data.
+     */
+    public static class InkAnnotation {
+        private final int annotationIndex;
+        private final String groupKey;
+        private final float[][] strokes;
+        private final String pressure;
+        private final int color;
+        private final float strokeWidth;
+        private final String creationDate;
+
+        public InkAnnotation(int annotationIndex, String groupKey, float[][] strokes, String pressure,
+                             int color, float strokeWidth, String creationDate) {
+            this.annotationIndex = annotationIndex;
+            this.groupKey = groupKey == null ? "" : groupKey;
+            this.strokes = strokes == null ? new float[0][] : strokes;
+            this.pressure = pressure == null ? "" : pressure;
+            this.color = color;
+            this.strokeWidth = strokeWidth;
+            this.creationDate = creationDate == null ? "" : creationDate;
+        }
+
+        public int getAnnotationIndex() {
+            return annotationIndex;
+        }
+
+        public String getGroupKey() {
+            return groupKey;
+        }
+
+        public float[][] getStrokes() {
+            return strokes;
+        }
+
+        public String getPressure() {
+            return pressure;
+        }
+
+        public int getColor() {
+            return color;
+        }
+
+        public float getStrokeWidth() {
+            return strokeWidth;
+        }
+
+        public String getCreationDate() {
+            return creationDate;
+        }
+    }
+
     public static class FontInfo {
         private final String name;
         private final boolean embedded;

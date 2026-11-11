@@ -28,6 +28,7 @@ using namespace android;
 #include <fpdf_save.h>
 #include <fpdf_progressive.h>
 #include <string>
+#include <cmath>
 
 #include <set>
 #include <vector>
@@ -474,6 +475,21 @@ static bool isAppHighlightAnnotation(FPDF_ANNOTATION annot) {
             || wideEqualsAscii(getAnnotWideString(annot, "T"), "MJ Study");
 }
 
+// MJ Study ink strokes are standard /Ink annotations that carry the same app
+// ownership key as highlights. Like app highlights they are hidden while the
+// page is rendered (the viewer draws them as vector overlays) and un-hidden
+// for every save, so the written PDF shows them in any reader.
+static bool isAppInkAnnotation(FPDF_ANNOTATION annot) {
+    if (annot == NULL || FPDFAnnot_GetSubtype(annot) != FPDF_ANNOT_INK) {
+        return false;
+    }
+    return !getAnnotWideString(annot, "MJGroup").empty();
+}
+
+static bool isAppOverlayAnnotation(FPDF_ANNOTATION annot) {
+    return isAppHighlightAnnotation(annot) || isAppInkAnnotation(annot);
+}
+
 static bool setAppHighlightsHidden(FPDF_PAGE page, bool hidden) {
     if (page == NULL) {
         return false;
@@ -485,7 +501,7 @@ static bool setAppHighlightsHidden(FPDF_PAGE page, bool hidden) {
         if (annot == NULL) {
             continue;
         }
-        if (isAppHighlightAnnotation(annot)) {
+        if (isAppOverlayAnnotation(annot)) {
             matchedAny = true;
             int flags = FPDFAnnot_GetFlags(annot);
             int updated = hidden ? (flags | FPDF_ANNOT_FLAG_HIDDEN)
@@ -1808,6 +1824,250 @@ JNI_FUNC(jboolean, PdfiumCore, nativeAddSignatureContent)(JNI_ARGS,
         FPDFPage_GenerateContent(page);
     }
     return success;
+}
+
+JNI_FUNC(jboolean, PdfiumCore, nativeCreateInkAnnotation)(JNI_ARGS,
+    jlong docPtr,
+    jlong pagePtr,
+    jobjectArray strokes,
+    jint red,
+    jint green,
+    jint blue,
+    jint alpha,
+    jfloat strokeWidth,
+    jstring appearance,
+    jstring pressure,
+    jstring groupKey,
+    jstring creationDate
+) {
+    DocumentFile *doc = reinterpret_cast<DocumentFile*>(docPtr);
+    FPDF_PAGE page = reinterpret_cast<FPDF_PAGE>(pagePtr);
+    if (doc == NULL || page == NULL || strokes == NULL || strokeWidth <= 0) {
+        return false;
+    }
+    if (!FPDFAnnot_IsSupportedSubtype(FPDF_ANNOT_INK)) {
+        return false;
+    }
+    jsize strokeCount = env->GetArrayLength(strokes);
+    if (strokeCount <= 0) {
+        return false;
+    }
+
+    std::vector<std::vector<FS_POINTF>> paths;
+    float minX = 0, minY = 0, maxX = 0, maxY = 0;
+    bool hasPoint = false;
+    for (jsize i = 0; i < strokeCount; i++) {
+        jfloatArray strokeArray = static_cast<jfloatArray>(env->GetObjectArrayElement(strokes, i));
+        if (strokeArray == NULL) {
+            return false;
+        }
+        jsize length = env->GetArrayLength(strokeArray);
+        if (length < 2 || length % 2 != 0) {
+            env->DeleteLocalRef(strokeArray);
+            return false;
+        }
+        std::vector<jfloat> values(length);
+        env->GetFloatArrayRegion(strokeArray, 0, length, values.data());
+        env->DeleteLocalRef(strokeArray);
+        if (env->ExceptionCheck()) {
+            return false;
+        }
+        std::vector<FS_POINTF> points(length / 2);
+        for (jsize k = 0; k < length / 2; k++) {
+            float x = values[2 * k];
+            float y = values[2 * k + 1];
+            if (!std::isfinite(x) || !std::isfinite(y)) {
+                return false;
+            }
+            points[k].x = x;
+            points[k].y = y;
+            if (!hasPoint) {
+                minX = maxX = x;
+                minY = maxY = y;
+                hasPoint = true;
+            } else {
+                minX = fmin(minX, x);
+                maxX = fmax(maxX, x);
+                minY = fmin(minY, y);
+                maxY = fmax(maxY, y);
+            }
+        }
+        paths.push_back(points);
+    }
+    if (!hasPoint) {
+        return false;
+    }
+
+    FPDF_ANNOTATION annot = FPDFPage_CreateAnnot(page, FPDF_ANNOT_INK);
+    if (annot == NULL) {
+        return false;
+    }
+    // The appearance may widen the stroke up to the full pen width (pressure),
+    // so the rectangle covers the centreline plus one full width.
+    float pad = strokeWidth + 1.0f;
+    FS_RECTF rect;
+    rect.left = minX - pad;
+    rect.right = maxX + pad;
+    rect.bottom = minY - pad;
+    rect.top = maxY + pad;
+
+    std::string name = makeAnnotName();
+    std::string groupName = jstringToUtf8(env, groupKey);
+    if (groupName.empty()) {
+        groupName = name;
+    }
+    std::string colorValue = colorToHex(red, green, blue);
+    // Order matters: SetColor and SetBorder refuse to run (or drop the
+    // appearance) once an appearance stream exists, so /AP is written last.
+    bool success = FPDFAnnot_SetRect(annot, &rect)
+            && FPDFAnnot_SetColor(annot, FPDFANNOT_COLORTYPE_Color, red, green, blue, alpha)
+            && FPDFAnnot_SetBorder(annot, 0.0f, 0.0f, strokeWidth);
+    for (size_t i = 0; success && i < paths.size(); i++) {
+        success = FPDFAnnot_AddInkStroke(annot, paths[i].data(), paths[i].size()) >= 0;
+    }
+    success = success
+            && FPDFAnnot_SetFlags(annot, FPDF_ANNOT_FLAG_PRINT | FPDF_ANNOT_FLAG_HIDDEN)
+            && setAnnotAsciiString(annot, "T", "MJ Study")
+            && setAnnotAsciiString(annot, "NM", name.c_str())
+            && setAnnotAsciiString(annot, "MJGroup", groupName.c_str())
+            && setAnnotAsciiString(annot, "MJColor", colorValue.c_str())
+            && setAnnotWideString(env, annot, "MJPressure", pressure)
+            && setAnnotWideString(env, annot, "CreationDate", creationDate);
+    if (success && appearance != NULL) {
+        std::vector<FPDF_WCHAR> ap = jstringToWide(env, appearance);
+        ap.push_back(0);
+        success = ap.size() > 1 && FPDFAnnot_SetAP(annot, FPDF_ANNOT_APPEARANCEMODE_NORMAL, ap.data());
+    }
+    int annotIndex = FPDFPage_GetAnnotIndex(page, annot);
+    FPDFPage_CloseAnnot(annot);
+    if (!success) {
+        if (annotIndex >= 0) {
+            FPDFPage_RemoveAnnot(page, annotIndex);
+        }
+        return false;
+    }
+    doc->pagesWithAppHighlights.insert(page);
+    return true;
+}
+
+JNI_FUNC(jobjectArray, PdfiumCore, nativeGetInkAnnotations)(JNI_ARGS,
+    jlong pagePtr
+) {
+    FPDF_PAGE page = reinterpret_cast<FPDF_PAGE>(pagePtr);
+    jclass inkClass = env->FindClass("com/shockwave/pdfium/PdfDocument$InkAnnotation");
+    if (inkClass == NULL) {
+        return NULL;
+    }
+    if (page == NULL) {
+        return env->NewObjectArray(0, inkClass, NULL);
+    }
+    jclass floatArrayClass = env->FindClass("[F");
+    jmethodID inkConstructor = env->GetMethodID(inkClass, "<init>",
+            "(ILjava/lang/String;[[FLjava/lang/String;IFLjava/lang/String;)V");
+    if (floatArrayClass == NULL || inkConstructor == NULL) {
+        env->DeleteLocalRef(inkClass);
+        return NULL;
+    }
+
+    std::vector<jobject> annotations;
+    int annotCount = FPDFPage_GetAnnotCount(page);
+    for (int i = 0; i < annotCount; i++) {
+        FPDF_ANNOTATION annot = FPDFPage_GetAnnot(page, i);
+        if (annot == NULL) {
+            continue;
+        }
+        if (!isAppInkAnnotation(annot)) {
+            FPDFPage_CloseAnnot(annot);
+            continue;
+        }
+        unsigned long pathCount = FPDFAnnot_GetInkListCount(annot);
+        jobjectArray strokes = env->NewObjectArray(static_cast<jsize>(pathCount), floatArrayClass, NULL);
+        bool valid = strokes != NULL && pathCount > 0;
+        for (unsigned long p = 0; valid && p < pathCount; p++) {
+            unsigned long count = FPDFAnnot_GetInkListPath(annot, p, NULL, 0);
+            std::vector<FS_POINTF> points(count);
+            if (count > 0) {
+                FPDFAnnot_GetInkListPath(annot, p, points.data(), count);
+            }
+            jfloatArray values = env->NewFloatArray(static_cast<jsize>(count * 2));
+            if (values == NULL) {
+                valid = false;
+                break;
+            }
+            std::vector<jfloat> flat(count * 2);
+            for (unsigned long k = 0; k < count; k++) {
+                flat[2 * k] = points[k].x;
+                flat[2 * k + 1] = points[k].y;
+            }
+            if (count > 0) {
+                env->SetFloatArrayRegion(values, 0, static_cast<jsize>(count * 2), flat.data());
+            }
+            env->SetObjectArrayElement(strokes, static_cast<jsize>(p), values);
+            env->DeleteLocalRef(values);
+        }
+        if (valid) {
+            unsigned int red = 0, green = 0, blue = 0, alpha = 255;
+            getHighlightAnnotationColor(annot, &red, &green, &blue, &alpha);
+            int color = ((alpha & 0xFF) << 24) | ((red & 0xFF) << 16) | ((green & 0xFF) << 8) | (blue & 0xFF);
+            float hRadius = 0, vRadius = 0, width = 1.0f;
+            if (!FPDFAnnot_GetBorder(annot, &hRadius, &vRadius, &width) || width <= 0) {
+                width = 1.0f;
+            }
+            jstring groupString = wideToJString(env, getAnnotWideString(annot, "MJGroup"));
+            jstring pressureString = wideToJString(env, getAnnotWideString(annot, "MJPressure"));
+            jstring createdString = wideToJString(env, getAnnotWideString(annot, "CreationDate"));
+            jobject inkObject = env->NewObject(inkClass, inkConstructor, static_cast<jint>(i), groupString,
+                    strokes, pressureString, static_cast<jint>(color), static_cast<jfloat>(width), createdString);
+            if (inkObject != NULL) {
+                annotations.push_back(env->NewGlobalRef(inkObject));
+                env->DeleteLocalRef(inkObject);
+            }
+            if (groupString != NULL) env->DeleteLocalRef(groupString);
+            if (pressureString != NULL) env->DeleteLocalRef(pressureString);
+            if (createdString != NULL) env->DeleteLocalRef(createdString);
+        }
+        if (strokes != NULL) {
+            env->DeleteLocalRef(strokes);
+        }
+        FPDFPage_CloseAnnot(annot);
+    }
+
+    jobjectArray result = env->NewObjectArray(annotations.size(), inkClass, NULL);
+    for (jsize i = 0; i < static_cast<jsize>(annotations.size()); i++) {
+        env->SetObjectArrayElement(result, i, annotations[i]);
+        env->DeleteGlobalRef(annotations[i]);
+    }
+    env->DeleteLocalRef(floatArrayClass);
+    env->DeleteLocalRef(inkClass);
+    return result;
+}
+
+JNI_FUNC(jboolean, PdfiumCore, nativeRemoveInkAnnotation)(JNI_ARGS,
+    jlong pagePtr,
+    jstring groupKey
+) {
+    FPDF_PAGE page = reinterpret_cast<FPDF_PAGE>(pagePtr);
+    std::vector<FPDF_WCHAR> group = jstringToWide(env, groupKey);
+    if (page == NULL || group.empty()) {
+        return false;
+    }
+    bool removedAny = false;
+    bool success = true;
+    for (int i = FPDFPage_GetAnnotCount(page) - 1; i >= 0; i--) {
+        FPDF_ANNOTATION annot = FPDFPage_GetAnnot(page, i);
+        if (annot == NULL) {
+            continue;
+        }
+        bool matches = isAppInkAnnotation(annot) && wideEquals(getAnnotWideString(annot, "MJGroup"), group);
+        FPDFPage_CloseAnnot(annot);
+        if (matches) {
+            removedAny = true;
+            if (!FPDFPage_RemoveAnnot(page, i)) {
+                success = false;
+            }
+        }
+    }
+    return removedAny && success;
 }
 
 JNI_FUNC(jobjectArray, PdfiumCore, nativeGetHighlightAnnotations)(JNI_ARGS,

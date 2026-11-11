@@ -155,6 +155,15 @@ public class PdfiumCore {
 
     private native PdfDocument.HighlightAnnotation[] nativeGetHighlightAnnotations(long pagePtr);
 
+    private native boolean nativeCreateInkAnnotation(long docPtr, long pagePtr, float[][] strokes,
+                                                     int r, int g, int b, int a, float strokeWidth,
+                                                     String appearance, String pressure,
+                                                     String groupKey, String creationDate);
+
+    private native PdfDocument.InkAnnotation[] nativeGetInkAnnotations(long pagePtr);
+
+    private native boolean nativeRemoveInkAnnotation(long pagePtr, String groupKey);
+
     private native String[] nativeGetPageFonts(long pagePtr);
 
     private native boolean nativeAddSignatureContent(long docPtr, long pagePtr,
@@ -953,6 +962,51 @@ public class PdfiumCore {
             }
             return nativeAddSignatureContent(doc.mNativeDocPtr, nativePagePtr, strokes,
                     Color.red(color), Color.green(color), Color.blue(color), strokeWidthPts);
+        }
+    }
+
+    /** Creates one MJ Study /Ink annotation; strokes are flat x,y pairs in PDF user space. */
+    public boolean createInkAnnotation(PdfDocument doc, int pageIndex, float[][] strokes, int color,
+                                       float strokeWidth, String appearance, String pressure,
+                                       String groupKey, String creationDate) {
+        synchronized (lock) {
+            Long nativePagePtr = doc.mNativePagesPtr.get(pageIndex);
+            if (nativePagePtr == null || strokes == null || strokes.length == 0 || strokeWidth <= 0) {
+                return false;
+            }
+            return nativeCreateInkAnnotation(doc.mNativeDocPtr, nativePagePtr, strokes,
+                    Color.red(color), Color.green(color), Color.blue(color), Color.alpha(color),
+                    strokeWidth, appearance, pressure == null ? "" : pressure,
+                    groupKey == null ? "" : groupKey, creationDate);
+        }
+    }
+
+    public List<PdfDocument.InkAnnotation> getInkAnnotations(PdfDocument doc, int pageIndex) {
+        synchronized (lock) {
+            Long nativePagePtr = doc.mNativePagesPtr.get(pageIndex);
+            List<PdfDocument.InkAnnotation> result = new ArrayList<>();
+            if (nativePagePtr == null) {
+                return result;
+            }
+            PdfDocument.InkAnnotation[] annotations = nativeGetInkAnnotations(nativePagePtr);
+            if (annotations != null) {
+                for (PdfDocument.InkAnnotation annotation : annotations) {
+                    if (annotation != null) {
+                        result.add(annotation);
+                    }
+                }
+            }
+            return result;
+        }
+    }
+
+    public boolean removeInkAnnotation(PdfDocument doc, int pageIndex, String groupKey) {
+        synchronized (lock) {
+            Long nativePagePtr = doc.mNativePagesPtr.get(pageIndex);
+            if (nativePagePtr == null || groupKey == null || groupKey.isEmpty()) {
+                return false;
+            }
+            return nativeRemoveInkAnnotation(nativePagePtr, groupKey);
         }
     }
 

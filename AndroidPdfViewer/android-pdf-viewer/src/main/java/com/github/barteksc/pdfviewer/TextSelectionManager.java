@@ -34,6 +34,7 @@ final class TextSelectionManager {
     private final PDFView pdfView;
     private final Paint selectionPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
     private final Paint handlePaint = new Paint(Paint.ANTI_ALIAS_FLAG);
+    private final Paint sweepPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
     private final Path selectionPath = new Path();
     private final Path handlePath = new Path();
     private final float[] boxScratch = new float[4];
@@ -55,6 +56,9 @@ final class TextSelectionManager {
     private float dragOffsetY;
     private Object magnifier;
     private boolean magnifierCreated;
+    /** Stylus "sweep" highlighting: a caret-to-caret selection snapped to words. */
+    private boolean sweeping;
+    private int sweepAnchorCaret = -1;
 
     TextSelectionManager(PDFView pdfView) {
         this.pdfView = pdfView;
@@ -68,6 +72,135 @@ final class TextSelectionManager {
         selectionPaint.setColor(DEFAULT_SELECTION_COLOR);
         handlePaint.setStyle(Paint.Style.FILL);
         handlePaint.setColor(0xFF3F51B5);
+        sweepPaint.setStyle(Paint.Style.FILL);
+        sweepPaint.setColor(0x80FFD54F);
+    }
+
+    void setSweepColor(int argb) {
+        int alpha = Math.max(0x40, Math.min(0xA0, (argb >>> 24) & 0xFF));
+        sweepPaint.setColor((alpha << 24) | (argb & 0x00FFFFFF));
+    }
+
+    boolean isSweeping() {
+        return sweeping;
+    }
+
+    /**
+     * Starts a pen sweep at a view point. Unlike long-press selection this does
+     * not expand to a word immediately and never notifies selection listeners:
+     * the sweep turns into a highlight when the pen lifts. Returns false when no
+     * text is under the pen (the caller may retry on the next move).
+     */
+    boolean beginSweep(float viewX, float viewY) {
+        PdfFile pdfFile = pdfView.pdfFile;
+        if (pdfFile == null) {
+            return false;
+        }
+        float docX = -pdfView.getCurrentXOffset() + viewX;
+        float docY = -pdfView.getCurrentYOffset() + viewY;
+        int page = pdfFile.getPageAtOffset(pdfView.isSwipeVertical() ? docY : docX,
+                pdfView.isSwipeVertical() ? docX : docY, pdfView.getZoom());
+        if (page < 0 || page >= pdfFile.getPagesCount()) {
+            return false;
+        }
+        if (selection != null) {
+            clear();
+        }
+        pdfFile.ensureTextPage(page);
+        if (pdfFile.pageCharCount(page) <= 0) {
+            pdfFile.closeTextPage(page);
+            return false;
+        }
+        PointF point = pdfFile.documentToPdf(page, pdfView.getZoom(), docX, docY);
+        float tolerance = viewDistanceToPdf(page, handleHitTolerancePx);
+        int caret = caretAt(page, point.x, point.y, tolerance);
+        if (caret < 0) {
+            pdfFile.closeTextPage(page);
+            return false;
+        }
+        activePage = page;
+        selection = new TextSelection();
+        selection.pageIndex = page;
+        sweepAnchorCaret = caret;
+        sweeping = true;
+        applySweepRange(caret);
+        pdfView.invalidate();
+        return true;
+    }
+
+    void extendSweep(float viewX, float viewY) {
+        PdfFile pdfFile = pdfView.pdfFile;
+        if (!sweeping || pdfFile == null || selection == null) {
+            return;
+        }
+        float docX = -pdfView.getCurrentXOffset() + viewX;
+        float docY = -pdfView.getCurrentYOffset() + viewY;
+        PointF point = pdfFile.documentToPdf(selection.pageIndex, pdfView.getZoom(), docX, docY);
+        float tolerance = viewDistanceToPdf(selection.pageIndex, handleHitTolerancePx);
+        int caret = caretAt(selection.pageIndex, point.x, point.y, tolerance);
+        if (caret < 0) {
+            return;
+        }
+        int previousBase = selection.baseChar;
+        int previousExtent = selection.extentChar;
+        applySweepRange(caret);
+        if (selection.baseChar != previousBase || selection.extentChar != previousExtent) {
+            pdfView.invalidate();
+        }
+    }
+
+    private void applySweepRange(int caret) {
+        PdfFile pdfFile = pdfView.pdfFile;
+        int page = selection.pageIndex;
+        int charCount = pdfFile.pageCharCount(page);
+        int low = clamp(Math.min(sweepAnchorCaret, caret), 0, charCount);
+        int high = clamp(Math.max(sweepAnchorCaret, caret), 0, charCount);
+        if (high == low && high < charCount) {
+            high = low + 1;
+        }
+        int[] snapped = snapSweepToWords(low, high, charCount, page);
+        selection.baseChar = snapped[0];
+        selection.extentChar = snapped[1];
+        rebuildRects();
+    }
+
+    private int[] snapSweepToWords(int low, int high, int charCount, int page) {
+        int start = low;
+        int end = high;
+        if (start < charCount) {
+            start = Math.min(start, expandWord(page, start)[0]);
+        }
+        if (end > 0 && end - 1 < charCount) {
+            end = Math.max(end, expandWord(page, end - 1)[1]);
+        }
+        return new int[] {clamp(start, 0, charCount), clamp(end, 0, charCount)};
+    }
+
+    /** Ends the sweep, returning the highlight request (or null) without notifying listeners. */
+    PDFView.HighlightRequest finishSweep() {
+        if (!sweeping) {
+            return null;
+        }
+        PDFView.HighlightRequest request = getHighlightRequest();
+        cancelSweep();
+        return request;
+    }
+
+    void cancelSweep() {
+        if (!sweeping) {
+            return;
+        }
+        sweeping = false;
+        sweepAnchorCaret = -1;
+        PdfFile pdfFile = pdfView.pdfFile;
+        if (pdfFile != null && activePage >= 0) {
+            pdfFile.closeTextPage(activePage);
+        }
+        activePage = -1;
+        selection = null;
+        pdfRunRects.clear();
+        selectionCharCount = 0;
+        pdfView.invalidate();
     }
 
     void setEnabled(boolean enabled) {
@@ -287,6 +420,9 @@ final class TextSelectionManager {
             pdfFile.closeTextPage(activePage);
         }
         activePage = -1;
+        boolean wasSweeping = sweeping;
+        sweeping = false;
+        sweepAnchorCaret = -1;
         selection = null;
         dragging = Handle.NONE;
         pdfRunRects.clear();
@@ -294,7 +430,7 @@ final class TextSelectionManager {
         startHandleRtl = false;
         endHandleRtl = false;
         dismissMagnifier();
-        if (hadSelection) {
+        if (hadSelection && !wasSweeping) {
             pdfView.callbacks.callOnTextSelectionCleared();
         }
         pdfView.invalidate();
@@ -302,7 +438,9 @@ final class TextSelectionManager {
     }
 
     void recycle() {
-        boolean hadSelection = selection != null;
+        boolean hadSelection = selection != null && !sweeping;
+        sweeping = false;
+        sweepAnchorCaret = -1;
         selection = null;
         activePage = -1;
         dragging = Handle.NONE;
@@ -342,9 +480,11 @@ final class TextSelectionManager {
             }
         }
         if (hasRect) {
-            canvas.drawPath(selectionPath, selectionPaint);
+            canvas.drawPath(selectionPath, sweeping ? sweepPaint : selectionPaint);
         }
-        drawHandles(canvas, zoom);
+        if (!sweeping) {
+            drawHandles(canvas, zoom);
+        }
     }
 
     private void drawHandles(Canvas canvas, float zoom) {
@@ -488,7 +628,7 @@ final class TextSelectionManager {
     }
 
     private void notifyChanged() {
-        if (selection == null || selection.isEmpty()) {
+        if (sweeping || selection == null || selection.isEmpty()) {
             return;
         }
         pdfView.callbacks.callOnTextSelectionChanged(

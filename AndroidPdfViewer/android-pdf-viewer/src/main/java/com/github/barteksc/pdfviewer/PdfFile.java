@@ -85,6 +85,7 @@ class PdfFile implements ViewportMath.Layout {
     private volatile int pinnedRenderPage = -1;
     private final Map<Integer, List<PdfDocument.HighlightAnnotation>> highlightAnnotationCache = new ConcurrentHashMap<>();
     private final Map<Integer, float[]> formFieldRectCache = new ConcurrentHashMap<>();
+    private final Map<Integer, List<PdfDocument.InkAnnotation>> inkAnnotationCache = new ConcurrentHashMap<>();
     private final Map<Integer, Map<String, List<PdfDocument.HighlightAnnotation>>> highlightGroupCache =
             new ConcurrentHashMap<>();
     int debugHighlightGroupCacheMisses;
@@ -1389,6 +1390,152 @@ class PdfFile implements ViewportMath.Layout {
         }
     }
 
+    /**
+     * Writes one pressure-sensitive /Ink annotation. Strokes are PDF user-space
+     * x,y pairs; the appearance stream is generated from the same outline the
+     * viewer draws, so other readers show the same variable-width ink.
+     */
+    public boolean createInkAnnotation(int pageIndex, float[][] strokes, float[][] pressures, int color,
+                                       float maxWidth, String groupKey, String creationDate) {
+        if (disposed || pdfDocument == null || strokes == null || strokes.length == 0 || maxWidth <= 0) {
+            return false;
+        }
+        int docPage = documentPage(pageIndex);
+        if (docPage < 0) {
+            return false;
+        }
+        String appearance = InkGeometry.appearanceStream(strokes, pressures, color, maxWidth);
+        String pressure = InkGeometry.encodePressure(pressures);
+        fenceRenders();
+        try {
+            try {
+                openPage(pageIndex);
+            } catch (PageRenderingException e) {
+                return false;
+            }
+            boolean created = pdfiumCore.createInkAnnotation(pdfDocument, docPage, strokes, color, maxWidth,
+                    appearance, pressure, groupKey, creationDate);
+            if (created) {
+                // Optimistic cache entry so the overlay keeps showing the stroke
+                // until the background prewarm re-reads the page annotations.
+                List<PdfDocument.InkAnnotation> current = inkAnnotationCache.get(pageIndex);
+                List<PdfDocument.InkAnnotation> next = current == null
+                        ? new ArrayList<PdfDocument.InkAnnotation>() : new ArrayList<>(current);
+                next.add(new PdfDocument.InkAnnotation(-1, groupKey, strokes, pressure, color, maxWidth,
+                        creationDate));
+                inkAnnotationCache.put(pageIndex, Collections.unmodifiableList(next));
+            }
+            return created;
+        } finally {
+            renderGate.unlock();
+        }
+    }
+
+    public boolean removeInkAnnotation(int pageIndex, String groupKey) {
+        if (disposed || pdfDocument == null || groupKey == null || groupKey.isEmpty()) {
+            return false;
+        }
+        int docPage = documentPage(pageIndex);
+        if (docPage < 0) {
+            return false;
+        }
+        fenceRenders();
+        try {
+            try {
+                openPage(pageIndex);
+            } catch (PageRenderingException e) {
+                return false;
+            }
+            boolean removed = pdfiumCore.removeInkAnnotation(pdfDocument, docPage, groupKey);
+            if (removed) {
+                List<PdfDocument.InkAnnotation> current = inkAnnotationCache.get(pageIndex);
+                if (current != null) {
+                    List<PdfDocument.InkAnnotation> next = new ArrayList<>(current.size());
+                    for (PdfDocument.InkAnnotation ink : current) {
+                        if (!groupKey.equals(ink.getGroupKey())) {
+                            next.add(ink);
+                        }
+                    }
+                    inkAnnotationCache.put(pageIndex, Collections.unmodifiableList(next));
+                }
+            }
+            return removed;
+        } finally {
+            renderGate.unlock();
+        }
+    }
+
+    public List<PdfDocument.InkAnnotation> getInkAnnotations(int pageIndex) {
+        List<PdfDocument.InkAnnotation> cached = inkAnnotationCache.get(pageIndex);
+        if (cached != null) {
+            return cached;
+        }
+        warnIfMainThreadFill("getInkAnnotations");
+        int docPage = documentPage(pageIndex);
+        if (docPage < 0) {
+            return new ArrayList<>();
+        }
+        try {
+            openPage(pageIndex);
+        } catch (PageRenderingException e) {
+            return new ArrayList<>();
+        }
+        List<PdfDocument.InkAnnotation> inks;
+        synchronized (lock) {
+            if (disposed || pdfDocument == null) {
+                return new ArrayList<>();
+            }
+            inks = pdfiumCore.getInkAnnotations(pdfDocument, docPage);
+        }
+        List<PdfDocument.InkAnnotation> snapshot = Collections.unmodifiableList(inks);
+        inkAnnotationCache.put(pageIndex, snapshot);
+        return snapshot;
+    }
+
+    public List<PdfDocument.InkAnnotation> peekInkAnnotations(int pageIndex) {
+        return inkAnnotationCache.get(pageIndex);
+    }
+
+    /**
+     * Affine transform from PDF user space of a page to document (strip)
+     * coordinates at {@code zoom}: docX = a*x + c*y + e, docY = b*x + d*y + f.
+     * Writes {a, b, c, d, e, f} to {@code out}. Handles rotation and crop.
+     */
+    public boolean pdfToDocumentAffine(int pageIndex, float zoom, float[] out) {
+        PageGeometry geometry = getPageGeometry(pageIndex);
+        SizeF renderedSize = getScaledPageSize(pageIndex, zoom);
+        float frameWidth = geometry.frameWidth();
+        float frameHeight = geometry.frameHeight();
+        if (out == null || out.length < 6 || frameWidth <= 0 || frameHeight <= 0
+                || renderedSize.getWidth() <= 0 || renderedSize.getHeight() <= 0) {
+            return false;
+        }
+        CropBounds crop = getCropBounds(pageIndex);
+        float cropLeft = crop.getLeft() * frameWidth;
+        float cropTop = crop.getTop() * frameHeight;
+        float cropWidth = Math.max(1f, crop.getWidth() * frameWidth);
+        float cropHeight = Math.max(1f, crop.getHeight() * frameHeight);
+        float pageOriginX = isVertical ? getSecondaryPageOffset(pageIndex, zoom) : getPageOffset(pageIndex, zoom);
+        float pageOriginY = isVertical ? getPageOffset(pageIndex, zoom) : getSecondaryPageOffset(pageIndex, zoom);
+        float scaleX = renderedSize.getWidth() / cropWidth;
+        float scaleY = renderedSize.getHeight() / cropHeight;
+        float[] p0 = new float[2];
+        float[] px = new float[2];
+        float[] py = new float[2];
+        userToFrameTopDown(geometry, 0f, 0f, p0);
+        userToFrameTopDown(geometry, 1f, 0f, px);
+        userToFrameTopDown(geometry, 0f, 1f, py);
+        float e = pageOriginX + (p0[0] - cropLeft) * scaleX;
+        float f = pageOriginY + (p0[1] - cropTop) * scaleY;
+        out[0] = (px[0] - p0[0]) * scaleX;
+        out[1] = (px[1] - p0[1]) * scaleY;
+        out[2] = (py[0] - p0[0]) * scaleX;
+        out[3] = (py[1] - p0[1]) * scaleY;
+        out[4] = e;
+        out[5] = f;
+        return true;
+    }
+
     public List<PdfDocument.HighlightAnnotation> getHighlightAnnotations(int pageIndex) {
         List<PdfDocument.HighlightAnnotation> cached = highlightAnnotationCache.get(pageIndex);
         if (cached != null) {
@@ -1423,6 +1570,7 @@ class PdfFile implements ViewportMath.Layout {
         try {
             getFormFieldRects(pageIndex);
             getHighlightAnnotations(pageIndex);
+            getInkAnnotations(pageIndex);
         } catch (Throwable ignored) {
         }
     }
@@ -1442,13 +1590,16 @@ class PdfFile implements ViewportMath.Layout {
         }
         List<PdfDocument.HighlightAnnotation> annotations;
         float[] rects;
+        List<PdfDocument.InkAnnotation> inks;
         synchronized (lock) {
             if (disposed || pdfDocument == null) {
                 return false;
             }
             annotations = pdfiumCore.getHighlightAnnotations(pdfDocument, docPage);
             rects = pdfiumCore.getFormFieldRects(pdfDocument, docPage);
+            inks = pdfiumCore.getInkAnnotations(pdfDocument, docPage);
         }
+        inkAnnotationCache.put(pageIndex, Collections.unmodifiableList(inks));
         List<PdfDocument.HighlightAnnotation> snapshot = annotations == null
                 ? Collections.<PdfDocument.HighlightAnnotation>emptyList()
                 : Collections.unmodifiableList(annotations);
@@ -1547,11 +1698,13 @@ class PdfFile implements ViewportMath.Layout {
     public void invalidateHighlightAnnotationCache(int pageIndex) {
         highlightGroupCache.remove(pageIndex);
         highlightAnnotationCache.remove(pageIndex);
+        inkAnnotationCache.remove(pageIndex);
     }
 
     public void invalidateHighlightAnnotationCache() {
         highlightGroupCache.clear();
         highlightAnnotationCache.clear();
+        inkAnnotationCache.clear();
     }
 
     public void invalidateFormFieldRectCache(int pageIndex) {
@@ -1618,7 +1771,23 @@ class PdfFile implements ViewportMath.Layout {
             } catch (PageRenderingException e) {
                 return false;
             }
-            return pdfiumCore.removeHighlightAnnotation(pdfDocument, docPage, annotationIndex, groupKey);
+            boolean removed = pdfiumCore.removeHighlightAnnotation(pdfDocument, docPage, annotationIndex, groupKey);
+            if (removed && groupKey != null && !groupKey.isEmpty()) {
+                // Drop the group from the overlay cache now so it disappears in the
+                // same frame instead of waiting for the background refill.
+                List<PdfDocument.HighlightAnnotation> current = highlightAnnotationCache.get(pageIndex);
+                if (current != null) {
+                    List<PdfDocument.HighlightAnnotation> next = new ArrayList<>(current.size());
+                    for (PdfDocument.HighlightAnnotation annotation : current) {
+                        if (!groupKey.equals(annotation.getGroupKey())) {
+                            next.add(annotation);
+                        }
+                    }
+                    highlightGroupCache.remove(pageIndex);
+                    highlightAnnotationCache.put(pageIndex, Collections.unmodifiableList(next));
+                }
+            }
+            return removed;
         } finally {
             renderGate.unlock();
         }
@@ -1853,6 +2022,7 @@ class PdfFile implements ViewportMath.Layout {
                 pinnedRenderPage = -1;
                 highlightGroupCache.clear();
                 highlightAnnotationCache.clear();
+                inkAnnotationCache.clear();
                 formFieldRectCache.clear();
                 pageRowIndexes = new int[0];
                 rowFirstPages.clear();

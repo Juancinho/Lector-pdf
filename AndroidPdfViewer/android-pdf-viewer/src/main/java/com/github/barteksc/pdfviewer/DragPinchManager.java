@@ -416,6 +416,18 @@ class DragPinchManager implements GestureDetector.OnGestureListener, GestureDete
             pdfView.callbacks.callOnDocumentInteraction(event);
         }
 
+        PenInputManager penInputManager = pdfView.getPenInputManager();
+        if (penInputManager != null && penInputManager.handleTouch(event)) {
+            int penAction = event.getActionMasked();
+            if (penAction == MotionEvent.ACTION_DOWN || penAction == MotionEvent.ACTION_POINTER_DOWN) {
+                animationManager.stopFling();
+            }
+            if (penInputManager.consumeNavigationCancel()) {
+                cancelNavigationGesture(event);
+            }
+            return true;
+        }
+
         TextSelectionManager textSelectionManager = pdfView.getTextSelectionManager();
         if (event.getActionMasked() == MotionEvent.ACTION_DOWN) {
             animationManager.stopFling();
@@ -445,6 +457,21 @@ class DragPinchManager implements GestureDetector.OnGestureListener, GestureDete
             }
         }
         return retVal;
+    }
+
+    /** The pen took over a gesture a finger started: end scrolling/zooming cleanly. */
+    private void cancelNavigationGesture(MotionEvent event) {
+        MotionEvent cancel = MotionEvent.obtain(event);
+        cancel.setAction(MotionEvent.ACTION_CANCEL);
+        scaleGestureDetector.onTouchEvent(cancel);
+        gestureDetector.onTouchEvent(cancel);
+        cancel.recycle();
+        axisLock = AxisLock.UNDECIDED;
+        lockedHorizontalResistance = 0f;
+        if (scrolling) {
+            scrolling = false;
+            onScrollEnd(event);
+        }
     }
 
     private boolean isInteractionEvent(MotionEvent event) {

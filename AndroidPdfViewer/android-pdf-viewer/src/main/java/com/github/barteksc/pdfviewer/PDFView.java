@@ -622,6 +622,10 @@ public class PDFView extends RelativeLayout {
 
     private StampPlacementManager stampPlacementManager;
 
+    private PenInputManager penInputManager;
+
+    private final InkOverlayRenderer inkOverlayRenderer = new InkOverlayRenderer();
+
     private Runnable onStampPlacementDiscardListener;
 
     PdfFile pdfFile;
@@ -861,6 +865,7 @@ public class PDFView extends RelativeLayout {
         animationManager = new AnimationManager(this);
         textSelectionManager = new TextSelectionManager(this);
         stampPlacementManager = new StampPlacementManager(this);
+        penInputManager = new PenInputManager(this);
         dragPinchManager = new DragPinchManager(this, animationManager);
         pagesLoader = new PagesLoader(this);
 
@@ -1104,6 +1109,9 @@ public class PDFView extends RelativeLayout {
             scrollHandle.destroyLayout();
         }
 
+        if (penInputManager != null) {
+            penInputManager.cancelGesture();
+        }
         if (textSelectionManager != null) {
             textSelectionManager.recycle();
         }
@@ -1434,10 +1442,17 @@ public class PDFView extends RelativeLayout {
 
         drawFormFieldIndicators(canvas, visiblePages);
         drawHighlightAnnotationOverlays(canvas, visiblePages);
+        if (annotationRendering && pdfFile != null) {
+            inkOverlayRenderer.draw(canvas, pdfFile, visiblePages, zoom, nightMode, this);
+        }
         drawSelectedHighlightAnnotation(canvas);
 
         if (textSelectionManager != null) {
             textSelectionManager.draw(canvas);
+        }
+
+        if (penInputManager != null) {
+            penInputManager.draw(canvas, nightMode);
         }
 
         if (stampPlacementManager != null) {
@@ -2231,6 +2246,146 @@ public class PDFView extends RelativeLayout {
 
     private static boolean isUsable(float value) {
         return ViewportMath.isUsable(value);
+    }
+
+    PenInputManager getPenInputManager() {
+        return penInputManager;
+    }
+
+    @Override
+    public boolean onHoverEvent(MotionEvent event) {
+        if (penInputManager != null && penInputManager.handleHover(event)) {
+            return true;
+        }
+        return super.onHoverEvent(event);
+    }
+
+    // ---- Study pen tools ----------------------------------------------------
+
+    /** All rects, colour and text of one app highlight group, used to undo an erase. */
+    public static final class HighlightGroup {
+        public final int pageIndex;
+        public final String groupKey;
+        public final List<RectF> pdfRects;
+        public final int color;
+        public final String quote;
+        public final String note;
+        public final String creationDate;
+
+        public HighlightGroup(int pageIndex, String groupKey, List<RectF> pdfRects, int color,
+                              String quote, String note, String creationDate) {
+            this.pageIndex = pageIndex;
+            this.groupKey = groupKey;
+            this.pdfRects = pdfRects;
+            this.color = color;
+            this.quote = quote == null ? "" : quote;
+            this.note = note == null ? "" : note;
+            this.creationDate = creationDate == null ? "" : creationDate;
+        }
+    }
+
+    public void setPenTool(PenTool tool) {
+        if (penInputManager != null) {
+            penInputManager.setSelectedTool(tool);
+        }
+    }
+
+    public PenTool getPenTool() {
+        return penInputManager == null ? PenTool.NONE : penInputManager.getSelectedTool();
+    }
+
+    /** When true (default) only a stylus writes; fingers keep scrolling and zooming. */
+    public void setPenStylusOnly(boolean stylusOnly) {
+        if (penInputManager != null) {
+            penInputManager.setStylusOnly(stylusOnly);
+        }
+    }
+
+    /** When true the stylus writes with the last tool even while reading. */
+    public void setPenAlwaysWrites(boolean alwaysWrites) {
+        if (penInputManager != null) {
+            penInputManager.setPenAlwaysWrites(alwaysWrites);
+        }
+    }
+
+    /** Widths are maximum widths in PDF points (reached at full pressure). */
+    public void setPenStyle(int penColor, float penWidth, int markerColor, float markerWidth,
+                            int highlighterColor) {
+        if (penInputManager != null) {
+            penInputManager.setStyle(penColor, penWidth, markerColor, markerWidth, highlighterColor);
+        }
+    }
+
+    public void setOnPenInputListener(OnPenInputListener listener) {
+        if (penInputManager != null) {
+            penInputManager.setListener(listener);
+        }
+    }
+
+    public boolean isPenGestureActive() {
+        return penInputManager != null && penInputManager.isGestureActive();
+    }
+
+    public boolean addInkAnnotation(int pageIndex, float[][] strokes, float[][] pressures, int color,
+                                    float maxWidth, String groupKey, String creationDate) {
+        if (pdfFile == null || strokes == null || strokes.length == 0) {
+            return false;
+        }
+        try {
+            boolean created = pdfFile.createInkAnnotation(pageIndex, strokes, pressures, color, maxWidth,
+                    groupKey, creationDate);
+            if (created) {
+                overlayContentChanged(pageIndex);
+            }
+            return created;
+        } catch (Throwable throwable) {
+            Log.e(TAG, "addInkAnnotation: failed to create ink", throwable);
+            return false;
+        }
+    }
+
+    public boolean removeInkAnnotation(int pageIndex, String groupKey) {
+        if (pdfFile == null) {
+            return false;
+        }
+        try {
+            boolean removed = pdfFile.removeInkAnnotation(pageIndex, groupKey);
+            if (removed) {
+                overlayContentChanged(pageIndex);
+            }
+            return removed;
+        } catch (Throwable throwable) {
+            Log.e(TAG, "removeInkAnnotation: failed to remove ink", throwable);
+            return false;
+        }
+    }
+
+    public HighlightGroup getHighlightGroup(int pageIndex, String groupKey) {
+        if (pdfFile == null || groupKey == null || groupKey.isEmpty()) {
+            return null;
+        }
+        List<PdfDocument.HighlightAnnotation> annotations;
+        try {
+            annotations = pdfFile.getHighlightAnnotations(pageIndex);
+        } catch (Throwable throwable) {
+            return null;
+        }
+        List<RectF> rects = new ArrayList<>();
+        PdfDocument.HighlightAnnotation first = null;
+        for (PdfDocument.HighlightAnnotation annotation : annotations) {
+            if (!groupKey.equals(annotation.getGroupKey()) || annotation.getBounds() == null) {
+                continue;
+            }
+            if (first == null) {
+                first = annotation;
+            }
+            rects.add(new RectF(annotation.getBounds()));
+        }
+        if (first == null) {
+            return null;
+        }
+        return new HighlightGroup(pageIndex, groupKey, rects, first.getColor(), first.getQuote(),
+                first.getNote(), first.getCreationDate());
     }
 
     TextSelectionManager getTextSelectionManager() {
